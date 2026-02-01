@@ -1,5 +1,6 @@
 import { User, HardDrive, FileText, LogOut, Trash2, Hash } from 'lucide-react';
-import { useApp, mockUser } from '../AppContext';
+import { useApp } from '../AppContext';
+import { supabaseClient } from '../supabase';
 
 export default function Profile() {
   const { currentUser, setCurrentUser, setCurrentPage, libraryFiles, assessments } = useApp();
@@ -15,8 +16,11 @@ export default function Profile() {
     return sum + sizeInMB;
   }, 0);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setCurrentUser(null);
+    // if I don't use this error value, it complains. ... also doesn't seem to work... very confusing
+    const { error } = await supabaseClient.auth.signOut();
+    console.log(error);
     setCurrentPage('landing');
   };
 

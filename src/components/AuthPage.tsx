@@ -1,20 +1,43 @@
 import { useState } from 'react';
 import { Mail, Lock, ArrowLeft } from 'lucide-react';
-import { useApp, mockUser } from '../AppContext';
+import { supabaseClient } from '../supabase';
+import { useApp } from '../AppContext';
 
 export default function AuthPage() {
-  const { setCurrentUser, setCurrentPage } = useApp();
+  const { /*setCurrentUser,*/ setCurrentPage } = useApp();
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setCurrentUser(mockUser);
+    // this does not work fully yet but is roughly what I expect to go here
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
+      email: email,
+      password: password
+    });
+    
+    console.log(data, error);
+    
+    // needs to call setCurrentUser... however the User type does not perfectly match supabase's user data
+    // This can easily be patched together like in the handleGoogleSignIn below
   };
 
-  const handleGoogleSignIn = () => {
-    setCurrentUser(mockUser);
+  const handleGoogleSignIn = async () => {
+    // This works but the redirect simply takes you to the landing page.
+    // For now, I added logic so that the landing page main button changes text to
+    // say that "Go to dashboard" or "login or sign up" based on whether supabase detects
+    // a signed in user... probably not the fix we want long term
+    await supabaseClient.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: 'https://capstone-project-xi-pearl.vercel.app?loggedIn=true' // idk if this only works when it is not on localhost but it doesn't do anything
+      }
+    });
+      
+    // nothing down here gets run since the sign in with google redirects off the page.
+    // This can be changed with a pop-up flow but that's apparently custom stuff that will
+    // also be extra effort.
   };
 
   return (

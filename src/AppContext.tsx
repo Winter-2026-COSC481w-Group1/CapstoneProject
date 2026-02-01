@@ -20,14 +20,6 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-const mockUser: User = {
-  id: '1',
-  name: 'Dr. Sarah Chen',
-  email: 'sarah.chen@university.edu',
-  avatar: 'SC',
-  sessionHash: 'a3f9c2b8-4e1d-7f2a-9b5c-3d8e6a1f4b7c'
-};
-
 const mockLibraryFiles: LibraryFile[] = [
   {
     id: '1',
@@ -231,5 +223,3 @@ export function useApp() {
   }
   return context;
 }
-
-export { mockUser };
