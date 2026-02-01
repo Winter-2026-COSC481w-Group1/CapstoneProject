@@ -22,6 +22,6 @@ dist-ssr
 *.sw?
 .env
 
-.venv
-
-__pycache__
+.venv/
+__pycache__/
+*.pdf
