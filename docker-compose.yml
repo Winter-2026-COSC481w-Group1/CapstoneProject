@@ -1,0 +1,113 @@
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://supabase_admin:postgres@db:5432/postgres
+      SUPABASE_URL: http://kong:8000/
+      SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY}
+      PGRST_JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      - db
+      - rest
+      - storage
+      - kong
+
+  ollama:
+    image: ollama/ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  db:
+    image: supabase/postgres:17.6.1.079
+    ports:
+      - "54322:5432"
+    environment:
+      POSTGRES_PASSWORD: "postgres"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./supabase/migrations/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  rest:
+    image: postgrest/postgrest
+    environment:
+      PGRST_DB_URI: "postgresql://supabase_admin:postgres@db:5432/postgres"
+      PGRST_DB_SCHEMA: "public, storage"
+      PGRST_DB_ANON_ROLE: "anon"
+      PGRST_JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  storage:
+    image: supabase/storage-api
+    ports:
+      - "5000:5000"
+    environment:
+      POSTGREST_URL: http://kong:8000/rest/v1/
+      PGRST_JWT_SECRET: ${JWT_SECRET}      
+      FILE_SIZE_LIMIT: "52428800"
+      STORAGE_BACKEND: "file"
+      FILE_STORAGE_BACKEND_PATH: "/var/lib/storage"
+      TENANT_ID: "stub"
+      DATABASE_URL: "postgresql://supabase_admin:postgres@db:5432/postgres"
+    depends_on:
+      - rest
+      - kong
+    volumes:
+      - storage_data:/var/lib/storage
+
+  kong-migrations:
+    image: kong:latest
+    environment:
+      KONG_DATABASE: postgres
+      KONG_PG_HOST: db
+      KONG_PG_USER: postgres
+      KONG_PG_PASSWORD: "postgres"
+      KONG_PG_DATABASE: postgres
+    command: "kong migrations bootstrap"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: on-failure
+
+  kong:
+    image: kong:latest
+    environment:
+      KONG_DATABASE: "off" 
+      KONG_PG_HOST: db
+      KONG_PG_USER: postgres
+      KONG_PG_PASSWORD: "postgres"
+      KONG_PG_DATABASE: postgres
+      KONG_DNS_ORDER: LAST,A,CNAME
+      KONG_PROXY_LISTEN: 0.0.0.0:8000
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001
+      KONG_DECLARATIVE_CONFIG: /usr/local/kong/declarative/kong.yml
+    ports:
+      - "80:8000"
+      - "8001:8001"
+    volumes:
+      - ./kong/kong.yml:/usr/local/kong/declarative/kong.yml
+    depends_on:
+      kong-migrations:
+        condition: service_completed_successfully
+
+volumes:
+  db_data:
+  ollama_data:
+  storage_data:
