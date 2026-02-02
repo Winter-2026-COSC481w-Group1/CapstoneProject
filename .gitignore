@@ -25,7 +25,4 @@ __pycache__/
 .env
 
 *.pdf
-# Backend
-backend/.env
-backend/.venv/
-backend/**/__pycache__/
+
