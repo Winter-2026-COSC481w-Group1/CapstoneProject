@@ -8,7 +8,7 @@ load_dotenv()
 
 security = HTTPBearer()
 SUPABASE_URL = os.getenv("SUPABASE_URL")
-JWT_SECRET = os.getenv("PGRST_JWT_SECRET")
+JWT_SECRET = os.getenv("JWT_SECRET")
 JWKS_URL = f"{SUPABASE_URL}/auth/v1/.well-known/jwks.json"
 
 jwks_client = jwt.PyJWKClient(JWKS_URL)
