@@ -1,9 +1,14 @@
+import hashlib
+from uuid import uuid4
+
+from fastapi import BackgroundTasks, HTTPException, UploadFile
 from app.services.embedding_service import EmbeddingService
 from app.services.vector_db_service import VectorDBService
-from app.utils.hash import generate_file_hash
-from app.utils.pdf_processor import pdf_process_to_chunks
+from app.tasks import process_pdf_in_background
 
 from supabase import Client
+
+BUCKET = "pdfs"  # Define the storage bucket name
 
 
 class UploadService:
@@ -15,86 +20,124 @@ class UploadService:
     ):
         self.vector_service = vector_service
         self.db = db_client
+        self.embedding_service = embedding_service
 
     async def execute(
-        self, file_bytes: bytes, filename: str, user_id: str, content_type: str
+        self,
+        file: UploadFile,
+        user_id: str,
+        background_tasks: BackgroundTasks,
     ):
-        file_hash = generate_file_hash(file_bytes)
-        file_path = f"uploads/{file_hash}.pdf"
-
-        try:
-            # We don't even need to list them; just try to create it.
-            # If it exists, Supabase returns an error we can ignore.
-            self.db.storage.create_bucket("pdfs", options={"public": True})
-            print("✅ Bucket 'pdfs' verified/created.")
-        except Exception:
-            pass  # bucket likely already exists
-
-        try:
-            self.db.storage.from_("pdfs").upload(
-                path=file_path,
-                file=file_bytes,
-                file_options={"content-type": content_type, "x-upsert": "true"},
+        # 1) Basic validation
+        if file.content_type not in ("application/pdf", "application/octet-stream"):
+            raise HTTPException(
+                status_code=400, detail=f"Expected PDF, got {file.content_type}"
             )
-        except Exception as e:
-            if "409" not in str(e):
-                print(f"Storage upload warning (likely exists): {e}")
 
-        # insert into db
-        doc_response = (
+        contents = await file.read()
+        if not contents:
+            raise HTTPException(status_code=400, detail="Empty file")
+
+        sha256 = hashlib.sha256(contents).hexdigest()
+        filename = file.filename or "upload.pdf"
+
+        existing = (
             self.db.table("documents")
-            .insert(
-                {
-                    "file_hash": file_hash,
-                    "file_name": filename,
-                    "file_path": "test",
-                }
+            .select("*")
+            .eq("file_hash", sha256)
+            .maybe_single()
+            .execute()
+        )
+
+        document = None
+        if existing and existing.data:
+            document = existing.data
+            document_id = document["id"]
+        else:
+            # 3) Create a new document row
+            document_id = str(uuid4())
+            storage_path = f"user-uploads/{user_id}/{document_id}.pdf"
+
+            insert_doc_data = {
+                "id": document_id,
+                "file_hash": sha256,
+                "filename": filename,
+                "file_path": storage_path,
+                "status": "uploaded",
+            }
+
+            insert_doc = self.db.table("documents").insert(insert_doc_data).execute()
+
+            if not insert_doc.data:
+                raise HTTPException(
+                    status_code=500, detail="Failed to insert documents row"
+                )
+
+            # 4) Upload file bytes to storage
+            try:
+                # Use a clean dictionary. If 'upsert' fails, use just content-type.
+                res = self.db.storage.from_(BUCKET).upload(
+                    path=storage_path,
+                    file=contents,
+                    file_options={
+                        "content-type": "application/pdf",
+                        "x-upsert": "true",
+                    },
+                )
+
+                # Check if 'res' contains an error (Supabase-py quirk)
+                if hasattr(res, "error") and res.error is not None:
+                    raise Exception(f"Supabase Storage Error: {res.error}")
+
+                print(f"Successfully uploaded to: {storage_path}")
+
+            except Exception as e:
+                print(f"UPLOAD CRASHED: {e}")
+                self.db.table("documents").update({"status": "failed"}).eq(
+                    "id", document_id
+                ).execute()
+                raise HTTPException(
+                    status_code=500, detail=f"Storage upload failed: {e}"
+                )
+
+            document = insert_doc.data[0]
+
+        # 5) Link user -> document in user_library (ignore if already exists)
+        link = (
+            self.db.table("user_library")
+            .upsert(
+                {"user_id": user_id, "document_id": document_id},
+                on_conflict="user_id,document_id",
             )
             .execute()
         )
-        if not doc_response.data:
-            raise Exception("Failed to insert document into database.")
 
-        doc_id = doc_response.data[0]["id"]
+        if link.data is None:
+            raise HTTPException(
+                status_code=500, detail="Failed to link document to user"
+            )
 
-        # process PDF to chunks containing text and metadata
-        chunks = pdf_process_to_chunks(file_bytes, file_hash)
-        # extract all texts from the chunks
-        all_texts = [chunk["text"] for chunk in chunks]
-        batch_size = 128
-        all_embeddings = []
+        # mark as pending before adding it to the task queue of processing
+        self.db.table("documents").update({"status": "pending"}).eq(
+            "id", document_id
+        ).execute()
 
-        print(f"Total chunks to process: {len(all_texts)}")
-
-        for i in range(0, len(all_texts), batch_size):
-            batch = all_texts[i : i + batch_size]
-            print(f"Processing batch {i // batch_size + 1} ({len(batch)} chunks)...")
-
-            # send batch to Ollama to embed
-            batch_embeddings = self.embedding_service.create_embeddings(batch)
-
-            all_embeddings.extend(batch_embeddings)
-
-        print(f"Successfully generated {len(all_embeddings)} total vectors.")
-
-        # upsert chunks and their embeddings into the vector DB
-        await self.vector_service.upsert_chunks(
-            chunks=chunks,
-            embeddings=all_embeddings,
-            file_hash=file_hash,
-            user_id=user_id,
+        # 6) Enqueue background task for further processing (e.g., chunking, embedding)
+        # The background task will update the document status to 'processing' and then 'completed'/'failed'
+        background_tasks.add_task(
+            process_pdf_in_background,
+            document_id,
+            sha256,
+            document["file_path"],
+            user_id,
+            self.db,
+            self.vector_service,
+            self.embedding_service,
         )
 
-        existing_link = (
-            self.db.table("user_documents")
-            .upsert({"user_id": user_id, "document_id": doc_id})
-            .execute()
-        )
-
-        if not existing_link.data:
-            # Link the user so they "own" a copy in their dashboard
-            self.db.table("user_documents").insert(
-                {"user_id": user_id, "document_id": doc_id}
-            ).execute()
-
-        return {"status": "success", "message": "Document processed", "doc_id": doc_id}
+        return {
+            "document": {**document, "status": "pending"},
+            "status": "processing_started",
+            "message": "File uploaded successfully. Embedding task running in the background.",
+            "linked": True,
+        }

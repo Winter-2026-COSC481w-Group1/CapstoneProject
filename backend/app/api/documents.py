@@ -1,5 +1,15 @@
+from typing import Annotated
 from app.services.upload_service import UploadService
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    HTTPException,
+    Request,
+    UploadFile,
+    BackgroundTasks,
+)
+from app.auth import get_current_user
 
 router = APIRouter()
 
@@ -10,31 +20,28 @@ def get_upload_service(request: Request) -> UploadService:
 
 @router.post("/upload")
 async def upload_pdf(
-    user_id: str = Form(...),
+    current_user: Annotated[dict, Depends(get_current_user)],
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     upload_service: UploadService = Depends(get_upload_service),
 ):
     """
     Endpoint to handle PDF uploads.
-    - user_id: Passed as a form field from React.
+    - user_id: Extracted from authenticated user.
     - file: The actual PDF binary.
     - upload_service: Injected dependency providing the upload logic.
     """
-    if file.content_type != "application/pdf":
-        raise HTTPException(status_code=400, detail="Only PDF files are supported.")
-
     try:
-        # read the file into memory
-        file_bytes = await file.read()
-
+        user_id = current_user["user_id"]
         result = await upload_service.execute(
-            file_bytes=file_bytes,
-            filename=file.filename,
+            file=file,
             user_id=user_id,
-            content_type=file.content_type,
+            background_tasks=background_tasks,
         )
         return result
 
+    except HTTPException as e:
+        raise e
     except Exception as e:
         print(f"Upload Error: {e}")
         raise HTTPException(
