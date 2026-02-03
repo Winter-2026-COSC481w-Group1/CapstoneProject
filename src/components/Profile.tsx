@@ -1,12 +1,12 @@
 import { User, HardDrive, FileText, LogOut, Trash2, Hash } from 'lucide-react';
-import { useApp, mockUser } from '../AppContext';
+import { useApp } from '../AppContext';
+import { supabaseClient } from '../supabase';
 
 export default function Profile() {
-  const { currentUser, setCurrentUser, setCurrentPage, libraryFiles, assessments } = useApp();
+  const { currentUser, libraryFiles, assessments } = useApp();
 
   if (!currentUser) {
-    setCurrentPage('landing');
-    return null;
+    window.location.reload();
   }
 
   const totalQuestions = assessments.reduce((sum, a) => sum + a.questionCount, 0);
@@ -15,9 +15,10 @@ export default function Profile() {
     return sum + sizeInMB;
   }, 0);
 
-  const handleLogout = () => {
-    setCurrentUser(null);
-    setCurrentPage('landing');
+  const handleLogout = async () => {
+    const { error } = await supabaseClient.auth.signOut();
+    console.log(error); // not using this value currently...
+    window.location.reload(); // returns to landing page
   };
 
   const handlePurgeLibrary = () => {
@@ -38,11 +39,11 @@ export default function Profile() {
           <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200">
             <div className="flex items-center gap-4 mb-6">
               <div className="w-20 h-20 bg-emerald-600 rounded-full flex items-center justify-center text-white text-3xl font-bold">
-                {currentUser.avatar}
+                {currentUser!.avatar}
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">{currentUser.name}</h2>
-                <p className="text-gray-600">{currentUser.email}</p>
+                <h2 className="text-2xl font-bold text-gray-900">{currentUser!.name}</h2>
+                <p className="text-gray-600">{currentUser!.email}</p>
               </div>
             </div>
 
@@ -61,7 +62,7 @@ export default function Profile() {
                   <div>
                     <div className="text-sm text-gray-600">Session Hash</div>
                     <div className="font-mono text-xs text-gray-900 break-all">
-                      {currentUser.sessionHash}
+                      {currentUser!.sessionHash}
                     </div>
                   </div>
                 </div>

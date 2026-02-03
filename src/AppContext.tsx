@@ -1,5 +1,8 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
 import { User, LibraryFile, Assessment, Activity } from './types';
+import { supabaseClient } from './supabase';
+
+const { data: { user } } = await supabaseClient.auth.getUser();
 
 interface AppContextType {
   currentUser: User | null;
@@ -19,14 +22,6 @@ interface AppContextType {
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
-
-const mockUser: User = {
-  id: '1',
-  name: 'Dr. Sarah Chen',
-  email: 'sarah.chen@university.edu',
-  avatar: 'SC',
-  sessionHash: 'a3f9c2b8-4e1d-7f2a-9b5c-3d8e6a1f4b7c'
-};
 
 const mockLibraryFiles: LibraryFile[] = [
   {
@@ -187,8 +182,16 @@ const mockActivities: Activity[] = [
 ];
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [currentPage, setCurrentPage] = useState('landing');
+  const firstPage = user ? 'dashboard' : 'landing';
+  const [currentPage, setCurrentPage] = useState(firstPage);
+  const realUser = user ? {
+    id: user.id,
+    name: user.user_metadata.full_name, // Should we assume there is always a name...?
+    email: user.email!,
+    avatar: user.user_metadata.full_name.match(/\b(\w)/g).join(''),
+    sessionHash: 'something' // TODO remove this field or populate with useful data
+  } : null;
+  const [currentUser, setCurrentUser] = useState<User | null>(realUser);
   const [libraryFiles, setLibraryFiles] = useState<LibraryFile[]>(mockLibraryFiles);
   const [assessments, setAssessments] = useState<Assessment[]>(mockAssessments);
   const [currentAssessment, setCurrentAssessment] = useState<Assessment | null>(null);
@@ -231,5 +234,3 @@ export function useApp() {
   }
   return context;
 }
-
-export { mockUser };

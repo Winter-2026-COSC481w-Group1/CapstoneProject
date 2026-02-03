@@ -1,20 +1,31 @@
 import { useState } from 'react';
 import { Mail, Lock, ArrowLeft } from 'lucide-react';
-import { useApp, mockUser } from '../AppContext';
+import { supabaseClient } from '../supabase';
+import { useApp } from '../AppContext';
 
 export default function AuthPage() {
-  const { setCurrentUser, setCurrentPage } = useApp();
+  const { /*setCurrentUser,*/ setCurrentPage } = useApp();
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setCurrentUser(mockUser);
+    // this does not work fully yet but is roughly what I expect to go here
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
+      email: email,
+      password: password
+    });
+    
+    console.log(data, error);
+    
+    // login may be successful but we need setCurrentUser called
   };
 
-  const handleGoogleSignIn = () => {
-    setCurrentUser(mockUser);
+  const handleGoogleSignIn = async () => {
+    await supabaseClient.auth.signInWithOAuth({
+      provider: 'google',
+    });
   };
 
   return (
