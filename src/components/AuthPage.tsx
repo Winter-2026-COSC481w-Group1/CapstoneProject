@@ -4,22 +4,50 @@ import { supabaseClient } from '../supabase';
 import { useApp } from '../AppContext';
 
 export default function AuthPage() {
-  const { /*setCurrentUser,*/ setCurrentPage } = useApp();
+  const { setCurrentUser, setCurrentPage } = useApp();
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [err, setErr] = useState<string | null>(null);
+  
+  const handleForgottenPassword = async () => {
+    setCurrentPage('passForgetPage');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // this does not work fully yet but is roughly what I expect to go here
-    const { data, error } = await supabaseClient.auth.signInWithPassword({
-      email: email,
-      password: password
-    });
+    let error, data;
+    if (isSignUp) {
+      ({ data, error } = await supabaseClient.auth.signUp({
+        email: email,
+        password: password,
+        options: {
+            data: {
+              full_name: name,
+            },
+          },
+      }));
+    } else {
+      ({ data, error } = await supabaseClient.auth.signInWithPassword({
+        email: email,
+        password: password
+      }));
+    }
     
-    console.log(data, error);
-    
-    // login may be successful but we need setCurrentUser called
+    if (error) {
+      setErr(error.message);
+    } else {
+      const user = data.user!;
+      const convertedUser = {
+        id: user.id,
+        name: user.user_metadata.full_name, // Should we assume there is always a name...?
+        email: user.email!,
+        avatar: user.user_metadata.full_name.match(/\b(\w)/g).join(''),
+        sessionHash: 'something' // TODO remove this field or populate with useful data
+      };
+      setCurrentUser(convertedUser);
+    }
   };
 
   const handleGoogleSignIn = async () => {
@@ -110,6 +138,24 @@ export default function AuthPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {isSignUp && <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Full name
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="John Doe"
+                  className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  required
+                />
+              </div>
+            </div>
+            }
+            
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Email address
@@ -143,12 +189,18 @@ export default function AuthPage() {
                 />
               </div>
             </div>
+            
+            {err && <div className="bg-red-50 border-2 border-red-200 rounded-3xl p-2 text-center">
+              <p className="font-bold text-red-900">{err}</p>
+            </div>
+            }
 
             {!isSignUp && (
               <div className="flex items-center justify-end">
                 <button
                   type="button"
                   className="text-sm text-emerald-600 hover:text-emerald-700 font-medium"
+                  onClick={handleForgottenPassword}
                 >
                   Forgot password?
                 </button>
@@ -165,7 +217,10 @@ export default function AuthPage() {
 
           <div className="mt-6 text-center">
             <button
-              onClick={() => setIsSignUp(!isSignUp)}
+              onClick={() => {
+                setIsSignUp(!isSignUp);
+                setErr(null);
+              }}
               className="text-gray-600 hover:text-gray-900"
             >
               {isSignUp ? (

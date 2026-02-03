@@ -10,6 +10,7 @@ import AssessmentsHub from './components/AssessmentsHub';
 import ExamMode from './components/ExamMode';
 import GradingReport from './components/GradingReport';
 import Profile from './components/Profile';
+import PassForgetPage from './components/passForgetPage';
 
 function AppContent() {
   const { currentPage } = useApp();
@@ -27,6 +28,7 @@ function AppContent() {
       {currentPage === 'exam-mode' && <ExamMode />}
       {currentPage === 'grading-report' && <GradingReport />}
       {currentPage === 'profile' && <Profile />}
+      {currentPage === 'passForgetPage' && <PassForgetPage />}
     </>
   );
 }
