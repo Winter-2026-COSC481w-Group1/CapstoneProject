@@ -19,25 +19,13 @@ export default function AuthPage() {
     
     console.log(data, error);
     
-    // needs to call setCurrentUser... however the User type does not perfectly match supabase's user data
-    // This can easily be patched together like in the handleGoogleSignIn below
+    // login may be successful but we need setCurrentUser called
   };
 
   const handleGoogleSignIn = async () => {
-    // This works but the redirect simply takes you to the landing page.
-    // For now, I added logic so that the landing page main button changes text to
-    // say that "Go to dashboard" or "login or sign up" based on whether supabase detects
-    // a signed in user... probably not the fix we want long term
     await supabaseClient.auth.signInWithOAuth({
       provider: 'google',
-      options: {
-        redirectTo: 'https://capstone-project-xi-pearl.vercel.app?loggedIn=true' // idk if this only works when it is not on localhost but it doesn't do anything
-      }
     });
-      
-    // nothing down here gets run since the sign in with google redirects off the page.
-    // This can be changed with a pop-up flow but that's apparently custom stuff that will
-    // also be extra effort.
   };
 
   return (

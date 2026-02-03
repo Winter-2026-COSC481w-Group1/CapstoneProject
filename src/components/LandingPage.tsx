@@ -1,19 +1,8 @@
 import { BookOpen, Search, Zap, ArrowRight } from 'lucide-react';
 import { useApp } from '../AppContext';
-import { createClient } from '@supabase/supabase-js';
-import { User } from '../types';
-
-// Create supabase client here as well as in the AuthPage component. Not sure how to globalize this but
-// it seems like a thing that would be better as a singleton... like something you import from elsewhere...
-const supabaseUrl = 'https://ftbqshbdzqbzyxatmylj.supabase.co';
-const supabaseKey = 'sb_publishable_kNck0q2-iE5Yskc1re2f5Q_WqW3HC__';
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-// determines what the main button will say. If you are logged in, you will get a button to the dashboard.
-const { data: { user } } = await supabase.auth.getUser();
 
 export default function LandingPage() {
-  const { setCurrentPage, setCurrentUser } = useApp();
+  const { setCurrentPage } = useApp();
   
   return (
     <div className="min-h-screen bg-stone-50">
@@ -36,23 +25,11 @@ export default function LandingPage() {
 
             <button
               onClick={() => {
-                if (user) {
-                  const realUser: User = {
-                    id: user!.id,
-                    name: user!.email!,
-                    email: user!.email!,
-                    avatar: 'LL',
-                    sessionHash: 'something'
-                  };
-                  
-                  setCurrentUser(realUser);
-                } else {
-                  setCurrentPage('auth');
-                }
+                setCurrentPage('auth');
               }}
               className="group inline-flex items-center gap-3 bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-4 rounded-full text-lg font-semibold transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
             >
-              {user ? "Go to Dashboard" : "Login or Sign up"}
+              Login or Sign up
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
 
