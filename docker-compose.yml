@@ -1,0 +1,34 @@
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY}
+      JWT_SECRET: ${JWT_SECRET}
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
+    depends_on:
+      - ollama
+
+  ollama:
+    image: ollama/ollama
+    ports:
+      - "11434:11434"
+    volumes:    
+      - ollama_data:/root/.ollama
+    environment:
+      - MODEL_NAME=${EMBEDDING_MODEL}
+    entrypoint: [ "/bin/sh", "-c", "ollama serve & sleep 5 && ollama pull $$MODEL_NAME && wait" ]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+# Remove all Supabase-related volumes as they are no longer needed
+volumes:
+  ollama_data:
