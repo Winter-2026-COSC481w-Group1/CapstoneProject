@@ -1,20 +1,19 @@
 import os
+from dotenv import load_dotenv
 from contextlib import asynccontextmanager
-
-import jwt
 from app.services.embedding_service import EmbeddingService
 from app.services.upload_service import UploadService
 from app.services.vector_db_service import VectorDBService
-from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from supabase import create_client
 
+load_dotenv()
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    load_dotenv()
 
     db_url = os.getenv("DATABASE_URL")
     supabase_url = os.getenv("SUPABASE_URL")
