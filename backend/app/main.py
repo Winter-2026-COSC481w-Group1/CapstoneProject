@@ -4,10 +4,12 @@ from contextlib import asynccontextmanager
 from app.services.embedding_service import EmbeddingService
 from app.services.upload_service import UploadService
 from app.services.vector_db_service import VectorDBService
-from fastapi import FastAPI, Request
+from app.services.document_service import DocumentService
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from supabase import create_client
+
 
 load_dotenv()
 
@@ -36,12 +38,14 @@ async def lifespan(app: FastAPI):
         db_client=supabase_service_client,  # Use the service role client for UploadService DB interactions
         embedding_service=embedding_service,
     )
+    document_service = DocumentService(supabase_service_client)
 
     # store the service instances and Supabase clients in the application state.
     # this makes them accessible from anywhere in the app, including dependencies.
     app.state.vector_service = vector_service
     app.state.upload_service = upload_service
     app.state.embedding_service = embedding_service  # Make embedding service available
+    app.state.document_service = document_service
     app.state.supabase_service_client = (
         supabase_service_client  # Store the service role client
     )
@@ -73,11 +77,3 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-def get_vector_service(request: Request) -> VectorDBService:
-    return request.app.state.vector_service
-
-
-def get_embedding_service(request: Request) -> EmbeddingService:
-    return request.app.state.embedding_service

@@ -5,20 +5,17 @@ from fastapi import (
     Depends,
     File,
     HTTPException,
-    Request,
     UploadFile,
     BackgroundTasks,
 )
 from app.auth import get_current_user
+from app.services.document_service import DocumentService
+from app.api.dependencies import get_document_service, get_upload_service
 
 router = APIRouter()
 
 
-def get_upload_service(request: Request) -> UploadService:
-    return request.app.state.upload_service
-
-
-@router.post("/upload")
+@router.post("")
 async def upload_pdf(
     current_user: Annotated[dict, Depends(get_current_user)],
     background_tasks: BackgroundTasks,
@@ -46,4 +43,25 @@ async def upload_pdf(
         print(f"Upload Error: {e}")
         raise HTTPException(
             status_code=500, detail="Internal Server Error during upload."
+        ) from e
+
+
+@router.get("")
+async def get_documents(
+    current_user: Annotated[dict, Depends(get_current_user)],
+    document_service: DocumentService = Depends(get_document_service),
+):
+    try:
+        user_id = current_user["user_id"]
+        result = await document_service.get_documents(
+            user_id=user_id,
+        )
+        return result
+
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        print(f"Error getting documents for user{e}")
+        raise HTTPException(
+            status_code=500, detail="Internal Server Error during getting documents"
         ) from e
