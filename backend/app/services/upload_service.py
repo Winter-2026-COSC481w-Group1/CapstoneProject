@@ -2,6 +2,7 @@ import hashlib
 from uuid import uuid4
 
 from fastapi import BackgroundTasks, HTTPException, UploadFile
+import fitz
 from app.services.embedding_service import EmbeddingService
 from app.services.vector_db_service import VectorDBService
 from app.tasks import process_pdf_in_background
@@ -38,8 +39,12 @@ class UploadService:
         if not contents:
             raise HTTPException(status_code=400, detail="Empty file")
 
+        with fitz.open(stream=contents, filetype="pdf") as doc:
+            page_count = len(doc)
+
         sha256 = hashlib.sha256(contents).hexdigest()
-        filename = file.filename or "upload.pdf"
+        file_name = file.filename or "upload.pdf"
+        file_size = len(contents)
 
         existing = (
             self.db.table("documents")
@@ -61,9 +66,11 @@ class UploadService:
             insert_doc_data = {
                 "id": document_id,
                 "file_hash": sha256,
-                "filename": filename,
+                "file_name": file_name,
                 "file_path": storage_path,
-                "status": "uploaded",
+                "file_size": file_size,
+                "page_count": page_count,
+                "status": "pending",
             }
 
             insert_doc = self.db.table("documents").insert(insert_doc_data).execute()
@@ -117,13 +124,7 @@ class UploadService:
                 status_code=500, detail="Failed to link document to user"
             )
 
-        # mark as pending before adding it to the task queue of processing
-        self.db.table("documents").update({"status": "pending"}).eq(
-            "id", document_id
-        ).execute()
-
         # 6) Enqueue background task for further processing (e.g., chunking, embedding)
-        # The background task will update the document status to 'processing' and then 'completed'/'failed'
         background_tasks.add_task(
             process_pdf_in_background,
             document_id,
@@ -136,8 +137,13 @@ class UploadService:
         )
 
         return {
-            "document": {**document, "status": "pending"},
-            "status": "processing_started",
-            "message": "File uploaded successfully. Embedding task running in the background.",
-            "linked": True,
+            "document": {
+                "id": document["id"],
+                "name": document["file_name"],
+                "status": document["status"],
+                "size": document["file_size"],
+                "pageCount": document["page_count"],
+                "uploadedAt": document.get("created_at"),
+            },
+            "message": "Upload successful.",
         }
