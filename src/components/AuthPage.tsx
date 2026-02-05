@@ -11,7 +11,7 @@ export default function AuthPage() {
   const [name, setName] = useState('');
   const [err, setErr] = useState<string | null>(null);
   
-  const handleForgottenPassword = async () => {
+  const handleForgottenPassword = () => {
     setCurrentPage('passForgetPage');
   };
 

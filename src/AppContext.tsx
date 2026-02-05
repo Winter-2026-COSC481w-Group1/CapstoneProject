@@ -1,8 +1,5 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
 import { User, LibraryFile, Assessment, Activity } from './types';
-import { supabaseClient } from './supabase';
-
-const { data: { user } } = await supabaseClient.auth.getUser();
 
 interface AppContextType {
   currentUser: User | null;
@@ -182,16 +179,9 @@ const mockActivities: Activity[] = [
 ];
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const firstPage = user ? 'dashboard' : 'landing';
+  const firstPage = 'spinningCircle';
   const [currentPage, setCurrentPage] = useState(firstPage);
-  const realUser = user ? {
-    id: user.id,
-    name: user.user_metadata.full_name, // Should we assume there is always a name...?
-    email: user.email!,
-    avatar: user.user_metadata.full_name.match(/\b(\w)/g).join(''),
-    sessionHash: 'something' // TODO remove this field or populate with useful data
-  } : null;
-  const [currentUser, setCurrentUser] = useState<User | null>(realUser);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [libraryFiles, setLibraryFiles] = useState<LibraryFile[]>(mockLibraryFiles);
   const [assessments, setAssessments] = useState<Assessment[]>(mockAssessments);
   const [currentAssessment, setCurrentAssessment] = useState<Assessment | null>(null);

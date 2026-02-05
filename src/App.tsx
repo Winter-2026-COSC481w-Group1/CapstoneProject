@@ -11,6 +11,7 @@ import ExamMode from './components/ExamMode';
 import GradingReport from './components/GradingReport';
 import Profile from './components/Profile';
 import PassForgetPage from './components/passForgetPage';
+import SpinningCircle from './components/spinningCircle';
 
 function AppContent() {
   const { currentPage } = useApp();
@@ -18,6 +19,7 @@ function AppContent() {
   return (
     <>
       <Navigation />
+      {currentPage === 'spinningCircle' && <SpinningCircle />}
       {currentPage === 'landing' && <LandingPage />}
       {currentPage === 'auth' && <AuthPage />}
       {currentPage === 'dashboard' && <Dashboard />}
