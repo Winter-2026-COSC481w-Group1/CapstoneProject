@@ -126,14 +126,14 @@ export default function AuthPage() {
             <form onSubmit={handleSubmitOtp} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Six digit OTP
+                Eight Digit OTP
               </label>
               <div className="relative">
                 <input
                   type="number"
                   value={otp}
                   onChange={(e) => setOtp(e.target.value)}
-                  placeholder="123456"
+                  placeholder="12345678"
                   maxLength={6}
                   minLength={6}
                   className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
