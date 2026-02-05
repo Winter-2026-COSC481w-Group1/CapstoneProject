@@ -6,18 +6,35 @@ import { useApp } from '../AppContext';
 export default function AuthPage() {
   const { setCurrentPage } = useApp();
   const [emailSent, setEmailSent] = useState(false);
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [otp, setOtp] = useState('');
   const [email, setEmail] = useState('');
   const [err, setErr] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmitEmail = async (e: React.FormEvent) => {
     e.preventDefault();
-    const { error } = await supabaseClient.auth.resetPasswordForEmail(email)
+    const { error } = await supabaseClient.auth.resetPasswordForEmail(email);
     
     if (error) {
       setErr(error.message);
     } else {
       setEmailSent(true);
     }
+  };
+  
+  const handleSubmitOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const { data, error } = await supabaseClient.auth.verifyOtp({
+      email, // The user's email
+      token: otp, // The token provided by the user
+      type: 'recovery'
+    });
+    
+    if (data && data.user) {
+      setOtpVerified(true);
+    }
+    
+    console.log(error);
   };
 
   return (
@@ -56,7 +73,7 @@ export default function AuthPage() {
             Back to home
           </button>
           
-          <form onSubmit={handleSubmit} className="space-y-4">
+          {!emailSent && <form onSubmit={handleSubmitEmail} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Email address
@@ -85,10 +102,37 @@ export default function AuthPage() {
             >
               Reset Password
             </button>
-          </form>
+          </form>}
           
-          
-          <p className="font-medium">Password reset email sent! Check your email to login.</p>
+          {emailSent && !otpVerified && <>
+            <p className="font-medium">Password reset email sent! Check your email to find your one time pin.</p>
+            <form onSubmit={handleSubmitOtp} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Six digit OTP
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  placeholder="123456"
+                  maxLength={6}
+                  minLength={6}
+                  className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  required
+                />
+              </div>
+            </div>
+            
+            <button
+              type="submit"
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-semibold transition-colors"
+            >
+              Submit OTP
+            </button>
+            </form>
+          </>}
         </div>
       </div>
     </div>
