@@ -7,7 +7,7 @@ The platform is a scalable educational tool designed to process PDF study materi
 
 Technical Stack
 AI and Inference
-Inference Engine: Llama 3 / 3.1 running locally via Ollama.
+Inference Engine: Nomic AI Embeddings.
 
 Embeddings Model: Nomic Embed Text (v1.5).
 

@@ -21,6 +21,7 @@ class VectorDBService:
         embeddings: list[list[float]],
         file_hash: str,
         user_id: str,
+        document_id: str,
     ):
         """
         Formats and uploads chunks and their embeddings to Supabase pgvector.
@@ -31,6 +32,7 @@ class VectorDBService:
                 f"{file_hash}_{i}",  # unique id for the chunk
                 embeddings[i],
                 {
+                    "document_id": document_id,
                     "file_hash": file_hash,
                     "user_id": user_id,
                     "text": chunks[i],
