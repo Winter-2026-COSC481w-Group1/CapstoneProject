@@ -192,12 +192,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     <AppContext.Provider
       value={{
         currentUser,
-        setCurrentUser: (user) => {
-          setCurrentUser(user);
-          if (user) {
-            setCurrentPage('dashboard');
-          }
-        },
+        setCurrentUser,
         currentPage,
         setCurrentPage,
         libraryFiles,

@@ -3,7 +3,7 @@ import { useApp } from '../AppContext';
 import { supabaseClient } from '../supabase';
 
 export default function Profile() {
-  const { currentUser, libraryFiles, assessments } = useApp();
+  const { currentUser, libraryFiles, assessments, setCurrentPage } = useApp();
 
   if (!currentUser) {
     window.location.reload();
@@ -166,6 +166,20 @@ export default function Profile() {
                   </div>
                 </div>
               </button>
+              
+              <button
+                  onClick={() => { setCurrentPage('resetPass'); }}
+                className="w-full flex items-center justify-between p-4 bg-white border-2 border-red-300 rounded-xl hover:border-red-500 hover:bg-red-50 transition-all group"
+              >
+                
+              <div className="flex items-center gap-3">
+                <LogOut className="w-5 h-5 text-red-600" />
+                <div className="text-left">
+                  <div className="font-semibold text-red-900">Reset Password</div>
+                  <div className="text-sm text-red-700">Change your password</div>
+                </div>
+              </div>
+            </button>
             </div>
           </div>
         </div>

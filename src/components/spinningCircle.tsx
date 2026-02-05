@@ -20,6 +20,7 @@ export default function AuthPage() {
         } : null;
         if (realUser) {
           setCurrentUser(realUser);
+          setCurrentPage('dashboard');
         } else {
           setCurrentPage('landing');
         }

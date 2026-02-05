@@ -4,9 +4,9 @@ import { supabaseClient } from '../supabase';
 import { useApp } from '../AppContext';
 
 export default function AuthPage() {
-  const { setCurrentPage } = useApp();
+  const { setCurrentUser, setCurrentPage } = useApp();
   const [emailSent, setEmailSent] = useState(false);
-  const [otpVerified, setOtpVerified] = useState(false);
+  const [otpErr, setOtpErr] = useState('');
   const [otp, setOtp] = useState('');
   const [email, setEmail] = useState('');
   const [err, setErr] = useState<string | null>(null);
@@ -30,11 +30,28 @@ export default function AuthPage() {
       type: 'recovery'
     });
     
-    if (data && data.user) {
-      setOtpVerified(true);
+    if (error) {
+      setOtpErr(error.message);
     }
     
-    console.log(error);
+    if (data) {
+      const user = data.user;
+      const realUser = user ? {
+        id: user.id,
+        name: user.user_metadata.full_name,
+        email: user.email!,
+        avatar: user.user_metadata.full_name.match(/\b(\w)/g).join(''),
+        sessionHash: 'something' // TODO remove this field or populate with useful data
+      } : null;
+      if (realUser) {
+        setCurrentUser(realUser);
+        setCurrentPage('resetPass');
+      } else {
+        setOtpErr('Could not verify OTP code.');
+      }
+    } else {
+      setOtpErr('Could not verify OTP code.');
+    }
   };
 
   return (
@@ -104,7 +121,7 @@ export default function AuthPage() {
             </button>
           </form>}
           
-          {emailSent && !otpVerified && <>
+          {emailSent && <>
             <p className="font-medium">Password reset email sent! Check your email to find your one time pin.</p>
             <form onSubmit={handleSubmitOtp} className="space-y-4">
             <div>
@@ -123,7 +140,12 @@ export default function AuthPage() {
                   required
                 />
               </div>
-            </div>
+              </div>
+              
+              {otpErr && <div className="bg-red-50 border-2 border-red-200 rounded-3xl p-2 text-center">
+                <p className="font-bold text-red-900">{otpErr}</p>
+              </div>
+              }
             
             <button
               type="submit"

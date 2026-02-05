@@ -47,6 +47,7 @@ export default function AuthPage() {
         sessionHash: 'something' // TODO remove this field or populate with useful data
       };
       setCurrentUser(convertedUser);
+      setCurrentPage('dashboard');
     }
   };
 

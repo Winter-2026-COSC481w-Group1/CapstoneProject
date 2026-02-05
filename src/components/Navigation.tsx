@@ -4,7 +4,7 @@ import { useApp } from '../AppContext';
 export default function Navigation() {
   const { currentUser, currentPage, setCurrentPage, showMobileMenu, setShowMobileMenu } = useApp();
 
-  if (!currentUser) return null;
+  if (!currentUser || currentPage === 'resetPass') return null;
 
   const navLinks = [
     { id: 'dashboard', label: 'Dashboard' },
