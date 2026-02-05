@@ -3,7 +3,7 @@ import { useApp } from '../AppContext';
 
 export default function LandingPage() {
   const { setCurrentPage } = useApp();
-
+  
   return (
     <div className="min-h-screen bg-stone-50">
       <div className="relative overflow-hidden">
@@ -24,10 +24,12 @@ export default function LandingPage() {
             </p>
 
             <button
-              onClick={() => setCurrentPage('auth')}
+              onClick={() => {
+                setCurrentPage('auth');
+              }}
               className="group inline-flex items-center gap-3 bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-4 rounded-full text-lg font-semibold transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
             >
-              Start Generating
+              Login or Sign up
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
 

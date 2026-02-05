@@ -10,6 +10,9 @@ import AssessmentsHub from './components/AssessmentsHub';
 import ExamMode from './components/ExamMode';
 import GradingReport from './components/GradingReport';
 import Profile from './components/Profile';
+import PassForgetPage from './components/passForgetPage';
+import SpinningCircle from './components/spinningCircle';
+import ResetPassPage from './components/resetPass';
 
 function AppContent() {
   const { currentPage } = useApp();
@@ -17,6 +20,8 @@ function AppContent() {
   return (
     <>
       <Navigation />
+      {currentPage === 'resetPass' && <ResetPassPage />}
+      {currentPage === 'spinningCircle' && <SpinningCircle />}
       {currentPage === 'landing' && <LandingPage />}
       {currentPage === 'auth' && <AuthPage />}
       {currentPage === 'dashboard' && <Dashboard />}
@@ -27,6 +32,7 @@ function AppContent() {
       {currentPage === 'exam-mode' && <ExamMode />}
       {currentPage === 'grading-report' && <GradingReport />}
       {currentPage === 'profile' && <Profile />}
+      {currentPage === 'passForgetPage' && <PassForgetPage />}
     </>
   );
 }
