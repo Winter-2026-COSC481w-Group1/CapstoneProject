@@ -18,11 +18,10 @@ httpx==0.28.1
 hyperframe==6.1.0
 idna==3.11
 langchain-core==1.2.7
-langchain-nomic==1.0.1
+langchain-google-genai
 langchain-text-splitters==1.1.0
 mmh3==5.2.0
 multidict==6.7.1
-nomic==3.9.0
 numpy==1.26.4
 orjson==3.11.6
 packaging==25.0
@@ -64,3 +63,4 @@ websockets==15.0.1
 wrapt==1.17.3
 xxhash==3.6.0
 yarl==1.22.0
+tiktoken
