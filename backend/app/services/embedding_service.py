@@ -1,11 +1,12 @@
 import os
-from langchain_nomic import NomicEmbeddings
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
 
 class EmbeddingService:
     def __init__(self):
-        self.embeddings = NomicEmbeddings(
-            model="nomic-embed-text-v1.5", nomic_api_key=os.getenv("NOMIC_API_KEY")
+        self.embeddings = GoogleGenerativeAIEmbeddings(
+            model="models/gemini-embedding-001",
+            google_api_key=os.getenv("GOOGLE_API_KEY"),
         )
 
     def create_embeddings(self, chunks: list[str]) -> list[list[float]]:

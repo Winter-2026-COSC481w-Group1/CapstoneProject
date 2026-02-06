@@ -28,7 +28,7 @@ async def process_pdf_in_background(
         # process PDF to chunks
         chunks = pdf_process_to_chunks(file_bytes, file_hash)
         all_texts = [chunk["text"] for chunk in chunks]
-        batch_size = 512
+        batch_size = 20
         all_embeddings = []
 
         print(f"Total chunks to indexing for doc {document_id}: {len(all_texts)}")
