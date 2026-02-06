@@ -30,10 +30,8 @@ def pdf_process_to_chunks(
             final_chunks.append(
                 {
                     "text": chunk,
-                    "metadata": {
-                        "file_hash": file_hash,
-                        "page_number": page_num + 1,
-                    },
+                    "file_hash": file_hash,
+                    "page_number": page_num + 1,
                 }
             )
 

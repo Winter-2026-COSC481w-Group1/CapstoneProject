@@ -1,3 +1,4 @@
+import logging
 from supabase import Client
 from app.services.vector_db_service import VectorDBService
 from app.services.embedding_service import EmbeddingService
@@ -27,34 +28,34 @@ async def process_pdf_in_background(
 
         # process PDF to chunks
         chunks = pdf_process_to_chunks(file_bytes, file_hash)
-        all_texts = [chunk["text"] for chunk in chunks]
-        batch_size = 20
-        all_embeddings = []
 
-        print(f"Total chunks to indexing for doc {document_id}: {len(all_texts)}")
+        batch_size = 20
+        total_chunks = len(chunks)
+        total_indexed = 0
+
+        print(f"Total chunks to index for doc {document_id}: {total_chunks}")
         db_client.table("documents").update({"status": "indexing"}).eq(
             "id", document_id
         ).execute()
 
-        for i in range(0, len(all_texts), batch_size):
-            batch = all_texts[i : i + batch_size]
+        for i in range(0, total_chunks, batch_size):
+            batch = chunks[i : i + batch_size]
+            batch_texts = [chunk["text"] for chunk in chunks]
             print(
                 f"Indexing batch {i // batch_size + 1} for doc {document_id} ({len(batch)} chunks)..."
             )
-            batch_embeddings = embedding_service.create_embeddings(batch)
-            all_embeddings.extend(batch_embeddings)
+            embeddings = await embedding_service.create_embeddings(batch_texts)
+            await vector_service.upsert_chunks(
+                chunks=chunks,
+                embeddings=embeddings,
+                file_hash=file_hash,
+                user_id=user_id,
+                document_id=document_id,
+            )
+            total_indexed += len(embeddings)
 
         print(
-            f"Successfully generated {len(all_embeddings)} total vectors for doc {document_id}."
-        )
-
-        # 4. Upsert chunks and their embeddings into the vector DB
-        await vector_service.upsert_chunks(
-            chunks=chunks,
-            embeddings=all_embeddings,
-            file_hash=file_hash,
-            user_id=user_id,
-            document_id=document_id,
+            f"Successfully embedded and upserted {total_indexed} vectors for doc {document_id}."
         )
 
         # 5. Update document status to 'completed'
