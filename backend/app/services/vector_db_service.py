@@ -13,11 +13,10 @@ class VectorDBService:
         self.collection = self.client.get_or_create_collection(
             name="document_chunks", dimension=768
         )
-        self.collection.create_index()  # creates an index to optimize for queries
 
     async def upsert_chunks(
         self,
-        chunks: list[str],
+        chunks: list[dict],
         embeddings: list[list[float]],
         file_hash: str,
         user_id: str,
@@ -27,23 +26,48 @@ class VectorDBService:
         Formats and uploads chunks and their embeddings to Supabase pgvector.
         Every chunk gets the file_hash and user_id in its metadata for filtering.
         """
-        records = [
-            (
-                f"{file_hash}_{i}",  # unique id for the chunk
-                embeddings[i],
-                {
-                    "document_id": document_id,
-                    "file_hash": file_hash,
-                    "user_id": user_id,
-                    "text": chunks[i],
-                    "chunk_index": i,
-                },
+        records = []
+        for i, chunk in enumerate(chunks):
+            text = chunk.get("text", "")
+            page_num = chunk.get("page_number", -1)
+
+            records.append(
+                (
+                    f"{file_hash}_{i}",  # unique id for the chunk
+                    embeddings[i],
+                    {
+                        "document_id": document_id,
+                        "file_hash": file_hash,
+                        "user_id": user_id,
+                        "text": text,
+                        "page_number": page_num,
+                        "chunk_index": i,
+                    },
+                )
             )
-            for i in range(len(chunks))
-        ]
+            # batch upload
+            self.collection.upsert(records=records)
 
-        # batch upload
-        self.collection.upsert(records=records)
+    async def query(
+        self, query_embedding: list[float], limit: int, filters: dict[str, any]
+    ) -> list[tuple[str, float, dict[str, any]]]:
+        """
+        Queries the 'vecs' collection using pgvector.
+        """
+        try:
+            results = self.collection.query(
+                data=query_embedding,  # the single embedding
+                limit=limit,
+                filters=filters,  # metadata filtering
+                include_value=True,  # this returns the distance/score
+                include_metadata=True,  # this returns your metadata dict (with 'text')
+            )
 
-        # creates an index on the vectors in the db
-        self.collection.create_index()
+            # 'vecs' returns a list of result objects/tuples.
+            # structure: [(id, score, metadata), (id, score, metadata)...]
+
+            return results
+
+        except Exception as e:
+            print(f"Vecs Query Error: {e}")
+            return []
