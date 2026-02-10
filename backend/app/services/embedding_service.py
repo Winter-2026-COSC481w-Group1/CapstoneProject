@@ -1,7 +1,7 @@
-import os
 import asyncio
 import logging
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
+import os
+from langchain_nomic import NomicEmbeddings
 
 
 logger = logging.getLogger(__name__)
@@ -9,9 +9,8 @@ logger = logging.getLogger(__name__)
 
 class EmbeddingService:
     def __init__(self):
-        self.embeddings = GoogleGenerativeAIEmbeddings(
-            model="models/gemini-embedding-001",
-            google_api_key=os.getenv("GOOGLE_API_KEY"),
+        self.embeddings = NomicEmbeddings(
+            model="nomic-embed-text-v1.5", nomic_api_key=os.getenv("NOMIC_API_KEY")
         )
 
     async def create_embeddings(
