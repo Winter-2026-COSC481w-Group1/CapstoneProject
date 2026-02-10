@@ -14,8 +14,8 @@ def pdf_process_to_chunks(
     doc = fitz.open(stream=file_bytes, filetype="pdf")
 
     splitter = TokenTextSplitter(
-        chunk_size=800,  # Optimized for Free Tier TPM (Tokens Per Minute)
-        chunk_overlap=80,  # 10% overlap
+        chunk_size=512,  
+        chunk_overlap=64,  
         encoding_name="cl100k_base",
     )
 
