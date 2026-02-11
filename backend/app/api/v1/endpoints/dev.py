@@ -16,19 +16,6 @@ class LoginBody(BaseModel):
 
 @router.post("/login")
 async def dev_login(body: LoginBody, request: Request):
-    """
-    DEV ONLY: Bypasses Supabase for rapid testing.
-    Checks for a 'magic' dev credential or falls back to Supabase.
-    """
-    # 1. HARDCODED BYPASS: Allow 'admin/admin' for local testing without Supabase
-    if body.email == "admin" and body.password == "admin":
-        return {
-            "access_token": "dev_mock_token_12345",
-            "user_id": "00000000-0000-0000-0000-000000000000",  # Mock UUID
-            "status": "dev_bypass_active",
-        }
-
-    # 2. STANDARD FLOW: Attempt Supabase if not using the bypass
     try:
         supabase_anon = request.app.state.supabase_anon
         res = supabase_anon.auth.sign_in_with_password(
