@@ -10,6 +10,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from supabase import create_client
 
+from app.api.v1.api import api_router
+
 
 load_dotenv()
 
@@ -50,17 +52,6 @@ async def lifespan(app: FastAPI):
         supabase_service_client  # Store the service role client
     )
     app.state.supabase_anon = supabase_anon_client  # Store the anonymous client
-
-    print("Startup complete. Services initialized.")
-
-    # import and include the router after services are initialized
-    from app.api import documents, user, health, dev  # Import the new dev router
-
-    app.include_router(documents.router, prefix="/api/documents", tags=["documents"])
-    app.include_router(user.router, prefix="/api/users", tags=["users"])
-    app.include_router(health.router)
-    app.include_router(dev.router, prefix="/api/dev", tags=["dev"])
-
     yield
 
     # --- Shutdown ---
@@ -77,3 +68,5 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(api_router, prefix="/api/v1")
