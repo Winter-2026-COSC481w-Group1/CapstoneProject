@@ -20,7 +20,12 @@ export default function AuthPage() {
         } : null;
         if (realUser) {
           setCurrentUser(realUser);
-          setCurrentPage('dashboard');
+          const savedPage = localStorage.getItem('saved-page');
+          if (savedPage === null) {
+            setCurrentPage('dashboard');
+          } else {
+            setCurrentPage(savedPage);
+          }
         } else {
           setCurrentPage('landing');
         }
