@@ -68,10 +68,16 @@ const mockAssessments: Assessment[] = [
     id: '1',
     title: 'Biology Chapter 5 - Cell Structure Quiz',
     createdAt: new Date('2024-01-16'),
-    status: 'draft',
+    status: 'completed',
     sourceFiles: ['Introduction to Biology - Chapter 5.pdf'],
     questionCount: 15,
     difficulty: 'medium',
+    bestScore: 80,
+    lastScore: 79,
+    attempts: {
+      attempts: [[]],
+      scores: []
+    },
     questions: [
       {
         id: 'q1',
@@ -135,25 +141,107 @@ const mockAssessments: Assessment[] = [
   },
   {
     id: '2',
-    title: 'World History - Industrial Revolution',
-    createdAt: new Date('2024-01-10'),
-    status: 'completed',
-    sourceFiles: ['World History Vol. 2.pdf'],
-    questionCount: 20,
+    title: 'Second Mock test',
+    createdAt: new Date('2024-01-16'),
+    status: 'new',
+    sourceFiles: ['Introduction to Biology - Chapter 5.pdf'],
+    questionCount: 5,
     difficulty: 'hard',
-    score: 85,
-    questions: []
+    bestScore: undefined,
+    lastScore: undefined,
+    attempts: {
+      attempts: [[]],
+      scores: []
+    },
+    questions: [
+      {
+        id: 'q1',
+        type: 'multiple-choice',
+        question: 'Where does photosynthesis occur in plant cells?',
+        options: ['Mitochondria', 'Chloroplasts', 'Nucleus', 'Cell membrane'],
+        correctAnswer: 'Chloroplasts',
+        source: {
+          text: '...photosynthesis occurs in the chloroplasts, specialized organelles that contain chlorophyll and convert light energy into chemical energy...',
+          page: 12,
+          fileName: 'Introduction to Biology - Chapter 5.pdf'
+        }
+      },
+      {
+        id: 'q2',
+        type: 'multiple-choice',
+        question: 'What is the primary function of mitochondria?',
+        options: ['Protein synthesis', 'Energy production', 'Waste removal', 'Cell division'],
+        correctAnswer: 'Energy production',
+        source: {
+          text: '...mitochondria are known as the powerhouse of the cell, responsible for producing ATP through cellular respiration...',
+          page: 15,
+          fileName: 'Introduction to Biology - Chapter 5.pdf'
+        }
+      },
+      {
+        id: 'q3',
+        type: 'true-false',
+        question: 'The cell membrane is selectively permeable.',
+        correctAnswer: 'True',
+        source: {
+          text: '...the cell membrane exhibits selective permeability, allowing certain molecules to pass while blocking others...',
+          page: 8,
+          fileName: 'Introduction to Biology - Chapter 5.pdf'
+        }
+      },
+      {
+        id: 'q4',
+        type: 'multiple-choice',
+        question: 'Which organelle contains the cell\'s genetic material?',
+        options: ['Ribosome', 'Golgi apparatus', 'Nucleus', 'Lysosome'],
+        correctAnswer: 'Nucleus',
+        source: {
+          text: '...the nucleus serves as the control center of the cell, housing DNA and directing cellular activities...',
+          page: 10,
+          fileName: 'Introduction to Biology - Chapter 5.pdf'
+        }
+      },
+      {
+        id: 'q5',
+        type: 'short-answer',
+        question: 'Explain the role of ribosomes in the cell.',
+        correctAnswer: 'Ribosomes are responsible for protein synthesis by translating mRNA into polypeptide chains.',
+        source: {
+          text: '...ribosomes are the site of protein synthesis, where messenger RNA is translated into polypeptide chains...',
+          page: 14,
+          fileName: 'Introduction to Biology - Chapter 5.pdf'
+        }
+      }
+    ]
   },
   {
     id: '3',
-    title: 'Quantum Mechanics Fundamentals',
-    createdAt: new Date('2024-01-08'),
-    status: 'completed',
-    sourceFiles: ['Advanced Physics - Quantum Mechanics.pdf'],
-    questionCount: 12,
-    difficulty: 'hard',
-    score: 92,
-    questions: []
+    title: 'Mock Test 3',
+    createdAt: new Date('2024-01-16'),
+    status: 'new',
+    sourceFiles: ['Introduction to Biology - Chapter 5.pdf'],
+    questionCount: 1,
+    difficulty: 'easy',
+    bestScore: undefined,
+    lastScore: undefined,
+    attempts: {
+      attempts: [[]],
+      scores: []
+    },
+    questions: [
+      {
+        id: 'q1',
+        type: 'multiple-choice',
+        question: 'Where does photosynthesis occur in plant cells?',
+        options: ['Mitochondria', 'Chloroplasts', 'Nucleus', 'Cell membrane'],
+        correctAnswer: 'Chloroplasts',
+        source: {
+          text: '...photosynthesis occurs in the chloroplasts, specialized organelles that contain chlorophyll and convert light energy into chemical energy...',
+          page: 12,
+          fileName: 'Introduction to Biology - Chapter 5.pdf'
+        }
+      }
+    ]
   }
 ];
 
