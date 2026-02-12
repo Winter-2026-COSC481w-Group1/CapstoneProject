@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { Play, Download, Clock, CheckCircle, FileText, MoreVertical } from 'lucide-react';
+import { Play, Download, Clock, CheckCircle, FileText, EllipsisVertical } from 'lucide-react';
 import { useApp } from '../AppContext';
 
 export default function AssessmentsHub() {
   const { assessments, setCurrentPage, setCurrentAssessment } = useApp();
   const [showDownloadMenu, setShowDownloadMenu] = useState<string | null>(null);
+  const [showOptionsMenu, setShowOptionsMenu] = useState<string | null>(null);
+  const [assessmentsFilter, setAssessmentsFilter] = useState < string | null>(null);
 
   const handleStartExam = (assessmentId: string) => {
     const assessment = assessments.find(a => a.id === assessmentId);
@@ -27,48 +29,77 @@ export default function AssessmentsHub() {
         </div>
 
         <div className="flex items-center gap-4 mb-8">
-          <button className="px-4 py-2 bg-emerald-600 text-white rounded-full font-medium">
+          <button className={"px-4 py-2 " + ((assessmentsFilter === null) ? "bg-emerald-600 text-white" : "text-gray-600 hover:bg-gray-300 bg-gray-200") + "  rounded-full font-medium"}
+            onClick={() => setAssessmentsFilter(null)}
+          >
             All ({assessments.length})
           </button>
-          <button className="px-4 py-2 text-gray-600 hover:bg-white rounded-full font-medium transition-colors">
-            Draft ({assessments.filter(a => a.status === 'draft').length})
+          <button className={"px-4 py-2 rounded-full font-medium " + ((assessmentsFilter === 'new') ? "bg-emerald-600 text-white" : "text-gray-600 hover:bg-gray-300 bg-gray-200")}
+            onClick={() => setAssessmentsFilter('new')}
+          >
+            New ({assessments.filter(a => a.status === 'new').length})
           </button>
-          <button className="px-4 py-2 text-gray-600 hover:bg-white rounded-full font-medium transition-colors">
+          <button className={"px-4 py-2 rounded-full font-medium " + ((assessmentsFilter === 'completed') ? "bg-emerald-600 text-white" : "text-gray-600 hover:bg-gray-300 bg-gray-200")}
+            onClick={() => setAssessmentsFilter('completed')}
+          >
             Completed ({assessments.filter(a => a.status === 'completed').length})
           </button>
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {assessments.map((assessment) => (
+          {assessments.filter(a => a.status === assessmentsFilter || assessmentsFilter === null).map((assessment) => (
             <div
               key={assessment.id}
-              className="bg-white rounded-3xl p-6 shadow-lg border border-gray-200 hover:shadow-xl transition-all group"
+              className="bg-white rounded-3xl p-6 shadow-lg border border-gray-200 hover:shadow-xl transition-all group flex-col flex gap-y-2"
             >
-              <div className="flex items-start justify-between mb-4">
+              
+              <div className="flex flex-row gap-x-2">
+          
+              <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2 w-full">
+                {assessment.title}
+              </h3>
+              <div className="relative">
+              <button
+                    onClick={
+                      () => {
+                        if (showOptionsMenu !== assessment.id) {
+                          setShowOptionsMenu(assessment.id)
+                        } else {
+                          setShowOptionsMenu(null);
+                        }
+                      }
+                    }
+                className=""
+              >
+                <EllipsisVertical className="w-5 text-gray-600" />
+              </button>
+              {showOptionsMenu === assessment.id && (
+                <div className="absolute right-0 top-5 mt-2 bg-white rounded-xl shadow-xl border border-gray-200 py-2 min-w-[180px] z-10">
+                  <button className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-sm font-medium text-gray-700">
+                    Edit
+                      </button>
+                      <button className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-sm font-medium text-gray-700">
+                        Copy
+                      </button>
+                  <button className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-sm font-medium text-gray-700">
+                    Delete
+                    </button>
+                  </div>)}
+                </div>
+              </div>
+              
+              <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  {assessment.status === 'draft' && (
+                  {assessment.status === 'new' && (
                     <div className="inline-flex items-center gap-2 bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-medium mb-3">
                       <Clock className="w-3 h-3" />
                       Ready to Start
                     </div>
                   )}
-                  {assessment.status === 'completed' && assessment.score !== undefined && (
-                    <div className="absolute top-4 right-4">
-                      <div className="w-16 h-16 bg-emerald-600 rounded-full flex items-center justify-center">
-                        <div className="text-center">
-                          <div className="text-xl font-bold text-white">{assessment.score}%</div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
 
-              <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2">
-                {assessment.title}
-              </h3>
-
-              <div className="space-y-2 mb-6">
+              <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <FileText className="w-4 h-4" />
                   <span>{assessment.questionCount} questions</span>
@@ -94,49 +125,64 @@ export default function AssessmentsHub() {
                 </div>
               </div>
 
-              {assessment.status === 'draft' && (
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleStartExam(assessment.id)}
-                    className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-semibold transition-colors"
-                  >
-                    <Play className="w-4 h-4" />
-                    Start Online
-                  </button>
-                  <div className="relative">
-                    <button
-                      onClick={() => handleDownloadMenu(assessment.id)}
-                      className="p-3 border-2 border-gray-200 hover:border-emerald-500 rounded-xl transition-colors"
-                    >
-                      <Download className="w-5 h-5 text-gray-600" />
-                    </button>
-                    {showDownloadMenu === assessment.id && (
-                      <div className="absolute right-0 top-full mt-2 bg-white rounded-xl shadow-xl border border-gray-200 py-2 min-w-[180px] z-10">
-                        <button className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-sm font-medium text-gray-700">
-                          Question Paper
-                        </button>
-                        <button className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-sm font-medium text-gray-700">
-                          Answer Key
-                        </button>
-                      </div>
-                    )}
+              {assessment.status === "completed" && (
+                  <div className="flex flex-row gap-x-2">
+                  <div className="w-1/2 flex items-center justify-center bg-emerald-100 text-white py-1 rounded-xl hover:bg-emerald-200">
+                      <div className="text-xl text-emerald-700">Best: {assessment.bestScore}%</div>
                   </div>
-                </div>
+                  <div className="w-1/2 flex items-center justify-center bg-emerald-100 text-white py-1 rounded-xl hover:bg-emerald-200">
+                      <div className="text-xl text-emerald-700">Last: {assessment.lastScore}%</div>
+                    </div>
+                  </div>
+                
               )}
-
-              {assessment.status === 'completed' && (
+              
+              {assessment.status === "new" && (
+                  <div className="flex flex-grow"></div>
+              )}
+                  
                 <button
-                  onClick={() => {
+                onClick={() => {
+                  if (assessment.status === "completed") {
                     setCurrentAssessment(assessment);
                     setCurrentPage('grading-report');
+                  }
                   }}
-                  className="w-full flex items-center justify-center gap-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 py-3 rounded-xl font-semibold transition-colors"
+                  className={"w-full flex items-center justify-center gap-2 " + ((assessment.status === "completed") ? "bg-blue-100 hover:bg-blue-200 text-blue-600" : "bg-gray-200 text-gray-600") + " py-3 rounded-xl font-semibold"}
                 >
                   <CheckCircle className="w-4 h-4" />
                   View Results
                 </button>
-              )}
+                
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleStartExam(assessment.id)}
+                  className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-semibold transition-colors"
+                >
+                  <Play className="w-4 h-4" />
+                  Start Online
+                </button>
+                <div className="relative">
+                  <button
+                    onClick={() => handleDownloadMenu(assessment.id)}
+                    className="p-3 border-2 border-gray-200 hover:border-emerald-500 rounded-xl transition-colors"
+                  >
+                    <Download className="w-5 h-5 text-gray-600" />
+                  </button>
+                  {showDownloadMenu === assessment.id && (
+                    <div className="absolute right-0 top-full mt-2 bg-white rounded-xl shadow-xl border border-gray-200 py-2 min-w-[180px] z-10">
+                      <button className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-sm font-medium text-gray-700">
+                        Question Paper
+                      </button>
+                      <button className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-sm font-medium text-gray-700">
+                        Answer Key
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
+          
           ))}
 
           {assessments.length === 0 && (

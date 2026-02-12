@@ -29,16 +29,24 @@ export interface Question {
   };
 }
 
+export interface Attempts {
+  attempts: Question[][];
+  scores: number[];
+};
+
+
 export interface Assessment {
   id: string;
   title: string;
   createdAt: Date;
-  status: 'draft' | 'in-progress' | 'completed';
+  status: 'new' | 'completed';
   sourceFiles: string[];
   questionCount: number;
-  difficulty: 'easy' | 'medium' | 'hard';
-  score?: number;
+  difficulty: 'easy' | 'medium' | 'hard' | 'none';
   questions: Question[];
+  bestScore?: number;
+  lastScore?: number;
+  attempts: Attempts;
 }
 
 export interface Activity {
