@@ -49,18 +49,23 @@ class VectorDBService:
         self.collection.upsert(records=records)
 
     async def query(
-        self, query_embedding: list[float], limit: int, filters: dict[str, any]
+        self,
+        data: list[float],
+        limit: int,
+        filters: dict[str, any],
+        include_value: bool = False,
+        include_metadata: bool = True,
     ) -> list[tuple[str, float, dict[str, any]]]:
         """
         Queries the 'vecs' collection using pgvector.
         """
         try:
             results = self.collection.query(
-                data=query_embedding,  # the single embedding
+                data=data,  # the single embedding
                 limit=limit,
                 filters=filters,  # metadata filtering
-                include_value=True,  # this returns the distance/score
-                include_metadata=True,  # this returns your metadata dict (with 'text')
+                include_value=include_value,  # this returns the distance/score
+                include_metadata=include_metadata,  # this returns your metadata dict (with 'text')
             )
 
             # 'vecs' returns a list of result objects/tuples.
