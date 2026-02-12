@@ -194,7 +194,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         currentUser,
         setCurrentUser,
         currentPage,
-        setCurrentPage,
+        setCurrentPage: (page) => { 
+          localStorage.setItem('saved-page', page);
+          setCurrentPage(page);
+        },
         libraryFiles,
         setLibraryFiles,
         assessments,
