@@ -13,25 +13,21 @@ class EmbeddingService:
             model="nomic-embed-text-v1.5", nomic_api_key=os.getenv("NOMIC_API_KEY")
         )
 
-    async def create_embeddings(
-        self, chunks: list[str], max_retries: int = 3
-    ) -> list[list[float]]:
-        """
-        Asynchronously creates embeddings with exponential backoff retries
-        """
+    async def embed_chunks(self, chunks: list[str]) -> list[list[float]]:
+        """Used for ingestion: handles multiple strings."""
+        return await self._execute_with_retry(self.embeddings.aembed_documents, chunks)
+
+    async def embed_query(self, text: str) -> list[float]:
+        """Used for search: handles a single string."""
+        return await self._execute_with_retry(self.embeddings.aembed_query, text)
+
+    async def _execute_with_retry(self, func, data, max_retries=3):
         for attempt in range(max_retries):
             try:
-                return await self.embeddings.aembed_documents(chunks)
-
+                return await func(data)
             except Exception as e:
-                wait_time = 2**attempt  # exponential backoff
-                logger.warning(
-                    f"Embedding attempt {attempt + 1} failed: {e}. Retrying in {wait_time}s..."
-                )
-
+                wait_time = 2**attempt
+                logger.warning(f"Attempt {attempt + 1} failed: {e}. Retrying...")
                 if attempt == max_retries - 1:
-                    logger.error("Max retries reached for embedding through API.")
                     raise e
-
-                # use asyncio.sleep so we don't block the event loop while waiting
                 await asyncio.sleep(wait_time)
