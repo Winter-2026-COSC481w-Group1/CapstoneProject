@@ -200,10 +200,6 @@ export default function GradingReport() {
                               <span className="font-medium">{question.source.fileName}</span>
                               <span>•</span>
                               <span>Page {question.source.page}</span>
-                              <button className="flex items-center gap-1 hover:underline">
-                                View source
-                                <ExternalLink className="w-3 h-3" />
-                              </button>
                             </div>
                           </div>
                         </div>
