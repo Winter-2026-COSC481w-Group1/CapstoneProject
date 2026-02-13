@@ -39,6 +39,14 @@ class UploadService:
         if not contents:
             raise HTTPException(status_code=400, detail="Empty file")
 
+        # Check file size limit (50MB)
+        MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB in bytes
+        if len(contents) > MAX_FILE_SIZE:
+            raise HTTPException(
+                status_code=413,
+                detail=f"File size exceeds 50MB limit. File size: {len(contents) / (1024 * 1024):.2f}MB",
+            )
+
         with fitz.open(stream=contents, filetype="pdf") as doc:
             page_count = len(doc)
 
