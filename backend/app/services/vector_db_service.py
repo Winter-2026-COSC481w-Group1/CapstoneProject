@@ -45,8 +45,8 @@ class VectorDBService:
                     },
                 )
             )
-            # batch upload
-            self.collection.upsert(records=records)
+        # batch upload
+        self.collection.upsert(records=records)
 
     async def query(
         self, query_embedding: list[float], limit: int, filters: dict[str, any]
