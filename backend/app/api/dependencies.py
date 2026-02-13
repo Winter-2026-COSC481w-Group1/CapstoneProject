@@ -22,5 +22,6 @@ def get_embedding_service(request: Request) -> EmbeddingService:
 def get_vector_service(request: Request) -> VectorDBService:
     return request.app.state.vector_service
 
+
 def get_assessment_service(request: Request) -> AssessmentService:
     return request.app.state.assessment_service

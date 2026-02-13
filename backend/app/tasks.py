@@ -1,4 +1,3 @@
-import logging
 from supabase import Client
 from app.services.vector_db_service import VectorDBService
 from app.services.embedding_service import EmbeddingService
@@ -44,7 +43,7 @@ async def process_pdf_in_background(
             print(
                 f"Indexing batch {i // batch_size + 1} for doc {document_id} ({len(batch)} chunks)..."
             )
-            embeddings = await embedding_service.create_embeddings(batch_texts)
+            embeddings = await embedding_service.embed_chunks(batch_texts)
             await vector_service.upsert_chunks(
                 chunks=chunks,
                 embeddings=embeddings,
@@ -52,7 +51,7 @@ async def process_pdf_in_background(
                 user_id=user_id,
                 document_id=document_id,
             )
-            total_indexed += len(embeddings)
+            total_indexed += len(batch_texts)
 
         print(
             f"Successfully embedded and upserted {total_indexed} vectors for doc {document_id}."
