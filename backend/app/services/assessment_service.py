@@ -8,6 +8,7 @@ from app.schemas.assessment_request import AssessmentRequest
 from app.services.document_service import DocumentService
 from app.services.embedding_service import EmbeddingService
 from app.services.vector_db_service import VectorDBService
+from app.services.llm_service import LLMService
 
 
 from supabase import Client
@@ -19,13 +20,14 @@ class AssessmentService:
         document_service: DocumentService,
         embedding_service: EmbeddingService,
         vector_service: VectorDBService,
+        llm_service: LLMService,
         db_client: Client,
     ):
         self.document_service = document_service
         self.embedding_service = embedding_service
         self.vector_service = vector_service
         self.db_client = db_client
-        self.llm = None  # import llm here
+        self.llm_service = llm_service  # import llm here
 
     # creates a pending record for the assessment generating in the db, and returns assessment id
     async def create_pending_record(
@@ -117,6 +119,8 @@ class AssessmentService:
         topic: str,
         user_id: str,
         num_questions: int,
+        question_types: list[str],
+        difficulty: str
     ):
         """
         MANAGER: Orchestrates the entire background task.
@@ -143,7 +147,14 @@ class AssessmentService:
 
             # mark as completed if the above is successful. so do a try catch?
             # await self.update_assessment_status(assessment_id, "completed")
-            return context
+            try:
+                result = await self.llm_service.generate_assessment(context, num_questions, difficulty, question_types)
+                await self.update_assessment_status(assessment_id, "completed")
+                #todo add to database?
+                return result
+            except Exception as e:
+                print(f"Error from LLM service {e}")
+                await self.update_assessment_status(assessment_id, "failed", str(e))
 
         except Exception as e:
             print(f"Error in generate_assessment {assessment_id}: {e}")

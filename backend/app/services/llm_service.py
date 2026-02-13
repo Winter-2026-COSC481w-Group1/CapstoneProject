@@ -1,6 +1,5 @@
 import json
 import os
-from typing import List
 from app.schemas.assessment import AssessmentSchema
 import google.generativeai as genai
 from fastapi import HTTPException
@@ -19,14 +18,21 @@ class LLMService:
         )
 
     #todo find out the format of context chunks
-    def generate_assessment(self, context_chunks: list, difficulty: str, 
-                            types: List[str]) -> AssessmentSchema:
+    async def generate_assessment(
+            self, 
+            context: str, 
+            num_questions: int, 
+            difficulty: str, 
+            types: list[str]
+    ) -> AssessmentSchema:
         try:
             #Construct prompt with strict JSON formatting instructions
             prompt = f"""
             You are an exam writer. Based ONLY on the provided context, gernerate an assessment.
 
-            CONTEXT: {chr(10).join(context_chunks)}
+            It should have exactly {num_questions} questions.
+
+            CONTEXT: {context}
 
             DIFFICULTY: {difficulty}
 

@@ -5,6 +5,7 @@ from app.services.embedding_service import EmbeddingService
 from app.services.upload_service import UploadService
 from app.services.vector_db_service import VectorDBService
 from app.services.document_service import DocumentService
+from app.services.llm_service import LLMService
 from app.services.assessment_service import AssessmentService
 
 from fastapi import FastAPI
@@ -43,10 +44,12 @@ async def lifespan(app: FastAPI):
         embedding_service=embedding_service,
     )
     document_service = DocumentService(supabase_service_client)
+    llm_service = LLMService()
     assessment_service = AssessmentService(
         document_service=document_service,
         embedding_service=embedding_service,
         vector_service=vector_service,
+        llm_service=llm_service,
         db_client=supabase_service_client,
     )
 

@@ -4,14 +4,15 @@ from uuid import uuid4
 from datetime import datetime
 
 class QuestionSchema(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid4()))
     type: str # 'multiple-choice' | 'true-false' | 'short-answer'
     question: str
-    options: Optional[List[str]] = None
+    options: Optional[List[str]]
     correctAnswer: str
     # metadata for RAG traceability
-    source_text: Optional[str] = None 
-    page_number: Optional[int] = None
+    source_text: Optional[str] 
+    page_number: Optional[int]
+
+    
 
 class AssessmentSchema(BaseModel):
     title: str
