@@ -28,9 +28,11 @@ async def generate_assessment(
         assessment_service.generate_assessment,
         assessment_id=assessment_id,
         document_id=request.document_id,
-        topic=request.query,
+        query=request.query,
         user_id=user_id,
         num_questions=request.num_questions,
+        question_types=request.question_types,
+        difficulty=request.difficulty,
     )
 
     # return the ID

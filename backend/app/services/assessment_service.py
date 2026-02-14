@@ -4,6 +4,7 @@ from uuid import uuid4
 from fastapi import HTTPException
 
 from app.schemas.assessment_request import AssessmentRequest
+from app.schemas.assessment import AssessmentSchema
 
 from app.services.document_service import DocumentService
 from app.services.embedding_service import EmbeddingService
@@ -74,13 +75,13 @@ class AssessmentService:
         ).execute()
 
     async def get_context_for_assessment(
-        self, topic: str, document_id: str, limit: int, user_id: str
+        self, query: str, document_id: str, limit: int, user_id: str
     ) -> str:
         """
         SPECIALIST: Just handles the RAG retrieval and formatting.
         """
         # get embeddings
-        embedding = await self.embedding_service.embed_query(topic)
+        embedding = await self.embedding_service.embed_query(query)
         if not embedding:
             return ""
 
@@ -111,12 +112,50 @@ class AssessmentService:
                 formatted_context.append(f"--- SOURCE {i + 1} ---\n{text.strip()}")
 
         return "\n\n".join(formatted_context)
+    
+    async def _save_assessment_to_db(self, assessment_id: str, assessment_data: AssessmentSchema):
+        """
+        Maps AssessmentSchema to 'questions' and 'question_options' tables.
+        """
+        for q_data in assessment_data.questions:
+            # 1. Insert into 'questions' table
+            # Note: Map your frontend types to your DB check constraints (MCQ, TF, SA)
+            q_type_map = {
+                "multiple-choice": "MCQ",
+                "true-false": "TF",
+                "short-answer": "SA"
+            }
+
+            question_insert = {
+                "assessment_id": assessment_id,
+                "question_text": q_data.question,
+                "question_type": q_type_map.get(q_data.type, "MCQ"),
+                "explanation": f"Page: {q_data.page_number} Text: {q_data.source_text}" # Using source_text as explanation/context
+            }
+
+            q_result = self.db_client.table("questions").insert(question_insert).execute()
+
+            if q_result.data:
+                new_q_id = q_result.data[0]["id"]
+
+                # 2. If it's MCQ or has options, insert into 'question_options'
+                if q_data.options:
+                    options_to_insert = []
+                    for option in q_data.options:
+                        options_to_insert.append({
+                            "question_id": new_q_id,
+                            "option_text": option,
+                            "is_correct": option == q_data.correctAnswer
+                        })
+
+                    if options_to_insert:
+                        self.db_client.table("question_options").insert(options_to_insert).execute()
 
     async def generate_assessment(
         self,
         assessment_id: str,
         document_id: list[str],
-        topic: str,
+        query: str,
         user_id: str,
         num_questions: int,
         question_types: list[str],
@@ -133,13 +172,13 @@ class AssessmentService:
                 raise ValueError("At least one document must be selected.")
 
             context = await self.get_context_for_assessment(
-                topic=topic, document_id=document_id, limit=5, user_id=user_id
+                query=query, document_id=document_id, limit=5, user_id=user_id
             )
 
             print(context)
 
             if not context:
-                raise ValueError(f"No relevant content found for: {topic}")
+                raise ValueError(f"No relevant content found for: {query}")
 
             # --- HAND OFF TO TEAMMATE (LLM) ---
             # This is where your teammate's code will eventually go
@@ -149,9 +188,12 @@ class AssessmentService:
             # await self.update_assessment_status(assessment_id, "completed")
             try:
                 result = await self.llm_service.generate_assessment(context, num_questions, difficulty, question_types)
+
+                await self._save_assessment_to_db(assessment_id, result)
+
                 await self.update_assessment_status(assessment_id, "completed")
-                #todo add to database?
-                return result
+
+                return context
             except Exception as e:
                 print(f"Error from LLM service {e}")
                 await self.update_assessment_status(assessment_id, "failed", str(e))

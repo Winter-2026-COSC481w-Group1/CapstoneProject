@@ -9,11 +9,11 @@ class LLMService:
        genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
        self.model = genai.GenerativeModel(
-            model_name="gemini-1.5-flash",
+            model_name="gemini-2.0-flash",
             #the model is pre-loaded to use json and our assessment scheme
             generation_config={
                 "response_mime_type": "application/json",
-                "response_schema": AssessmentSchema
+                #"response_schema": AssessmentSchema
             }
         )
 
@@ -26,34 +26,39 @@ class LLMService:
             types: list[str]
     ) -> AssessmentSchema:
         try:
+            schema_json = json.dumps(AssessmentSchema.model_json_schema(), indent=2)
             #Construct prompt with strict JSON formatting instructions
             prompt = f"""
-            You are an exam writer. Based ONLY on the provided context, gernerate an assessment.
+                You are an expert exam generator. 
+                Based ONLY on the provided context, generate a complete JSON assessment.
 
-            It should have exactly {num_questions} questions.
+                CONTEXT:
+                {context}
 
-            CONTEXT: {context}
+                INSTRUCTIONS:
+                1. Generate a JSON object that matches the structure below EXACTLY.
+                2. You MUST include "difficulty" and "questions". Do not stop early.
+                3. For "questions", generate exactly {num_questions} items.
+                4. Use the difficulty level: "{difficulty}".
+                5. Use these question types: {json.dumps(types)}.
 
-            DIFFICULTY: {difficulty}
-
-            QUESTION TYPES: 
-            Questions should only be of the types specified in this list:
-            {', '.join(types)}
-
-            OUTPUT INSTRUCTIONS:
-            You must return ONLY a JSON object that matches the schema EXACTLY:
-
-            Make sure that every question has a unique ID and accurately reflects the context.
-
-            Set the source text and page number from the context for each question.
-            """
+                REQUIRED JSON STRUCTURE:
+                {schema_json}
+                """
 
             #call LLM
             raw_response = self.model.generate_content(prompt)
 
-            #return json exam
-            return AssessmentSchema.model_validate_json(raw_response)
+            #check that response text exists
+            if not raw_response.text:
+             raise ValueError("LLM returned an empty response")
+            
+            print(f"{raw_response}")
+            print(f"{raw_response.text}")
+
+            return AssessmentSchema.model_validate_json(raw_response.text)
 
         except Exception as e:
             # Handle retry logic or fallback if JSON is invalid
-            print("exam invalid")
+            print(f"LLM Error: {e}")
+            raise HTTPException(status_code=500, detail="Failed to generate assessment")

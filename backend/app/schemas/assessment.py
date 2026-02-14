@@ -6,11 +6,11 @@ from datetime import datetime
 class QuestionSchema(BaseModel):
     type: str # 'multiple-choice' | 'true-false' | 'short-answer'
     question: str
-    options: Optional[List[str]]
+    options: List[str]
     correctAnswer: str
     # metadata for RAG traceability
-    source_text: Optional[str] 
-    page_number: Optional[int]
+    source_text: str 
+    page_number: int
 
     
 
