@@ -10,7 +10,8 @@ from fastapi import (
 )
 from app.auth import get_current_user
 from app.services.document_service import DocumentService
-from app.api.dependencies import get_document_service, get_upload_service
+from app.services.vector_db_service import VectorDBService
+from app.api.dependencies import get_document_service, get_upload_service, get_vector_service
 
 router = APIRouter()
 
@@ -72,6 +73,7 @@ async def delete_document(
     document_id: str,
     current_user: Annotated[dict, Depends(get_current_user)],
     document_service: DocumentService = Depends(get_document_service),
+    vector_service: VectorDBService = Depends(get_vector_service),
 ):
     """
     Delete a document for the current user by its id. If no other users reference
@@ -101,8 +103,11 @@ async def delete_document(
             .execute()
         )
 
-        # If no remaining links, remove document row and storage object
+        # If no remaining links, remove document row, vectors, and storage object
         if not remaining.data:
+            # Delete vector embeddings
+            await vector_service.delete_document_vectors(document_id)
+
             # fetch document to get storage path
             doc_response = (
                 document_service.db.table("documents")
