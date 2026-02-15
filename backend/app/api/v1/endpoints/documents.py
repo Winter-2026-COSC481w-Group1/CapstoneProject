@@ -10,8 +10,7 @@ from fastapi import (
 )
 from app.auth import get_current_user
 from app.services.document_service import DocumentService
-from app.services.vector_db_service import VectorDBService
-from app.api.dependencies import get_document_service, get_upload_service, get_vector_service
+from app.api.dependencies import get_document_service, get_upload_service
 
 router = APIRouter()
 
@@ -73,7 +72,6 @@ async def delete_document(
     document_id: str,
     current_user: Annotated[dict, Depends(get_current_user)],
     document_service: DocumentService = Depends(get_document_service),
-    vector_service: VectorDBService = Depends(get_vector_service),
 ):
     """
     Delete a document for the current user by its id. If no other users reference
@@ -84,7 +82,6 @@ async def delete_document(
         result = await document_service.delete_document(
             document_id,
             user_id,
-            vector_service
         )
         return result
 
