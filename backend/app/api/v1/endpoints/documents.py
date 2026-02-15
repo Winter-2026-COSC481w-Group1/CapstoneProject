@@ -81,60 +81,12 @@ async def delete_document(
     """
     try:
         user_id = current_user["user_id"]
-
-        # Remove the user -> document link
-        delete_link = (
-            document_service.db.table("user_library")
-            .delete()
-            .eq("user_id", user_id)
-            .eq("document_id", document_id)
-            .execute()
+        result = await document_service.delete_document(
+            document_id,
+            user_id,
+            vector_service
         )
-
-        # If nothing was deleted, the user didn't have that document
-        if not delete_link.data:
-            raise HTTPException(status_code=404, detail="Document not found for user")
-
-        # Check if other users still reference this document
-        remaining = (
-            document_service.db.table("user_library")
-            .select("*")
-            .eq("document_id", document_id)
-            .execute()
-        )
-
-        # If no remaining links, remove document row, vectors, and storage object
-        if not remaining.data:
-            # Delete vector embeddings
-            await vector_service.delete_document_vectors(document_id)
-
-            # fetch document to get storage path
-            doc_response = (
-                document_service.db.table("documents")
-                .select("*")
-                .eq("id", document_id)
-                .maybe_single()
-                .execute()
-            )
-
-            file_path = None
-            if doc_response and doc_response.data:
-                file_path = doc_response.data.get("file_path")
-
-            # delete storage object (ignore failures)
-            try:
-                if file_path:
-                    document_service.db.storage.from_("pdfs").remove([file_path])
-            except Exception as e:
-                print(f"Storage delete warning: {e}")
-
-            # delete the document row
-            try:
-                document_service.db.table("documents").delete().eq("id", document_id).execute()
-            except Exception as e:
-                print(f"DB delete warning: {e}")
-
-        return {"message": "Document deleted"}
+        return result
 
     except HTTPException as e:
         raise e
