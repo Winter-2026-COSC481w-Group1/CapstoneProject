@@ -4,6 +4,7 @@ from app.services.document_service import DocumentService
 from app.services.embedding_service import EmbeddingService
 from app.services.upload_service import UploadService
 from app.services.vector_db_service import VectorDBService
+from app.services.assessment_service import AssessmentService
 
 
 def get_upload_service(request: Request) -> UploadService:
@@ -20,3 +21,7 @@ def get_embedding_service(request: Request) -> EmbeddingService:
 
 def get_vector_service(request: Request) -> VectorDBService:
     return request.app.state.vector_service
+
+
+def get_assessment_service(request: Request) -> AssessmentService:
+    return request.app.state.assessment_service

@@ -5,6 +5,9 @@ from app.services.embedding_service import EmbeddingService
 from app.services.upload_service import UploadService
 from app.services.vector_db_service import VectorDBService
 from app.services.document_service import DocumentService
+from app.services.llm_service import LLMService
+from app.services.assessment_service import AssessmentService
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -40,7 +43,15 @@ async def lifespan(app: FastAPI):
         db_client=supabase_service_client,  # Use the service role client for UploadService DB interactions
         embedding_service=embedding_service,
     )
-    document_service = DocumentService(supabase_service_client, vector_service)
+    document_service = DocumentService(supabase_service_client)
+    llm_service = LLMService()
+    assessment_service = AssessmentService(
+        document_service=document_service,
+        embedding_service=embedding_service,
+        vector_service=vector_service,
+        llm_service=llm_service,
+        db_client=supabase_service_client,
+    )
 
     # store the service instances and Supabase clients in the application state.
     # this makes them accessible from anywhere in the app, including dependencies.
@@ -48,6 +59,7 @@ async def lifespan(app: FastAPI):
     app.state.upload_service = upload_service
     app.state.embedding_service = embedding_service  # Make embedding service available
     app.state.document_service = document_service
+    app.state.assessment_service = assessment_service
     app.state.supabase_service_client = (
         supabase_service_client  # Store the service role client
     )
