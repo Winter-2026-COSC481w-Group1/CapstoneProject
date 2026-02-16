@@ -65,3 +65,31 @@ async def get_documents(
         raise HTTPException(
             status_code=500, detail="Internal Server Error during getting documents"
         ) from e
+
+
+@router.delete("/{document_id}")
+async def delete_document(
+    document_id: str,
+    current_user: Annotated[dict, Depends(get_current_user)],
+    document_service: DocumentService = Depends(get_document_service),
+):
+    """
+    Delete a document for the current user by its id. If no other users reference
+    the document it will also remove the document row and storage file.
+    """
+    try:
+        user_id = current_user["user_id"]
+        result = await document_service.delete_document(
+            document_id,
+            user_id,
+        )
+        return result
+
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        print(f"Error deleting document: {e}")
+        raise HTTPException(
+            status_code=500, detail="Internal Server Error during document deletion"
+        ) from e
+

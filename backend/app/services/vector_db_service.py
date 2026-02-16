@@ -71,3 +71,40 @@ class VectorDBService:
         except Exception as e:
             print(f"Vecs Query Error: {e}")
             return []
+
+    async def delete_document_vectors(self, document_id: str):
+        """
+        Deletes all vector chunks associated with a document by document_id.
+        Uses metadata filtering to find and delete chunks in batches of 1000
+        (database limit) since there may be more than 1000 chunks per document.
+        """
+        try:
+            batch_size = 1000
+            total_deleted = 0
+
+            while True:
+                # Query for chunks with this document_id (batch of 1000)
+                chunks_to_delete = self.collection.query(
+                    data=[0.0] * 768,  # dummy embedding (only used for filter)
+                    limit=batch_size,
+                    filters={"document_id": {"$eq": document_id}},
+                    include_metadata=True,
+                )
+
+                # If no more chunks, we're done
+                if not chunks_to_delete:
+                    break
+
+                # Extract chunk IDs and delete them
+                chunk_ids = [chunk[0] for chunk in chunks_to_delete]
+                self.collection.delete(ids=chunk_ids)
+                total_deleted += len(chunk_ids)
+                print(f"Deleted {len(chunk_ids)} vector chunks (total: {total_deleted}) for document {document_id}")
+
+                # If we got fewer than batch_size, we've deleted all chunks
+                if len(chunk_ids) < batch_size:
+                    break
+
+            print(f"Completed: Deleted {total_deleted} total vector chunks for document {document_id}")
+        except Exception as e:
+            print(f"Vector delete warning: {e}")

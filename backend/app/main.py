@@ -40,7 +40,7 @@ async def lifespan(app: FastAPI):
         db_client=supabase_service_client,  # Use the service role client for UploadService DB interactions
         embedding_service=embedding_service,
     )
-    document_service = DocumentService(supabase_service_client)
+    document_service = DocumentService(supabase_service_client, vector_service)
 
     # store the service instances and Supabase clients in the application state.
     # this makes them accessible from anywhere in the app, including dependencies.
