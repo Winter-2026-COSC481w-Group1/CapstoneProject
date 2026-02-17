@@ -43,7 +43,7 @@ async def lifespan(app: FastAPI):
         db_client=supabase_service_client,  # Use the service role client for UploadService DB interactions
         embedding_service=embedding_service,
     )
-    document_service = DocumentService(supabase_service_client)
+    document_service = DocumentService(supabase_service_client, vector_service) #not sure why this was removed
     llm_service = LLMService()
     assessment_service = AssessmentService(
         document_service=document_service,
