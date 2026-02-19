@@ -1,4 +1,4 @@
-import { CheckCircle, XCircle, Download, ArrowLeft, FileText, ExternalLink } from 'lucide-react';
+import { CheckCircle, XCircle, Download, ArrowLeft, FileText } from 'lucide-react';
 import { useApp } from '../AppContext';
 
 export default function GradingReport() {
