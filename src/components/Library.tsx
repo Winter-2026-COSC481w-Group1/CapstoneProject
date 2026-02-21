@@ -132,8 +132,30 @@ export default function Library() {
     }
   };
 
-  const handleDelete = (id: string) => {
-    setLibraryFiles(libraryFiles.filter(f => f.id !== id));
+  // Delete document handler
+  const handleDelete = async (id: string) => {
+    try {
+      // obtain supabase session for auth token
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (!session?.access_token) {
+        console.error('no session token available for delete');
+        return;
+      }
+      const res = await fetch(`${VITE_API_URL}/api/v1/documents/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+      if (res.ok) {
+        // remove from UI state only after backend confirms deletion
+        setLibraryFiles(libraryFiles.filter(f => f.id !== id));
+      } else {
+        console.error('failed deleting document', res.status);
+      }
+    } catch (err) {
+      console.error('error deleting document', err);
+    }
   };
 
   return (
