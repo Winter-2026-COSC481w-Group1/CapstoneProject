@@ -20,49 +20,6 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-const mockLibraryFiles: LibraryFile[] = [
-  {
-    id: '1',
-    name: 'Introduction to Biology - Chapter 5.pdf',
-    size: '2.4 MB',
-    uploadedAt: new Date('2024-01-15'),
-    status: 'ready',
-    pageCount: 24
-  },
-  {
-    id: '2',
-    name: 'World History Vol. 2.pdf',
-    size: '5.8 MB',
-    uploadedAt: new Date('2024-01-14'),
-    status: 'ready',
-    pageCount: 156
-  },
-  {
-    id: '3',
-    name: 'Advanced Physics - Quantum Mechanics.pdf',
-    size: '3.2 MB',
-    uploadedAt: new Date('2024-01-13'),
-    status: 'ready',
-    pageCount: 89
-  },
-  {
-    id: '4',
-    name: 'Chemistry Fundamentals.pdf',
-    size: '4.1 MB',
-    uploadedAt: new Date('2024-01-12'),
-    status: 'indexing',
-    pageCount: 45
-  },
-  {
-    id: '5',
-    name: 'Literature Analysis - Shakespeare.pdf',
-    size: '1.9 MB',
-    uploadedAt: new Date('2024-01-11'),
-    status: 'ready',
-    pageCount: 67
-  }
-];
-
 const mockAssessments: Assessment[] = [
   {
     id: '1',
@@ -270,7 +227,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const firstPage = 'spinningCircle';
   const [currentPage, setCurrentPage] = useState(firstPage);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [libraryFiles, setLibraryFiles] = useState<LibraryFile[]>(mockLibraryFiles);
+  const [libraryFiles, setLibraryFiles] = useState<LibraryFile[]>([]);
   const [assessments, setAssessments] = useState<Assessment[]>(mockAssessments);
   const [currentAssessment, setCurrentAssessment] = useState<Assessment | null>(null);
   const [activities, setActivities] = useState<Activity[]>(mockActivities);

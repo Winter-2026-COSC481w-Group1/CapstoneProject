@@ -21,8 +21,23 @@ class DocumentService:
             .execute()
         )
 
-        # extract the document part from each row
-        return [row["documents"] for row in response.data if row.get("documents")]
+        documents = []
+
+        for row in response.data:
+            doc = row.get("documents")
+            if doc:
+                documents.append(
+                    {
+                        "id": doc.get("id"),
+                        "name": doc.get("file_name"),  # Rename for frontend
+                        "status": doc.get("status"),
+                        "size": doc.get("file_size"),  # Standardize key
+                        "pageCount": doc.get("page_count", 0),
+                        "uploadedAt": doc.get("created_at"),  # Rename for frontend
+                    }
+                )
+
+        return documents
 
     async def delete_document(self, document_id: str, user_id: str):
         """
@@ -44,9 +59,7 @@ class DocumentService:
 
         # If nothing was deleted, the user didn't have that document
         if not delete_link.data:
-            raise HTTPException(
-                status_code=404, detail="Document not found for user"
-            )
+            raise HTTPException(status_code=404, detail="Document not found for user")
 
         # Check if other users still reference this document
         remaining = (
@@ -90,12 +103,12 @@ class DocumentService:
                 self.db.table("documents").delete().eq("id", document_id).execute()
             except Exception as e:
                 print(f"DB delete warning: {e}")
-        
+
         return {
             "document": {
                 "document_id": document_id,
                 "fully_deleted": fully_deleted,
-                "remaining_user_links": remaining_user_links
+                "remaining_user_links": remaining_user_links,
             },
             "message": "Document deleted.",
         }
