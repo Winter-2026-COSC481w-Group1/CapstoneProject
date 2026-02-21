@@ -5,7 +5,8 @@ import { LibraryFile } from '../types';
 import { supabaseClient } from '../supabase';
 
 import { post } from '../api';
-import { supabaseClient } from '../supabase';
+
+const VITE_API_URL = import.meta.env.VITE_API_URL;
 
 export default function Library() {
   const { libraryFiles, setLibraryFiles } = useApp();
@@ -22,7 +23,7 @@ export default function Library() {
           setLoading(false);
           return;
         }
-        const res = await fetch('/api/v1/documents', {
+        const res = await fetch(`${VITE_API_URL}/api/v1/documents`, {
           headers: {
             'Authorization': `Bearer ${session.access_token}`
           }
