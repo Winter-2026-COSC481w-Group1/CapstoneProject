@@ -3,6 +3,9 @@ import { Upload, FileText, Loader2, CheckCircle, Trash2, Eye } from 'lucide-reac
 import { useApp } from '../AppContext';
 import { LibraryFile } from '../types';
 
+import { post } from '../api';
+import { supabaseClient } from '../supabase';
+
 export default function Library() {
   const { libraryFiles, setLibraryFiles } = useApp();
   const [isDragging, setIsDragging] = useState(false);
@@ -19,44 +22,49 @@ export default function Library() {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-
-    const newFile: LibraryFile = {
-      id: Date.now().toString(),
-      name: 'New Document.pdf',
-      size: '2.1 MB',
-      uploadedAt: new Date(),
-      status: 'indexing',
-      pageCount: 42
-    };
-
-    setLibraryFiles([...libraryFiles, newFile]);
-
-    setTimeout(() => {
-      setLibraryFiles(prev =>
-        prev.map(f => f.id === newFile.id ? { ...f, status: 'ready' } : f)
-      );
-    }, 3000);
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      uploadFile(files[0]);
+    }
   };
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      const newFile: LibraryFile = {
-        id: Date.now().toString(),
-        name: files[0].name,
-        size: `${(files[0].size / (1024 * 1024)).toFixed(1)} MB`,
-        uploadedAt: new Date(),
-        status: 'indexing',
-        pageCount: Math.floor(Math.random() * 100) + 10
-      };
+      uploadFile(files[0]);
+    }
+  };
 
-      setLibraryFiles([...libraryFiles, newFile]);
+  const uploadFile = async (file: File) => {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) {
+      // Handle not logged in
+      return;
+    }
 
-      setTimeout(() => {
-        setLibraryFiles(prev =>
-          prev.map(f => f.id === newFile.id ? { ...f, status: 'ready' } : f)
-        );
-      }, 3000);
+    const newFile: LibraryFile = {
+      id: Date.now().toString(),
+      name: file.name,
+      size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
+      uploadedAt: new Date(),
+      status: 'indexing',
+      pageCount: 0 // Will be updated from backend
+    };
+
+    setLibraryFiles(prev => [...prev, newFile]);
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const result = await post('api/v1/documents', formData, session.access_token);
+      setLibraryFiles(prev =>
+        prev.map(f => f.id === newFile.id ? { ...result, status: 'ready' } : f)
+      );
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      // Handle upload error, maybe remove the file from the list
+      setLibraryFiles(prev => prev.filter(f => f.id !== newFile.id));
     }
   };
 
