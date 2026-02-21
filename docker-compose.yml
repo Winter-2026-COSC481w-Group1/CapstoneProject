@@ -21,6 +21,7 @@ services:
         args:
           VITE_SUPABASE_URL: ${SUPABASE_URL}
           VITE_SUPABASE_KEY: ${SUPABASE_PUBLISHABLE_KEY}
+          VITE_API_URL: http://localhost:8000
       ports:
         - "3000:80" # Access frontend at localhost:3000
       depends_on:
