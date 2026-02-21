@@ -32,13 +32,13 @@ export default function Library() {
           const data = await res.json();
           const files: LibraryFile[] = data.map((doc: any) => ({
             id: doc.id,
-            name: doc.file_name,
-            size: doc.file_size
-              ? `${(doc.file_size / (1024 * 1024)).toFixed(1)} MB`
+            name: doc.name,
+            size: doc.size
+              ? `${(doc.size / (1024 * 1024)).toFixed(1)} MB`
               : '0 MB',
-            uploadedAt: new Date(doc.created_at),
+            uploadedAt: new Date(doc.uploadedAt),
             status: doc.status as 'ready' | 'indexing' | 'processing' | 'pending' | 'failed',
-            pageCount: doc.page_count ?? 0,
+            pageCount: doc.pageCount ?? 0,
           }));
           setLibraryFiles(files);
         } else {
@@ -93,9 +93,10 @@ export default function Library() {
       // Handle not logged in
       return;
     }
+    const tempId = Date.now().toString();
 
     const newFile: LibraryFile = {
-      id: Date.now().toString(),
+      id: tempId,
       name: file.name,
       size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
       uploadedAt: new Date(),
@@ -110,13 +111,24 @@ export default function Library() {
 
     try {
       const result = await post('api/v1/documents', formData, session.access_token);
+      const doc = result.document;
       setLibraryFiles(prev =>
-        prev.map(f => f.id === newFile.id ? { ...result, status: 'ready' } : f)
+        prev.map(f => f.id === tempId ? {
+          id: doc.id,
+          name: doc.name,
+          size: typeof doc.size === 'number'
+            ? `${(doc.size / (1024 * 1024)).toFixed(1)} MB`
+            : doc.size,
+          uploadedAt: new Date(doc.uploadedAt),
+          // Use the status directly from the backend response
+          status: doc.status as LibraryFile['status'],
+          pageCount: doc.pageCount ?? 0
+        } : f)
       );
     } catch (error) {
       console.error('Error uploading file:', error);
       // Handle upload error, maybe remove the file from the list
-      setLibraryFiles(prev => prev.filter(f => f.id !== newFile.id));
+      setLibraryFiles(prev => prev.filter(f => f.id !== tempId));
     }
   };
 
