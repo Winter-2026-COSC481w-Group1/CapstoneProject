@@ -141,7 +141,7 @@ export default function Library() {
         console.error('no session token available for delete');
         return;
       }
-      const res = await fetch(`/api/v1/documents/${id}`, {
+      const res = await fetch(`${VITE_API_URL}/api/v1/documents/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
