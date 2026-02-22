@@ -7,9 +7,11 @@ class QuestionSchema(BaseModel):
     type: str # 'multiple-choice' | 'true-false' | 'short-answer'
     question: str
     options: List[str]
+    #TODO add number of options field
+    #TODO change to index of options list
     correctAnswer: str
     # metadata for RAG traceability
-    source_text: str 
+    source_text: str
     page_number: int
 
     
