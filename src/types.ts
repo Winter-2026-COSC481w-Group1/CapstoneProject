@@ -11,7 +11,7 @@ export interface LibraryFile {
   name: string;
   size: string;
   uploadedAt: Date;
-  status: 'ready' | 'indexing' | 'processing';
+  status: 'pending' | 'failed' | 'ready' | 'indexing' | 'processing';
   pageCount: number;
 }
 

@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import documents, user, dev, query, assessments
+from app.api.v1.endpoints import documents, user, dev, query, assessments, notifications
 
 api_router = APIRouter()
 
@@ -13,11 +13,20 @@ api_router.include_router(
     tags=["Development"],
 )
 
-
 api_router.include_router(
-    documents.router, prefix="/documents", tags=["Document Management"]
+    documents.router,
+    prefix="/documents",
+    tags=["Document Management"],
 )
 
 api_router.include_router(
-    assessments.router, prefix="/assessments", tags=["Exam Generation"]
+    assessments.router,
+    prefix="/assessments",
+    tags=["Exam Generation"],
+)
+
+api_router.include_router(
+    notifications.router,
+    prefix="/notifications",
+    tags=["Notifications"],
 )
