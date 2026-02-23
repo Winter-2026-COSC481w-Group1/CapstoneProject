@@ -53,7 +53,7 @@ class LLMService:
             if not raw_response.text:
              raise ValueError("LLM returned an empty response")
             
-            print(f"{raw_response}")
+            #print(f"{raw_response}")
             print(f"{raw_response.text}")
 
             return AssessmentSchema.model_validate_json(raw_response.text)
