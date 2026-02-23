@@ -12,6 +12,8 @@ export default function ExamStudio() {
 
   const readyFiles = libraryFiles.filter(f => f.status === 'ready');
 
+  const [topic, setTopic] = useState('');
+
   const toggleFile = (fileName: string) => {
     setSelectedFiles(prev =>
       prev.includes(fileName)
@@ -28,24 +30,63 @@ export default function ExamStudio() {
     );
   };
 
-  const handleGenerate = () => {
-    const newAssessment: Assessment = {
-      id: Date.now().toString(),
-      title: `Assessment ${assessments.length + 1}`,
-      createdAt: new Date(),
-      status: 'draft',
-      sourceFiles: selectedFiles,
-      questionCount,
-      difficulty,
-      questions: []
+  const handleGenerate = async () => {
+
+    // find file opject
+    const selectedFileObjects = libraryFiles.filter(f => selectedFiles.includes(f.name));
+
+    //currently the backend supports one file
+    const primaryFile = selectedFileObjects[0];
+
+    const requestBody = {
+      document_id: primaryFile.id,
+      query: topic, // topic/query
+      num_questions: questionCount,
+      difficulty: difficulty,
+      question_types: selectedTypes.map(t => t.replace('-', '_')) // match 'multiple_choice' backend format
     };
 
-    setAssessments([...assessments, newAssessment]);
-    setCurrentPage('loading');
+    try {
+      setCurrentPage('loading');
 
-    setTimeout(() => {
+      const res = await fetch('${VITE_API_URL}/api/v1/assessments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          // 'Authorization': `Bearer ${your_auth_token}` // Ensure user is authenticated
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!res.ok) throw new Error('Failed to start assessment generation');
+
+      const assessmentId = await res.json();
+
+      const newAssessment: Assessment = {
+        id: assessmentId,
+        title: `Assessment: ${primaryFile.name}`,
+        createdAt: new Date(),
+        status: 'pending', // or 'processing'
+        sourceFiles: selectedFiles,
+        questionCount,
+        difficulty,
+        questions: [],
+        attempts: {
+          attempts: [],
+          scores: []
+        }
+      };
+
+      setAssessments([newAssessment, ...assessments]);
+
+      // Navigate to assessments hub where you can poll for status
       setCurrentPage('assessments');
-    }, 5000);
+
+    } catch (error) {
+      console.error("Generation error:", error);
+      alert("Error generating assessment. Please try again.");
+      setCurrentPage('examStudio');
+    }
   };
 
   const canGenerate = selectedFiles.length > 0 && selectedTypes.length > 0;
@@ -80,11 +121,10 @@ export default function ExamStudio() {
                     <button
                       key={file.id}
                       onClick={() => toggleFile(file.name)}
-                      className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${
-                        selectedFiles.includes(file.name)
+                      className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${selectedFiles.includes(file.name)
                           ? 'border-emerald-500 bg-emerald-50'
                           : 'border-gray-200 hover:border-emerald-300 bg-white'
-                      }`}
+                        }`}
                     >
                       {selectedFiles.includes(file.name) ? (
                         <CheckSquare className="w-6 h-6 text-emerald-600 flex-shrink-0" />
@@ -102,17 +142,29 @@ export default function ExamStudio() {
             </div>
 
             <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Assessment Topic</h2>
+              <p className="text-gray-600 mb-6">What specific topic or chapter should the questions focus on?</p>
+
+              <input
+                type="text"
+                value={topic}
+                onChange={(e) => setTopic(e.target.value)}
+                placeholder="e.g., Cellular Respiration, The French Revolution, Quantum Mechanics..."
+                className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-gray-900"
+              />
+            </div>
+
+            <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200">
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Question Types</h2>
               <p className="text-gray-600 mb-6">Select one or more types</p>
 
               <div className="grid sm:grid-cols-3 gap-4">
                 <button
                   onClick={() => toggleType('multiple-choice')}
-                  className={`p-6 rounded-2xl border-3 transition-all ${
-                    selectedTypes.includes('multiple-choice')
+                  className={`p-6 rounded-2xl border-3 transition-all ${selectedTypes.includes('multiple-choice')
                       ? 'border-emerald-500 bg-emerald-50'
                       : 'border-gray-200 hover:border-emerald-300 bg-white'
-                  }`}
+                    }`}
                 >
                   <div className="text-4xl mb-3">📝</div>
                   <div className="font-semibold text-gray-900">Multiple Choice</div>
@@ -121,11 +173,10 @@ export default function ExamStudio() {
 
                 <button
                   onClick={() => toggleType('true-false')}
-                  className={`p-6 rounded-2xl border-3 transition-all ${
-                    selectedTypes.includes('true-false')
+                  className={`p-6 rounded-2xl border-3 transition-all ${selectedTypes.includes('true-false')
                       ? 'border-emerald-500 bg-emerald-50'
                       : 'border-gray-200 hover:border-emerald-300 bg-white'
-                  }`}
+                    }`}
                 >
                   <div className="text-4xl mb-3">✓✗</div>
                   <div className="font-semibold text-gray-900">True/False</div>
@@ -134,11 +185,10 @@ export default function ExamStudio() {
 
                 <button
                   onClick={() => toggleType('short-answer')}
-                  className={`p-6 rounded-2xl border-3 transition-all ${
-                    selectedTypes.includes('short-answer')
+                  className={`p-6 rounded-2xl border-3 transition-all ${selectedTypes.includes('short-answer')
                       ? 'border-emerald-500 bg-emerald-50'
                       : 'border-gray-200 hover:border-emerald-300 bg-white'
-                  }`}
+                    }`}
                 >
                   <div className="text-4xl mb-3">✍️</div>
                   <div className="font-semibold text-gray-900">Short Answer</div>
@@ -179,31 +229,28 @@ export default function ExamStudio() {
               <div className="flex items-center gap-4 bg-gray-100 p-2 rounded-2xl">
                 <button
                   onClick={() => setDifficulty('easy')}
-                  className={`flex-1 py-3 rounded-xl font-semibold transition-all ${
-                    difficulty === 'easy'
+                  className={`flex-1 py-3 rounded-xl font-semibold transition-all ${difficulty === 'easy'
                       ? 'bg-white text-emerald-600 shadow-md'
                       : 'text-gray-600 hover:text-gray-900'
-                  }`}
+                    }`}
                 >
                   Easy
                 </button>
                 <button
                   onClick={() => setDifficulty('medium')}
-                  className={`flex-1 py-3 rounded-xl font-semibold transition-all ${
-                    difficulty === 'medium'
+                  className={`flex-1 py-3 rounded-xl font-semibold transition-all ${difficulty === 'medium'
                       ? 'bg-white text-emerald-600 shadow-md'
                       : 'text-gray-600 hover:text-gray-900'
-                  }`}
+                    }`}
                 >
                   Medium
                 </button>
                 <button
                   onClick={() => setDifficulty('hard')}
-                  className={`flex-1 py-3 rounded-xl font-semibold transition-all ${
-                    difficulty === 'hard'
+                  className={`flex-1 py-3 rounded-xl font-semibold transition-all ${difficulty === 'hard'
                       ? 'bg-white text-emerald-600 shadow-md'
                       : 'text-gray-600 hover:text-gray-900'
-                  }`}
+                    }`}
                 >
                   Hard
                 </button>
@@ -271,11 +318,10 @@ export default function ExamStudio() {
                 <button
                   onClick={handleGenerate}
                   disabled={!canGenerate}
-                  className={`w-full py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2 ${
-                    canGenerate
+                  className={`w-full py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2 ${canGenerate
                       ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg hover:shadow-xl'
                       : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                  }`}
+                    }`}
                 >
                   <Zap className="w-5 h-5" />
                   Generate Assessment
