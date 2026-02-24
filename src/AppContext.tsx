@@ -1,5 +1,8 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { User, LibraryFile, Assessment, Activity } from './types';
+import { supabaseClient } from './supabase';
+
+const VITE_API_URL = import.meta.env.VITE_API_URL;
 
 interface AppContextType {
   currentUser: User | null;
@@ -7,7 +10,8 @@ interface AppContextType {
   currentPage: string;
   setCurrentPage: (page: string) => void;
   libraryFiles: LibraryFile[];
-  setLibraryFiles: (files: LibraryFile[]) => void;
+  setLibraryFiles: (files: LibraryFile[] | ((prevFiles: LibraryFile[]) => LibraryFile[])) => void;
+  fetchLibraryFiles: () => Promise<void>;
   assessments: Assessment[];
   setAssessments: (assessments: Assessment[]) => void;
   currentAssessment: Assessment | null;
@@ -233,18 +237,59 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [activities, setActivities] = useState<Activity[]>(mockActivities);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
+
+  useEffect(() => {
+    if (currentUser) {
+      fetchLibraryFiles();
+    }
+  }, [currentUser]);
+
+  const fetchLibraryFiles = useCallback(async () => {
+    try {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (!session?.access_token) {
+        console.error('no session token available');
+        return;
+      }
+      const res = await fetch(`${VITE_API_URL}/api/v1/documents`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const files: LibraryFile[] = data.map((doc: any) => ({
+          id: doc.id,
+          name: doc.name,
+          size: doc.size
+            ? `${(doc.size / (1024 * 1024)).toFixed(1)} MB`
+            : '0 MB',
+          uploadedAt: new Date(doc.uploadedAt),
+          status: doc.status as 'ready' | 'indexing' | 'processing' | 'pending' | 'failed',
+          pageCount: doc.pageCount ?? 0,
+        }));
+        setLibraryFiles(files);
+      } else {
+        console.error('failed fetching documents', res.status);
+      }
+    } catch (err) {
+      console.error('error loading documents', err);
+    }
+  }, []);
+
   return (
     <AppContext.Provider
       value={{
         currentUser,
         setCurrentUser,
         currentPage,
-        setCurrentPage: (page) => { 
+        setCurrentPage: (page) => {
           localStorage.setItem('saved-page', page);
           setCurrentPage(page);
         },
         libraryFiles,
         setLibraryFiles,
+        fetchLibraryFiles,
         assessments,
         setAssessments,
         currentAssessment,

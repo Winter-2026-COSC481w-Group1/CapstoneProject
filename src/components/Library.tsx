@@ -11,56 +11,6 @@ const VITE_API_URL = import.meta.env.VITE_API_URL;
 export default function Library() {
   const { libraryFiles, setLibraryFiles } = useApp();
   const [isDragging, setIsDragging] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  // load documents on mount
-  useEffect(() => {
-    async function load() {
-      try {
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        if (!session?.access_token) {
-          console.error('no session token available');
-          setLoading(false);
-          return;
-        }
-        const res = await fetch(`${VITE_API_URL}/api/v1/documents`, {
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`
-          }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          const files: LibraryFile[] = data.map((doc: any) => ({
-            id: doc.id,
-            name: doc.name,
-            size: doc.size
-              ? `${(doc.size / (1024 * 1024)).toFixed(1)} MB`
-              : '0 MB',
-            uploadedAt: new Date(doc.uploadedAt),
-            status: doc.status as 'ready' | 'indexing' | 'processing' | 'pending' | 'failed',
-            pageCount: doc.pageCount ?? 0,
-          }));
-          setLibraryFiles(files);
-        } else {
-          console.error('failed fetching documents', res.status);
-        }
-      } catch (err) {
-        console.error('error loading documents', err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, [setLibraryFiles]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-12 h-12 animate-spin text-emerald-600" />
-        <span className="ml-4 text-xl">Loading library...</span>
-      </div>
-    );
-  }
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
