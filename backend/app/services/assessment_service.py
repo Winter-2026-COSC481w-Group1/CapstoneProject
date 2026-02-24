@@ -201,3 +201,32 @@ class AssessmentService:
         except Exception as e:
             print(f"Error in generate_assessment {assessment_id}: {e}")
             await self.update_assessment_status(assessment_id, "failed", str(e))
+
+
+    #return assessment metadata for user
+    async def get_assessments(self, user_id: str) -> list:
+        response = (
+            self.db.table("assessments")
+            .select("*")
+            .eq("user_id", user_id)
+            .execute()
+        )
+
+        assessments = []
+
+        for row in response.data:
+            assessment = row.get("assessment")
+            if assessment:
+                assessments.append(
+                    {
+                        "id": assessment.get("id"),
+                        "title": assessment.get("title"),  # Rename for frontend
+                        "createdAt": assessment.get("createdAt")
+                        "status": assessment.get("status"),
+                        "size": doc.get("file_size"),  # Standardize key
+                        "pageCount": doc.get("page_count", 0),
+                        "uploadedAt": doc.get("created_at"),  # Rename for frontend
+                    }
+                )
+
+        return documents
