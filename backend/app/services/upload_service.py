@@ -63,9 +63,11 @@ class UploadService:
         )
 
         document = None
+        message = ""
         if existing and existing.data:
             document = existing.data
             document_id = document["id"]
+            message = "Document already exists."
         else:
             # 3) Create a new document row
             document_id = str(uuid4())
@@ -116,6 +118,7 @@ class UploadService:
                 )
 
             document = insert_doc.data[0]
+            message = "Upload successful."
 
         # 5) Link user -> document in user_library (ignore if already exists)
         link = (
@@ -133,16 +136,18 @@ class UploadService:
             )
 
         # 6) Enqueue background task for further processing (e.g., chunking, embedding)
-        background_tasks.add_task(
-            process_pdf_in_background,
-            document_id,
-            sha256,
-            document["file_path"],
-            user_id,
-            self.db,
-            self.vector_service,
-            self.embedding_service,
-        )
+        # only process/index if the document isn't already 'ready' OR 'processing' or 'indexing'
+        if document.get("status") not in ["ready", "processing", "indexing"]:
+            background_tasks.add_task(
+                process_pdf_in_background,
+                document_id,
+                sha256,
+                document["file_path"],
+                user_id,
+                self.db,
+                self.vector_service,
+                self.embedding_service,
+            )
 
         return {
             "document": {
@@ -153,5 +158,5 @@ class UploadService:
                 "pageCount": document["page_count"],
                 "uploadedAt": document.get("created_at"),
             },
-            "message": "Upload successful.",
+            "message": message,
         }
