@@ -141,11 +141,11 @@ class AssessmentService:
                 # 2. If it's MCQ or has options, insert into 'question_options'
                 if q_data.options:
                     options_to_insert = []
-                    for option in q_data.options:
+                    for i, option in enumerate(q_data.options):
                         options_to_insert.append({
                             "question_id": new_q_id,
                             "option_text": option,
-                            "is_correct": option == q_data.correctAnswer
+                            "is_correct": i == q_data.correctAnswer
                         })
 
                     if options_to_insert:
@@ -229,3 +229,47 @@ class AssessmentService:
             )
 
         return assessments
+
+    #returns the assossiated questions and their options
+    #assumes that if the questions are being requested the exam metadata is already present in the front end
+    async def get_questions(self, assessment_id: str, user_id: str):
+        response = (
+            self.db_client.table("questions")
+            .select("*, question_options(*)")
+            .eq("assessment_id", assessment_id)
+            .execute()
+        )
+
+        questions = []
+
+        for row in response.data:
+    
+            options_data = row.get("question_options", [])
+
+            question_options = []
+            correct = 0
+
+
+            for i, opt in enumerate(options_data):
+                if opt.get("is_correct"):
+                    correct = i
+
+                question_options.append(opt.get("option_text"))
+
+                questions.append(
+                    {
+                        "id": row.get("id"),
+                        "type": row.get("question_type"),
+                        "question": row.get("question_text"),
+                        "numOptions": len(question_options),
+                        "options": question_options,
+                        "correctAnswer": correct,
+                        "source": {
+                            "text": row.get("explanation")
+                            #TODO add page number after the db fix
+                            #TODO source file should be listed per question in db
+                        }
+                    }
+                )
+
+            return questions
