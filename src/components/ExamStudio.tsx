@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { CheckSquare, Square, X, Zap } from 'lucide-react';
 import { useApp } from '../AppContext';
 import { Assessment } from '../types';
+import { supabaseClient } from '../supabase';
+
+const VITE_API_URL = import.meta.env.VITE_API_URL;
 
 export default function ExamStudio() {
   const { libraryFiles, assessments, setAssessments, setCurrentPage } = useApp();
@@ -49,11 +52,18 @@ export default function ExamStudio() {
     try {
       setCurrentPage('loading');
 
-      const res = await fetch('${VITE_API_URL}/api/v1/assessments', {
+      //get session token
+      const { data: {session} } = await supabaseClient.auth.getSession();
+      if(!session?.access_token) {
+        console.error('no session token available'); //do something else here?
+        return;
+      }
+
+      const res = await fetch(`${VITE_API_URL}/api/v1/assessments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          // 'Authorization': `Bearer ${your_auth_token}` // Ensure user is authenticated
+          'Authorization': `Bearer ${session.access_token}` // Ensure user is authenticated
         },
         body: JSON.stringify(requestBody),
       });
