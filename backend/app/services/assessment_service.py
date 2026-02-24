@@ -206,7 +206,7 @@ class AssessmentService:
     #return assessment metadata for user
     async def get_assessments(self, user_id: str) -> list:
         response = (
-            self.db.table("assessments")
+            self.db_client.table("assessments")
             .select("*")
             .eq("user_id", user_id)
             .execute()
@@ -215,18 +215,17 @@ class AssessmentService:
         assessments = []
 
         for row in response.data:
-            assessment = row.get("assessment")
-            if assessment:
-                assessments.append(
-                    {
-                        "id": assessment.get("id"),
-                        "title": assessment.get("title"),  # Rename for frontend
-                        "createdAt": assessment.get("createdAt")
-                        "status": assessment.get("status"),
-                        "size": doc.get("file_size"),  # Standardize key
-                        "pageCount": doc.get("page_count", 0),
-                        "uploadedAt": doc.get("created_at"),  # Rename for frontend
-                    }
-                )
+            assessments.append(
+                {
+                    "id": row.get("id"),
+                    "title": row.get("title"),  # Rename for frontend
+                    "createdAt": row.get("created_at"),
+                    "status": row.get("status"),
+                    "sourceFiles": row.get("document_id"),  # Standardize key
+                    "questionCount": row.get("num_questions"),
+                    "difficulty": row.get("difficulty"), # Rename for frontend
+                    #TODO add attempts when added to db
+                }
+            )
 
-        return documents
+        return assessments
