@@ -3,8 +3,7 @@ import { CheckSquare, Square, X, Zap } from 'lucide-react';
 import { useApp } from '../AppContext';
 import { Assessment } from '../types';
 import { supabaseClient } from '../supabase';
-
-const VITE_API_URL = import.meta.env.VITE_API_URL;
+import { post } from '../api';
 
 export default function ExamStudio() {
   const { libraryFiles, assessments, setAssessments, setCurrentPage } = useApp();
@@ -59,16 +58,7 @@ export default function ExamStudio() {
         return;
       }
 
-      const res = await fetch(`${VITE_API_URL}/api/v1/assessments`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}` // Ensure user is authenticated
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      if (!res.ok) throw new Error('Failed to start assessment generation');
+      const res = await post('api/v1/assessments', requestBody, session.access_token)
 
       const assessmentId = await res.json();
 
