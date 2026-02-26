@@ -1,10 +1,11 @@
 from typing import List, Dict, Any
 from uuid import uuid4
+import re
 
 from fastapi import HTTPException
 
 from app.schemas.assessment_request import AssessmentRequest
-from app.schemas.assessment import AssessmentSchema
+from app.schemas.assessment import AssessmentSchema, QuestionDetail, QuestionSource
 
 from app.services.document_service import DocumentService
 from app.services.embedding_service import EmbeddingService
@@ -30,11 +31,117 @@ class AssessmentService:
         self.db_client = db_client
         self.llm_service = llm_service  # import llm here
 
+    async def get_assessment_details(
+        self, assessment_id: str, user_id: str
+    ) -> List[QuestionDetail]:
+        # ownership check
+        assessment_response = (
+            self.db_client.table("assessments")
+            .select("id, document_id")
+            .eq("id", assessment_id)
+            .eq("user_id", user_id)
+            .maybe_single()
+            .execute()
+        )
+        if not assessment_response.data:
+            raise PermissionError("Assessment not found or user does not have access.")
+
+        # get document filename
+        document_id = assessment_response.data["document_id"]
+        doc_response = (
+            self.db_client.table("documents")
+            .select("file_name")
+            .eq("id", document_id)
+            .maybe_single()
+            .execute()
+        )
+        file_name = doc_response.data["file_name"] if doc_response.data else "Unknown"
+
+        # fetch questions
+        questions_response = (
+            self.db_client.table("questions")
+            .select("*")
+            .eq("assessment_id", assessment_id)
+            .execute()
+        )
+        if not questions_response.data:
+            return []
+
+        # fetch all options for all questions in the assessment
+        question_ids = [q["id"] for q in questions_response.data]
+        options_response = (
+            self.db_client.table("question_options")
+            .select("*")
+            .in_("question_id", question_ids)
+            .execute()
+        )
+        options_by_question_id = {}
+        for option in options_response.data:
+            qid = option["question_id"]
+            if qid not in options_by_question_id:
+                options_by_question_id[qid] = []
+            options_by_question_id[qid].append(option)
+
+        # construct QuestionDetail list
+        detailed_questions = []
+        type_mapping = {
+            "MCQ": "multiple-choice",
+            "TF": "true-false",
+            "SA": "short-answer",
+        }
+
+        for q in questions_response.data:
+            question_id = q["id"]
+            options_data = options_by_question_id.get(question_id, [])
+
+            options = [opt["option_text"] for opt in options_data]
+            correct_answer = next(
+                (opt["option_text"] for opt in options_data if opt["is_correct"]), ""
+            )
+
+            # parse source
+            source = None
+            explanation = q.get("explanation", "")
+            if explanation:
+                match = re.search(r"Page: (\d+) Text: (.*)", explanation)
+                if match:
+                    page, text = match.groups()
+                    source = QuestionSource(
+                        text=text.strip(), page=int(page), fileName=file_name
+                    )
+
+            detailed_questions.append(
+                QuestionDetail(
+                    id=str(question_id),
+                    type=type_mapping.get(q["question_type"], "multiple-choice"),
+                    question=q["question_text"],
+                    options=options,
+                    correctAnswer=correct_answer,
+                    source=source,
+                )
+            )
+
+        return detailed_questions
+
     # creates a pending record for the assessment generating in the db, and returns assessment id
     async def create_pending_record(
         self, request: AssessmentRequest, user_id: str
     ) -> str:
         """Creates the initial row in Supabase and returns the ID."""
+
+        check_ownership = (
+            self.db_client.table("user_library")
+            .select("document_id")
+            .eq("user_id", user_id)
+            .eq("document_id", request.document_id)  # Use .eq for a single ID
+            .maybe_single()
+            .execute()
+        )
+
+        if not check_ownership.data:
+            raise PermissionError(
+                f"User {user_id} does not have access to document {request.document_id}"
+            )
 
         # convert Pydantic model to dict
         # this automatically includes query, document_ids, num_questions, etc.
@@ -86,12 +193,7 @@ class AssessmentService:
             return ""
 
         #  query Vector DB ensure only documents that the user owns
-        filters = {
-            "$and": [
-                {"document_id": {"$eq": document_id}},
-                {"user_id": {"$eq": user_id}},
-            ]
-        }
+        filters = {"document_id": {"$eq": document_id}}
 
         retrieved_chunks = await self.vector_service.query(
             embedding,
@@ -112,8 +214,10 @@ class AssessmentService:
                 formatted_context.append(f"--- SOURCE {i + 1} ---\n{text.strip()}")
 
         return "\n\n".join(formatted_context)
-    
-    async def _save_assessment_to_db(self, assessment_id: str, assessment_data: AssessmentSchema):
+
+    async def _save_assessment_to_db(
+        self, assessment_id: str, assessment_data: AssessmentSchema
+    ):
         """
         Maps AssessmentSchema to 'questions' and 'question_options' tables.
         """
@@ -123,17 +227,19 @@ class AssessmentService:
             q_type_map = {
                 "multiple-choice": "MCQ",
                 "true-false": "TF",
-                "short-answer": "SA"
+                "short-answer": "SA",
             }
 
             question_insert = {
                 "assessment_id": assessment_id,
                 "question_text": q_data.question,
                 "question_type": q_type_map.get(q_data.type, "MCQ"),
-                "explanation": f"Page: {q_data.page_number} Text: {q_data.source_text}" # Using source_text as explanation/context
+                "explanation": f"Page: {q_data.page_number} Text: {q_data.source_text}",  # Using source_text as explanation/context
             }
 
-            q_result = self.db_client.table("questions").insert(question_insert).execute()
+            q_result = (
+                self.db_client.table("questions").insert(question_insert).execute()
+            )
 
             if q_result.data:
                 new_q_id = q_result.data[0]["id"]
@@ -142,24 +248,28 @@ class AssessmentService:
                 if q_data.options:
                     options_to_insert = []
                     for option in q_data.options:
-                        options_to_insert.append({
-                            "question_id": new_q_id,
-                            "option_text": option,
-                            "is_correct": option == q_data.correctAnswer
-                        })
+                        options_to_insert.append(
+                            {
+                                "question_id": new_q_id,
+                                "option_text": option,
+                                "is_correct": option == q_data.correctAnswer,
+                            }
+                        )
 
                     if options_to_insert:
-                        self.db_client.table("question_options").insert(options_to_insert).execute()
+                        self.db_client.table("question_options").insert(
+                            options_to_insert
+                        ).execute()
 
     async def generate_assessment(
         self,
         assessment_id: str,
-        document_id: list[str],
+        document_id: str,
         query: str,
         user_id: str,
         num_questions: int,
         question_types: list[str],
-        difficulty: str
+        difficulty: str,
     ):
         """
         MANAGER: Orchestrates the entire background task.
@@ -187,7 +297,9 @@ class AssessmentService:
             # mark as completed if the above is successful. so do a try catch?
             # await self.update_assessment_status(assessment_id, "completed")
             try:
-                result = await self.llm_service.generate_assessment(context, num_questions, difficulty, question_types)
+                result = await self.llm_service.generate_assessment(
+                    context, num_questions, difficulty, question_types
+                )
 
                 await self._save_assessment_to_db(assessment_id, result)
 
