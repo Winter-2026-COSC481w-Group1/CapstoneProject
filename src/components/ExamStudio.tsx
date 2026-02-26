@@ -5,6 +5,8 @@ import { Assessment } from '../types';
 import { supabaseClient } from '../supabase';
 import { post } from '../api';
 
+const VITE_API_URL = import.meta.env.VITE_API_URL;
+
 export default function ExamStudio() {
   const { libraryFiles, assessments, setAssessments, setCurrentPage } = useApp();
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
@@ -60,7 +62,7 @@ export default function ExamStudio() {
 
       const res = await post('api/v1/assessments', requestBody, session.access_token)
 
-      const assessmentId = await res.json();
+      const assessmentId = await res;
 
       const newAssessment: Assessment = {
         id: assessmentId,
