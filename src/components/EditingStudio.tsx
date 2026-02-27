@@ -301,15 +301,8 @@ export default function EditingStudio() {
                                 defaultValue={option}
                                 type="text"
                                 onChange={(event) => {
-                                  // a question's value changed (update with re-render to update correct answer checkmarks)
-                                  // NOTE: This may be changed to a non-re-rendering approach
-                                  // if correct answer is changed to an index rather than a string
-                                  const changedAssessment =
-                                    structuredClone(currentAssessment);
-                                  changedAssessment.questions[idx].options![
-                                    optIdx
-                                  ] = event.target.value;
-                                  setCurrentAssessment(changedAssessment);
+                                  // an option's value changed
+                                  question.options![optIdx] = event.target.value;
                                   setIsEdited(true);
                                 }}
                               />
