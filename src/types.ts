@@ -40,7 +40,7 @@ export interface Assessment {
   id: string;
   title: string;
   createdAt: Date;
-  status: 'new' | 'completed';
+  status: 'pending' | 'completed';
   sourceFiles: string[];
   questionCount: number;
   difficulty: 'easy' | 'medium' | 'hard' | 'none';
