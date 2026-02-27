@@ -232,7 +232,7 @@ export default function EditingStudio() {
                           case "Short Answer":
                             changedQuestion.type = "short-answer";
                             changedQuestion.correctAnswer = 0;
-                            changedQuestion.numOptions = 1;
+                            changedQuestion.numOptions = 0;
                             changedQuestion.options = undefined;
                             break;
                         }
