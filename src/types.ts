@@ -19,8 +19,9 @@ export interface Question {
   id: string;
   type: 'multiple-choice' | 'true-false' | 'short-answer';
   question: string;
+  numOptions: number
   options?: string[];
-  correctAnswer: string;
+  correctAnswer: number;
   userAnswer?: string;
   source?: {
     text: string;

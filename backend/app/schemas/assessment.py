@@ -21,8 +21,9 @@ class QuestionDetail(BaseModel):
 class QuestionSchema(BaseModel):
     type: str  # 'multiple-choice' | 'true-false' | 'short-answer'
     question: str
+    numOptions: int #this will be used later when we add the option to choose number of multiple choice questions
     options: List[str]
-    correctAnswer: str
+    correctAnswer: int #index of correct option in list
     # metadata for RAG traceability
     source_text: str
     page_number: int
