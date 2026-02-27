@@ -13,7 +13,7 @@ export default function GradingReport() {
   const score = assessment.lastScore || 0;
   const questions = assessment.questions;
   const correctCount = questions.filter(q =>
-    q.userAnswer?.toLowerCase().trim() === q.correctAnswer.toLowerCase().trim()
+    q.userAnswer?.toLowerCase().trim() === q.options![correctAnswer].toLowerCase().trim()
   ).length;
 
   const getScoreColor = (score: number) => {

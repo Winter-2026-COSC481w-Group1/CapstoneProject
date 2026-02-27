@@ -49,7 +49,7 @@ export default function EditingStudio() {
 
   const handleCorrectOptionChange = function (
     questionNum: number,
-    correctAnswer: string,
+    correctAnswer: number,
   ) {
     if (!currentAssessment) return;
     const changedAssessment: Assessment = structuredClone(currentAssessment);
@@ -219,17 +219,20 @@ export default function EditingStudio() {
                         switch (e.target.value) {
                           case "Multiple Choice":
                             changedQuestion.type = "multiple-choice";
-                            changedQuestion.correctAnswer = "";
+                            changedQuestion.correctAnswer = 0;
+                            changedQuestion.numOptions = 4;
                             changedQuestion.options = ["", "", "", ""];
                             break;
                           case "True/False":
                             changedQuestion.type = "true-false";
-                            changedQuestion.correctAnswer = "True";
-                            changedQuestion.options = undefined;
+                            changedQuestion.correctAnswer = 0;
+                            changedQuestion.numOptions = 2;
+                            changedQuestion.options = ["True", "False"];
                             break;
                           case "Short Answer":
                             changedQuestion.type = "short-answer";
-                            changedQuestion.correctAnswer = "";
+                            changedQuestion.correctAnswer = 0;
+                            changedQuestion.numOptions = 1;
                             changedQuestion.options = undefined;
                             break;
                         }
@@ -286,7 +289,7 @@ export default function EditingStudio() {
                       <div className="space-y-2 mb-4">
                         {question.options.map((option, optIdx) => {
                           const isCorrectAnswer =
-                            option === question.correctAnswer;
+                            optIdx === question.correctAnswer;
 
                           return (
                             <div
@@ -321,7 +324,7 @@ export default function EditingStudio() {
                                       // Edit a copy of the currentAssessment and then reassign to trigger an update
                                       handleCorrectOptionChange(
                                         idx,
-                                        option,
+                                        optIdx,
                                       );
                                     }}
                                   />
@@ -335,9 +338,9 @@ export default function EditingStudio() {
 
                   {question.type === "true-false" && (
                     <div className="space-y-2 mb-4">
-                      {["True", "False"].map((option, optIdx) => {
+                      {(question.options ?? ["True", "False"]).map((option, optIdx) => {
                         const isCorrectAnswer =
-                          option === question.correctAnswer;
+                          optIdx === question.correctAnswer;
 
                         return (
                           <div
@@ -356,7 +359,7 @@ export default function EditingStudio() {
                                   className="w-4 h-4 text-red-600 hover:scale-110 transition-transform duration-300"
                                   onClick={() => {
                                     // Edit a copy of the currentAssessment and then reassign to trigger an update
-                                    handleCorrectOptionChange(idx, option);
+                                    handleCorrectOptionChange(idx, optIdx);
                                   }}
                                 />
                               )}
@@ -373,7 +376,7 @@ export default function EditingStudio() {
                         className="w-full text-gray-900 font-medium p-4 bg-emerald-50 border-2 border-emerald-200 rounded-lg"
                         defaultValue={question.correctAnswer}
                         onChange={(e) => {
-                          question.correctAnswer = e.target.value;
+                          question.options![0] = e.target.value;
                           setIsEdited(true);
                         }}
                       ></textarea>
@@ -519,7 +522,8 @@ export default function EditingStudio() {
               type: "multiple-choice",
               question: "",
               options: ["", "", "", ""],
-              correctAnswer: "",
+              correctAnswer: 0,
+              numOptions: 4,
               source: undefined,
             });
             changedAssessment.questionCount =

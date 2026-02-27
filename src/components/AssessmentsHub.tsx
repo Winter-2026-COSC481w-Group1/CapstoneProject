@@ -34,10 +34,10 @@ export default function AssessmentsHub() {
           >
             All ({assessments.length})
           </button>
-          <button className={"px-4 py-2 rounded-full font-medium " + ((assessmentsFilter === 'new') ? "bg-emerald-600 text-white" : "text-gray-600 hover:bg-gray-300 bg-gray-200")}
-            onClick={() => setAssessmentsFilter('new')}
+          <button className={"px-4 py-2 rounded-full font-medium " + ((assessmentsFilter === 'pending') ? "bg-emerald-600 text-white" : "text-gray-600 hover:bg-gray-300 bg-gray-200")}
+            onClick={() => setAssessmentsFilter('pending')}
           >
-            New ({assessments.filter(a => a.status === 'new').length})
+            Pending ({assessments.filter(a => a.status === 'pending').length})
           </button>
           <button className={"px-4 py-2 rounded-full font-medium " + ((assessmentsFilter === 'completed') ? "bg-emerald-600 text-white" : "text-gray-600 hover:bg-gray-300 bg-gray-200")}
             onClick={() => setAssessmentsFilter('completed')}
@@ -90,7 +90,7 @@ export default function AssessmentsHub() {
               
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  {assessment.status === 'new' && (
+                  {assessment.status === 'pending' && (
                     <div className="inline-flex items-center gap-2 bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-medium mb-3">
                       <Clock className="w-3 h-3" />
                       Ready to Start
@@ -137,7 +137,7 @@ export default function AssessmentsHub() {
                 
               )}
               
-              {assessment.status === "new" && (
+              {assessment.status === "pending" && (
                   <div className="flex flex-grow"></div>
               )}
                   

@@ -41,7 +41,7 @@ const handleGenerate = () => {
     id: Date.now().toString(),
     title: `Assessment ${assessments.length + 1}`,
     createdAt: new Date(),
-    status: "new",
+    status: "pending",
     sourceFiles: selectedFiles,
     questionCount,
     difficulty,
