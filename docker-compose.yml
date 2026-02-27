@@ -12,3 +12,17 @@ services:
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       NOMIC_API_KEY: ${NOMIC_API_KEY} 
       PYTHONUNBUFFERED: 1
+
+  #frontend:
+  #    build:
+  #      context: .
+  #      dockerfile: Dockerfile
+       # Vite requires these vars at BUILD time, not run time
+  #      args:
+  #        VITE_SUPABASE_URL: ${SUPABASE_URL}
+  #        VITE_SUPABASE_KEY: ${SUPABASE_PUBLISHABLE_KEY}
+  #        VITE_API_URL: http://localhost:8000
+  #    ports:
+  #      - "3000:80" # Access frontend at localhost:3000
+  #    depends_on:
+  #      - backend

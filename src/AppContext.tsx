@@ -1,5 +1,7 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { User, LibraryFile, Assessment, Activity } from './types';
+import { supabaseClient } from './supabase';
+import { get } from './api';
 
 interface AppContextType {
   currentUser: User | null;
@@ -7,7 +9,8 @@ interface AppContextType {
   currentPage: string;
   setCurrentPage: (page: string) => void;
   libraryFiles: LibraryFile[];
-  setLibraryFiles: (files: LibraryFile[]) => void;
+  setLibraryFiles: (files: LibraryFile[] | ((prevFiles: LibraryFile[]) => LibraryFile[])) => void;
+  fetchLibraryFiles: () => Promise<void>;
   assessments: Assessment[];
   setAssessments: (assessments: Assessment[]) => void;
   currentAssessment: Assessment | null;
@@ -19,49 +22,6 @@ interface AppContextType {
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
-
-const mockLibraryFiles: LibraryFile[] = [
-  {
-    id: '1',
-    name: 'Introduction to Biology - Chapter 5.pdf',
-    size: '2.4 MB',
-    uploadedAt: new Date('2024-01-15'),
-    status: 'ready',
-    pageCount: 24
-  },
-  {
-    id: '2',
-    name: 'World History Vol. 2.pdf',
-    size: '5.8 MB',
-    uploadedAt: new Date('2024-01-14'),
-    status: 'ready',
-    pageCount: 156
-  },
-  {
-    id: '3',
-    name: 'Advanced Physics - Quantum Mechanics.pdf',
-    size: '3.2 MB',
-    uploadedAt: new Date('2024-01-13'),
-    status: 'ready',
-    pageCount: 89
-  },
-  {
-    id: '4',
-    name: 'Chemistry Fundamentals.pdf',
-    size: '4.1 MB',
-    uploadedAt: new Date('2024-01-12'),
-    status: 'indexing',
-    pageCount: 45
-  },
-  {
-    id: '5',
-    name: 'Literature Analysis - Shakespeare.pdf',
-    size: '1.9 MB',
-    uploadedAt: new Date('2024-01-11'),
-    status: 'ready',
-    pageCount: 67
-  }
-];
 
 const mockAssessments: Assessment[] = [
   {
@@ -270,11 +230,41 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const firstPage = 'spinningCircle';
   const [currentPage, setCurrentPage] = useState(firstPage);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [libraryFiles, setLibraryFiles] = useState<LibraryFile[]>(mockLibraryFiles);
+  const [libraryFiles, setLibraryFiles] = useState<LibraryFile[]>([]);
   const [assessments, setAssessments] = useState<Assessment[]>(mockAssessments);
   const [currentAssessment, setCurrentAssessment] = useState<Assessment | null>(null);
   const [activities, setActivities] = useState<Activity[]>(mockActivities);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+
+  useEffect(() => {
+    if (currentUser) {
+      fetchLibraryFiles();
+    }
+  }, [currentUser]);
+
+  const fetchLibraryFiles = async () => {
+    try {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (!session?.access_token) {
+        console.error('no session token available');
+        return;
+      }
+      const data = await get('api/v1/documents', session.access_token);
+      const files: LibraryFile[] = data.map((doc: any) => ({
+        id: doc.id,
+        name: doc.name,
+        size: doc.size
+          ? `${(doc.size / (1024 * 1024)).toFixed(1)} MB`
+          : '0 MB',
+        uploadedAt: new Date(doc.uploadedAt),
+        status: doc.status as 'ready' | 'indexing' | 'processing' | 'pending' | 'failed',
+        pageCount: doc.pageCount ?? 0,
+      }));
+      setLibraryFiles(files);
+    } catch (err) {
+      console.error('error loading documents', err);
+    }
+  };
 
   return (
     <AppContext.Provider
@@ -282,12 +272,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
         currentUser,
         setCurrentUser,
         currentPage,
-        setCurrentPage: (page) => { 
+        setCurrentPage: (page) => {
           localStorage.setItem('saved-page', page);
           setCurrentPage(page);
         },
         libraryFiles,
         setLibraryFiles,
+        fetchLibraryFiles,
         assessments,
         setAssessments,
         currentAssessment,

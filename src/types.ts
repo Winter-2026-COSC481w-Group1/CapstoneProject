@@ -11,7 +11,7 @@ export interface LibraryFile {
   name: string;
   size: string;
   uploadedAt: Date;
-  status: 'ready' | 'indexing' | 'processing';
+  status: 'pending' | 'failed' | 'ready' | 'indexing' | 'processing';
   pageCount: number;
 }
 
@@ -19,8 +19,9 @@ export interface Question {
   id: string;
   type: 'multiple-choice' | 'true-false' | 'short-answer';
   question: string;
+  numOptions: number
   options?: string[];
-  correctAnswer: string;
+  correctAnswer: number;
   userAnswer?: string;
   source?: {
     text: string;
@@ -39,7 +40,7 @@ export interface Assessment {
   id: string;
   title: string;
   createdAt: Date;
-  status: 'new' | 'completed';
+  status: 'pending' | 'completed';
   sourceFiles: string[];
   questionCount: number;
   difficulty: 'easy' | 'medium' | 'hard' | 'none';

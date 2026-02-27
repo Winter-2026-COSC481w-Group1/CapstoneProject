@@ -1,7 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Upload, FileText, Loader2, CheckCircle, Trash2, Eye } from 'lucide-react';
 import { useApp } from '../AppContext';
 import { LibraryFile } from '../types';
+import { supabaseClient } from '../supabase';
+
+import { post } from '../api';
+
+const VITE_API_URL = import.meta.env.VITE_API_URL;
 
 export default function Library() {
   const { libraryFiles, setLibraryFiles } = useApp();
@@ -19,49 +24,88 @@ export default function Library() {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-
-    const newFile: LibraryFile = {
-      id: Date.now().toString(),
-      name: 'New Document.pdf',
-      size: '2.1 MB',
-      uploadedAt: new Date(),
-      status: 'indexing',
-      pageCount: 42
-    };
-
-    setLibraryFiles([...libraryFiles, newFile]);
-
-    setTimeout(() => {
-      setLibraryFiles(prev =>
-        prev.map(f => f.id === newFile.id ? { ...f, status: 'ready' } : f)
-      );
-    }, 3000);
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      uploadFile(files[0]);
+    }
   };
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      const newFile: LibraryFile = {
-        id: Date.now().toString(),
-        name: files[0].name,
-        size: `${(files[0].size / (1024 * 1024)).toFixed(1)} MB`,
-        uploadedAt: new Date(),
-        status: 'indexing',
-        pageCount: Math.floor(Math.random() * 100) + 10
-      };
-
-      setLibraryFiles([...libraryFiles, newFile]);
-
-      setTimeout(() => {
-        setLibraryFiles(prev =>
-          prev.map(f => f.id === newFile.id ? { ...f, status: 'ready' } : f)
-        );
-      }, 3000);
+      uploadFile(files[0]);
     }
   };
 
-  const handleDelete = (id: string) => {
-    setLibraryFiles(libraryFiles.filter(f => f.id !== id));
+  const uploadFile = async (file: File) => {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) {
+      // Handle not logged in
+      return;
+    }
+    const tempId = Date.now().toString();
+
+    const newFile: LibraryFile = {
+      id: tempId,
+      name: file.name,
+      size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
+      uploadedAt: new Date(),
+      status: 'indexing',
+      pageCount: 0 // Will be updated from backend
+    };
+
+    setLibraryFiles(prev => [...prev, newFile]);
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const result = await post('api/v1/documents', formData, session.access_token);
+      const doc = result.document;
+      setLibraryFiles(prev =>
+        prev.map(f => f.id === tempId ? {
+          id: doc.id,
+          name: doc.name,
+          size: typeof doc.size === 'number'
+            ? `${(doc.size / (1024 * 1024)).toFixed(1)} MB`
+            : doc.size,
+          uploadedAt: new Date(doc.uploadedAt),
+          // Use the status directly from the backend response
+          status: doc.status as LibraryFile['status'],
+          pageCount: doc.pageCount ?? 0
+        } : f)
+      );
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      // Handle upload error, maybe remove the file from the list
+      setLibraryFiles(prev => prev.filter(f => f.id !== tempId));
+    }
+  };
+
+  // Delete document handler
+  const handleDelete = async (id: string) => {
+    try {
+      // obtain supabase session for auth token
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (!session?.access_token) {
+        console.error('no session token available for delete');
+        return;
+      }
+      const res = await fetch(`${VITE_API_URL}/api/v1/documents/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+      if (res.ok) {
+        // remove from UI state only after backend confirms deletion
+        setLibraryFiles(libraryFiles.filter(f => f.id !== id));
+      } else {
+        console.error('failed deleting document', res.status);
+      }
+    } catch (err) {
+      console.error('error deleting document', err);
+    }
   };
 
   return (
