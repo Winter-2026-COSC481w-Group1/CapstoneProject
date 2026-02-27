@@ -10,7 +10,7 @@ export default function GradingReport() {
   }
 
   const assessment = assessments.find(a => a.id === currentAssessment.id) || currentAssessment;
-  const score = assessment.score || 0;
+  const score = assessment.lastScore || 0;
   const questions = assessment.questions;
   const correctCount = questions.filter(q =>
     q.userAnswer?.toLowerCase().trim() === q.correctAnswer.toLowerCase().trim()

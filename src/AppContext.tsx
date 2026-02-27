@@ -70,8 +70,8 @@ const mockAssessments: Assessment[] = [
     createdAt: new Date('2024-01-16'),
     status: 'completed',
     sourceFiles: ['Introduction to Biology - Chapter 5.pdf'],
-    questionCount: 15,
-    difficulty: 'medium',
+    questionCount: 5,
+    difficulty: 'hard',
     bestScore: 80,
     lastScore: 79,
     attempts: {
