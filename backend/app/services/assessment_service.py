@@ -95,9 +95,12 @@ class AssessmentService:
             options_data = options_by_question_id.get(question_id, [])
 
             options = [opt["option_text"] for opt in options_data]
-            correct_answer = next(
-                (opt["option_text"] for opt in options_data if opt["is_correct"]), ""
-            )
+            # Updated retrieval logic to return an index (int)
+            correct_answer_index = -1
+            for index, opt in enumerate(options_data):
+                if opt["is_correct"]:
+                    correct_answer_index = index
+                    break
 
             # parse source
             source = None
@@ -116,7 +119,7 @@ class AssessmentService:
                     type=type_mapping.get(q["question_type"], "multiple-choice"),
                     question=q["question_text"],
                     options=options,
-                    correctAnswer=correct_answer,
+                    correctAnswer=correct_answer_index,
                     source=source,
                 )
             )
@@ -340,46 +343,46 @@ class AssessmentService:
 
         return assessments
 
-    #returns the assossiated questions and their options
-    #assumes that if the questions are being requested the exam metadata is already present in the front end
-    async def get_questions(self, assessment_id: str, user_id: str):
-        response = (
-            self.db_client.table("questions")
-            .select("*, question_options(*)")
-            .eq("assessment_id", assessment_id)
-            .execute()
-        )
+    # #returns the assossiated questions and their options
+    # #assumes that if the questions are being requested the exam metadata is already present in the front end
+    # async def get_questions(self, assessment_id: str, user_id: str):
+    #     response = (
+    #         self.db_client.table("questions")
+    #         .select("*, question_options(*)")
+    #         .eq("assessment_id", assessment_id)
+    #         .execute()
+    #     )
 
-        questions = []
+    #     questions = []
 
-        for row in response.data:
+    #     for row in response.data:
     
-            options_data = row.get("question_options", [])
+    #         options_data = row.get("question_options", [])
 
-            question_options = []
-            correct = 0
+    #         question_options = []
+    #         correct = 0
 
 
-            for i, opt in enumerate(options_data):
-                if opt.get("is_correct"):
-                    correct = i
+    #         for i, opt in enumerate(options_data):
+    #             if opt.get("is_correct"):
+    #                 correct = i
 
-                question_options.append(opt.get("option_text"))
+    #             question_options.append(opt.get("option_text"))
 
-                questions.append(
-                    {
-                        "id": row.get("id"),
-                        "type": row.get("question_type"),
-                        "question": row.get("question_text"),
-                        "numOptions": len(question_options),
-                        "options": question_options,
-                        "correctAnswer": correct,
-                        "source": {
-                            "text": row.get("explanation")
-                            #TODO add page number after the db fix
-                            #TODO source file should be listed per question in db
-                        }
-                    }
-                )
+    #             questions.append(
+    #                 {
+    #                     "id": row.get("id"),
+    #                     "type": row.get("question_type"),
+    #                     "question": row.get("question_text"),
+    #                     "numOptions": len(question_options),
+    #                     "options": question_options,
+    #                     "correctAnswer": correct,
+    #                     "source": {
+    #                         "text": row.get("explanation")
+    #                         #TODO add page number after the db fix
+    #                         #TODO source file should be listed per question in db
+    #                     }
+    #                 }
+    #             )
 
-            return questions
+    #         return questions
