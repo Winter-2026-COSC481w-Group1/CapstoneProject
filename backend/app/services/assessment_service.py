@@ -342,6 +342,46 @@ class AssessmentService:
             )
 
         return assessments
+    
+    async def update_assessment(self, 
+                                assessment_id: str, 
+                                assessment_data: AssessmentSchema, 
+                                user_id: str
+                                ):
+        metadata_update = {
+            "title": assessment_data.title,
+            "num_questions": len(assessment_data.questions), # Automatically sync the count
+            "difficulty": assessment_data.difficulty,
+            "query": assessment_data.subject,
+            "status": "completed" # Or whatever status is appropriate
+        }
+
+        update_result = (
+            self.db_client.table("assessments")
+            .select("id")
+            .eq("user_id", user_id)
+            .eq("id", assessment_id)
+            .execute()
+        )
+
+        if not update_result.data:
+            raise HTTPException(status_code=404, detail="Assessment not found")
+
+        #delete existing questions
+        delete_result = (
+            self.db_client.table("questions")
+            .delete()
+            .eq("assessment_id", assessment_id)
+            .execute()
+        )
+
+        if not delete_result.data:
+            raise HTTPException(status_code=404, detail="No questions found")
+        
+        await self._save_assessment_to_db(assessment_id, assessment_data)
+
+        return {"message": "Assessment updated successfully"}
+
 
     async def delete_assessment(self, assessment_id: str, user_id:str):
         result = (

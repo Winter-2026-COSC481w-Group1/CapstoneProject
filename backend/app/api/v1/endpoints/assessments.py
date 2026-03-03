@@ -2,7 +2,7 @@ from typing import Annotated, List
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from app.auth import get_current_user
 from app.schemas.assessment_request import AssessmentRequest
-from app.schemas.assessment import QuestionDetail
+from app.schemas.assessment import QuestionDetail, AssessmentSchema
 
 # from app.schemas.assessment_generation import AssessmentContent # Commented out
 from app.api.dependencies import get_assessment_service
@@ -73,6 +73,33 @@ async def get_assessment_details(
     except PermissionError:
         raise HTTPException(status_code=403, detail="Not authorized")
     
+@router.put("/{assessment_id}")
+async def update_assessment(
+    assessment_id: str,
+    assessment_data: AssessmentSchema,
+    current_user: Annotated[dict, Depends(get_current_user)],
+    assessment_service: AssessmentService = Depends(get_assessment_service)
+):
+    try:
+        user_id = current_user["user_id"]
+        result = await assessment_service.update_assessment(
+            assessment_id,
+            assessment_data,
+            user_id
+        )
+        return result
+    except ValueError as e:
+        # Catch specific validation errors if your service throws them
+        raise HTTPException(status_code=400, detail=str(e))
+    except PermissionError as e:
+        # Catch ownership/access errors
+        raise HTTPException(status_code=403, detail=str(e))
+    except Exception as e:
+        print(f"Error updating assessment: {e}")
+        raise HTTPException(
+            status_code=500, detail="Internal Server error during assessment update"
+        )
+    
 @router.delete("/{assessment_id}" )
 async def delete_assessment(
     assessment_id: str,
@@ -86,6 +113,7 @@ async def delete_assessment(
             user_id
         )
         return result
+    
     except HTTPException as e:
         raise e
     except Exception as e:
