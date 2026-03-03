@@ -40,6 +40,27 @@ async def generate_assessment(
     return assessment_id
 
 
+@router.get("")
+async def get_assessments(
+    current_user: Annotated[dict, Depends(get_current_user)],
+    assessment_service: AssessmentService = Depends(get_assessment_service),
+):
+    try:
+        user_id = current_user["user_id"]
+        result = await assessment_service.get_assessments(
+            user_id=user_id,
+        )
+        return result
+
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        print(f"Error getting assessments for user{e}")
+        raise HTTPException(
+            status_code=500, detail="Internal Server Error during getting assessments"
+        ) from e
+
+
 @router.get("/{assessment_id}", response_model=List[QuestionDetail])
 async def get_assessment_details(
     assessment_id: str,

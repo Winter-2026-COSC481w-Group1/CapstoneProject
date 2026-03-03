@@ -13,7 +13,7 @@ class QuestionDetail(BaseModel):
     type: str  # 'multiple-choice' | 'true-false' | 'short-answer'
     question: str
     options: Optional[List[str]] = None
-    correctAnswer: str
+    correctAnswer: int
     userAnswer: Optional[str] = None
     source: Optional[QuestionSource] = None
 
