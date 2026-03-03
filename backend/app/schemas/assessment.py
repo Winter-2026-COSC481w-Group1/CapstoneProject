@@ -34,4 +34,4 @@ class AssessmentSchema(BaseModel):
     types: List[str]  # true/false, multiple choice, short answer
     difficulty: str  # 'easy' | 'medium' | 'hard'
     questions: List[QuestionSchema]
-    subject: str #either the original query or one entered when edited
+    topic: str #either the original query or one entered when edited

@@ -352,13 +352,13 @@ class AssessmentService:
             "title": assessment_data.title,
             "num_questions": len(assessment_data.questions), # Automatically sync the count
             "difficulty": assessment_data.difficulty,
-            "query": assessment_data.subject,
+            "query": assessment_data.topic,
             "status": "completed" # Or whatever status is appropriate
         }
 
         update_result = (
             self.db_client.table("assessments")
-            .select("id")
+            .update(metadata_update)
             .eq("user_id", user_id)
             .eq("id", assessment_id)
             .execute()
