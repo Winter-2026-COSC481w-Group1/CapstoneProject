@@ -72,3 +72,24 @@ async def get_assessment_details(
         return await assessment_service.get_assessment_details(assessment_id, user_id)
     except PermissionError:
         raise HTTPException(status_code=403, detail="Not authorized")
+    
+@router.delete("/{assessment_id}" )
+async def delete_assessment(
+    assessment_id: str,
+    current_user: Annotated[dict, Depends(get_current_user)],
+    assessment_service: AssessmentService = Depends(get_assessment_service)
+):
+    try:
+        user_id = current_user["user_id"]
+        result = await assessment_service.delete_assessment(
+            assessment_id,
+            user_id
+        )
+        return result
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        print(f"Error deleting assessment: {e}")
+        raise HTTPException(
+            status_code=500, detail="Internal Server error during assessment deletion"
+        )
