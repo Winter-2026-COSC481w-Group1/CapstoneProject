@@ -39,6 +39,7 @@ export interface Attempts {
 export interface Assessment {
   id: string;
   title: string;
+  topic: string;
   createdAt: Date;
   status: 'pending' | 'completed';
   sourceFiles: string[];
