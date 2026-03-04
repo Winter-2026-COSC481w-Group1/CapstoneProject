@@ -111,6 +111,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
         status: doc.status as 'ready' | 'indexing' | 'processing' | 'pending' | 'failed',
         pageCount: doc.pageCount ?? 0,
       }));
+
+      // Check if any files are either pending/processing/indexing
+      if (files.some(file => file.status !== 'ready' && file.status !== 'failed')) {
+        setTimeout(() => {
+          fetchLibraryFiles();
+        }, 3000); // wait 3 seconds
+      }
+
       setLibraryFiles(files);
     } catch (err) {
       console.error('error loading documents', err);
