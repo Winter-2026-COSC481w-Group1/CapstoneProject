@@ -95,9 +95,12 @@ class AssessmentService:
             options_data = options_by_question_id.get(question_id, [])
 
             options = [opt["option_text"] for opt in options_data]
-            correct_answer = next(
-                (opt["option_text"] for opt in options_data if opt["is_correct"]), ""
-            )
+            # Updated retrieval logic to return an index (int)
+            correct_answer_index = -1
+            for index, opt in enumerate(options_data):
+                if opt["is_correct"]:
+                    correct_answer_index = index
+                    break
 
             # parse source
             source = None
@@ -116,7 +119,7 @@ class AssessmentService:
                     type=type_mapping.get(q["question_type"], "multiple-choice"),
                     question=q["question_text"],
                     options=options,
-                    correctAnswer=correct_answer,
+                    correctAnswer=correct_answer_index,
                     source=source,
                 )
             )
@@ -247,14 +250,12 @@ class AssessmentService:
                 # 2. If it's MCQ or has options, insert into 'question_options'
                 if q_data.options:
                     options_to_insert = []
-                    for option in q_data.options:
-                        options_to_insert.append(
-                            {
-                                "question_id": new_q_id,
-                                "option_text": option,
-                                "is_correct": option == q_data.correctAnswer,
-                            }
-                        )
+                    for i, option in enumerate(q_data.options):
+                        options_to_insert.append({
+                            "question_id": new_q_id,
+                            "option_text": option,
+                            "is_correct": i == q_data.correctAnswer
+                        })
 
                     if options_to_insert:
                         self.db_client.table("question_options").insert(
@@ -313,3 +314,48 @@ class AssessmentService:
         except Exception as e:
             print(f"Error in generate_assessment {assessment_id}: {e}")
             await self.update_assessment_status(assessment_id, "failed", str(e))
+
+
+    #return assessment metadata for user
+    async def get_assessments(self, user_id: str) -> list:
+        response = (
+            self.db_client.table("assessments")
+            .select("*")
+            .eq("user_id", user_id)
+            .execute()
+        )
+
+        assessments = []
+
+        for row in response.data:
+            assessments.append(
+                {
+                    "id": row.get("id"),
+                    "title": row.get("title"),  # Rename for frontend
+                    "createdAt": row.get("created_at"),
+                    "status": row.get("status"),
+                    "sourceFiles": row.get("document_id"),  # Standardize key
+                    "questionCount": row.get("num_questions"),
+                    "difficulty": row.get("difficulty"), # Rename for frontend
+                    #TODO add attempts when added to db
+                }
+            )
+
+        return assessments
+
+    async def delete_assessment(self, assessment_id: str, user_id:str):
+        result = (
+            self.db_client.table("assessments")
+            .delete()
+            .eq("user_id", user_id)
+            .eq("id", assessment_id)
+            .execute()
+        )
+
+        if not result.data:
+            raise HTTPException(status_code=404, detail="Assessment not found")
+        
+        return {
+            "message": "Assessment deleted successfully",
+            "assessment_id": assessment_id
+        }
