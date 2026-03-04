@@ -2,6 +2,8 @@ import { useState } from "react";
 import { CheckSquare, Square, Zap } from "lucide-react";
 import { useApp } from "../AppContext";
 import { Assessment } from "../types";
+import { supabaseClient } from '../supabase';
+import { post } from '../api';
 
 export default function CreationStudio() { 
 const {
@@ -22,6 +24,8 @@ const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">(
 
 const readyFiles = libraryFiles.filter((f) => f.status === "ready");
 
+const [topic, setTopic] = useState('');
+
 const toggleFile = (fileName: string) => {
   setSelectedFiles((prev) =>
     prev.includes(fileName)
@@ -36,29 +40,62 @@ const toggleType = (type: string) => {
   );
 };
 
-const handleGenerate = () => {
-  const newAssessment: Assessment = {
-    id: Date.now().toString(),
-    title: `Assessment ${assessments.length + 1}`,
-    createdAt: new Date(),
-    status: "pending",
-    sourceFiles: selectedFiles,
-    questionCount,
-    difficulty,
-    questions: [],
-    attempts: {
-      attempts: [],
-      scores: [],
-    },
+ const handleGenerate = async () => {
+
+    // find file opject
+    const selectedFileObjects = libraryFiles.filter(f => selectedFiles.includes(f.name));
+
+    //currently the backend supports one file
+    const primaryFile = selectedFileObjects[0];
+
+    const requestBody = {
+      document_id: primaryFile.id,
+      query: topic, // topic/query
+      num_questions: questionCount,
+      difficulty: difficulty,
+      question_types: selectedTypes.map(t => t.replace('-', '_')) // match 'multiple_choice' backend format
+    };
+
+    try {
+      setCurrentPage('loading');
+
+      //get session token
+      const { data: {session} } = await supabaseClient.auth.getSession();
+      if(!session?.access_token) {
+        console.error('no session token available'); //do something else here?
+        return;
+      }
+
+      const res = await post('api/v1/assessments', requestBody, session.access_token)
+
+      const assessmentId = await res;
+
+      const newAssessment: Assessment = {
+        id: assessmentId,
+        title: `Assessment: ${primaryFile.name}`,
+        createdAt: new Date(),
+        status: 'pending', // or 'processing'
+        sourceFiles: selectedFiles,
+        questionCount,
+        difficulty,
+        questions: [],
+        attempts: {
+          attempts: [],
+          scores: []
+        }
+      };
+
+      setAssessments([newAssessment, ...assessments]);
+
+      // Navigate to assessments hub where you can poll for status
+      setCurrentPage('assessments');
+
+    } catch (error) {
+      console.error("Generation error:", error);
+      alert("Error generating assessment. Please try again.");
+      setCurrentPage('examStudio');
+    }
   };
-
-  setAssessments([...assessments, newAssessment]);
-  setCurrentPage("loading");
-
-  setTimeout(() => {
-    setCurrentPage("assessments");
-  }, 5000);
-};
 
 const canGenerate = selectedFiles.length > 0 && selectedTypes.length > 0;
 
@@ -116,6 +153,19 @@ return (<>
               </div>
             )}
           </div>
+
+          <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Assessment Topic</h2>
+              <p className="text-gray-600 mb-6">What specific topic or chapter should the questions focus on?</p>
+
+              <input
+                type="text"
+                value={topic}
+                onChange={(e) => setTopic(e.target.value)}
+                placeholder="e.g., Cellular Respiration, The French Revolution, Quantum Mechanics..."
+                className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-gray-900"
+              />
+            </div>
 
           <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200">
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
