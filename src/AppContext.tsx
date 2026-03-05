@@ -81,14 +81,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
         pageCount: doc.pageCount ?? 0,
       }));
 
+      setLibraryFiles(files);
+
       // Check if any files are either pending/processing/indexing
       if (files.some(file => file.status !== 'ready' && file.status !== 'failed')) {
         setTimeout(() => {
           fetchLibraryFiles();
         }, 3000); // wait 3 seconds
       }
-
-      setLibraryFiles(files);
     } catch (err) {
       console.error('error loading documents', err);
     }
@@ -107,34 +107,41 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const assessments: Assessment[] = data.map((ass: any) => ({
         id: ass.id,
         title: ass.title,
+        topic: ass.topic || '', // !!! backend should return this maybe
         createdAt: new Date(ass.createdAt),
-        status: ass.status as 'pending' | 'completed',
+        status: ass.status as 'completed' | 'pending' | 'failed',
         sourceFiles: [ass.sourceFiles], // !!! Backend returns single document_id; wrap in array for now
         questionCount: ass.questionCount,
         difficulty: ass.difficulty as 'easy' | 'medium' | 'hard' | 'none',
+        questions: [], // !!! Not provided by get assessments endpoint; initialize empty
         bestScore: undefined, // !!! Not provided; set later if needed
         lastScore: undefined, // !!! Not provided; set later if needed
         attempts: { attempts: [], scores: [] }, // !!! Default empty
-        questions: [], // !!! Not provided by get assessments endpoint; initialize empty
-        topic: ass.query || '', // !!! Map 'query' to 'topic'
       }));
 
       // Fetch questions
       for (const ass of assessments) {
         const questions = await get(`api/v1/assessments/${ass.id}`, session.access_token);
-        console.log(questions);
         ass.questions = questions.map((que: any) => ({
           id: que.id,
           type: que.type,
           question: que.question,
+          numOptions: que.options.length, // !!! consider removing?
           options: que.options,
           correctAnswer: que.correctAnswer,
-          numOptions: que.options.length,
+          userAnswer: que.userAnswer,
           source: que.source,
         }));
       }
-      
+
       setAssessments(assessments);
+
+      // Check if any assessments are either pending/processing
+      if (assessments.some(ass => ass.status !== 'completed' && ass.status !== 'failed')) {
+        setTimeout(() => {
+          fetchAssessments();
+        }, 10000); // wait 10 seconds
+      }
     } catch (err) {
       console.error('error loading assessments', err);
     }

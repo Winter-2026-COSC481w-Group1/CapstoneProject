@@ -41,7 +41,7 @@ export interface Assessment {
   title: string;
   topic: string;
   createdAt: Date;
-  status: 'pending' | 'completed';
+  status: 'completed' | 'processing' | 'pending' | 'failed';
   sourceFiles: string[];
   questionCount: number;
   difficulty: 'easy' | 'medium' | 'hard' | 'none';

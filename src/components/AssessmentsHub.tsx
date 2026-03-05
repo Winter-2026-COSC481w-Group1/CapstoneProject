@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Play, Download, Clock, CheckCircle, FileText, EllipsisVertical } from 'lucide-react';
+import { Play, Download, Clock, CheckCircle, CircleX, FileText, EllipsisVertical } from 'lucide-react';
 import { useApp } from '../AppContext';
 
 export default function AssessmentsHub() {
@@ -93,7 +93,17 @@ export default function AssessmentsHub() {
                   {assessment.status === 'pending' && (
                     <div className="inline-flex items-center gap-2 bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-medium mb-3">
                       <Clock className="w-3 h-3" />
-                      Ready to Start
+                      Pending
+                    </div>
+                  ) || assessment.status === 'processing' && (
+                    <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-medium mb-3">
+                      <Clock className="w-3 h-3" />
+                      Processing
+                    </div>
+                  ) || assessment.status === 'failed' && (
+                    <div className="inline-flex items-center gap-2 bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-medium mb-3">
+                      <CircleX className="w-3 h-3" />
+                      Failed
                     </div>
                   )}
                 </div>
@@ -148,7 +158,7 @@ export default function AssessmentsHub() {
                     setCurrentPage('grading-report');
                   }
                   }}
-                  className={"w-full flex items-center justify-center gap-2 " + ((assessment.status === "completed") ? "bg-blue-100 hover:bg-blue-200 text-blue-600" : "bg-gray-200 text-gray-600") + " py-3 rounded-xl font-semibold"}
+                  className={"w-full flex items-center justify-center gap-2 " + ((assessment.status === "completed") ? "bg-blue-100 hover:bg-blue-200 text-blue-600" : "bg-gray-200 text-gray-600 cursor-default") + " py-3 rounded-xl font-semibold"}
                 >
                   <CheckCircle className="w-4 h-4" />
                   View Results
@@ -156,16 +166,24 @@ export default function AssessmentsHub() {
                 
               <div className="flex gap-2">
                 <button
-                  onClick={() => handleStartExam(assessment.id)}
-                  className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-semibold transition-colors"
+                  onClick={() => {
+                    if (assessment.status === "completed") {
+                      handleStartExam(assessment.id);
+                    }
+                  }}
+                  className={"flex-1 flex items-center justify-center gap-2 " + ((assessment.status === "completed") ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-gray-200 text-gray-600 cursor-default") + " py-3 rounded-xl font-semibold transition-colors"}
                 >
                   <Play className="w-4 h-4" />
                   Start Online
                 </button>
                 <div className="relative">
                   <button
-                    onClick={() => handleDownloadMenu(assessment.id)}
-                    className="p-3 border-2 border-gray-200 hover:border-emerald-500 rounded-xl transition-colors"
+                    onClick={() => {
+                      if (assessment.status === "completed") {
+                        handleDownloadMenu(assessment.id);
+                      }
+                    }}
+                    className={"p-3 border-2 border-gray-200 " + ((assessment.status === "completed") ? "hover:border-emerald-500" : "bg-gray-200 cursor-default") + " rounded-xl transition-colors"}
                   >
                     <Download className="w-5 h-5 text-gray-600" />
                   </button>
