@@ -10,6 +10,7 @@ const {
   libraryFiles,
   assessments,
   setAssessments,
+  fetchAssessments,
   setCurrentPage
 } = useApp();
 
@@ -72,6 +73,7 @@ const toggleType = (type: string) => {
 
       const newAssessment: Assessment = {
         id: assessmentId,
+        topic: topic,
         title: `Assessment: ${primaryFile.name}`,
         createdAt: new Date(),
         status: 'pending', // or 'processing'
@@ -86,6 +88,8 @@ const toggleType = (type: string) => {
       };
 
       setAssessments([newAssessment, ...assessments]);
+
+      fetchAssessments(); // will poll until assessment finishes processing (completes or fails)
 
       // Navigate to assessments hub where you can poll for status
       setCurrentPage('assessments');
