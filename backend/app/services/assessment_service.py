@@ -55,7 +55,7 @@ class AssessmentService:
             .maybe_single()
             .execute()
         )
-        file_name = doc_response.data["file_name"] if doc_response.data else "Unknown"
+        file_name = doc_response.data["file_name"] if doc_response else "Unknown"
 
         # fetch questions
         questions_response = (
