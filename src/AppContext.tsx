@@ -13,6 +13,7 @@ interface AppContextType {
   fetchLibraryFiles: () => Promise<void>;
   assessments: Assessment[];
   setAssessments: (assessments: Assessment[]) => void;
+  fetchAssessments: () => Promise<void>;
   currentAssessment: Assessment | null;
   setCurrentAssessment: (assessment: Assessment | null) => void;
   activities: Activity[];
@@ -22,39 +23,6 @@ interface AppContextType {
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
-
-const mockAssessments: Assessment[] = [
-  {
-    id: '1',
-    title: 'Mock Test',
-    createdAt: new Date('2024-01-16'),
-    status: 'pending',
-    sourceFiles: ['Introduction to Biology - Chapter 5.pdf'],
-    questionCount: 1,
-    difficulty: 'easy',
-    bestScore: undefined,
-    lastScore: undefined,
-    attempts: {
-      attempts: [[]],
-      scores: []
-    },
-    questions: [
-      {
-        id: 'q1',
-        type: 'multiple-choice',
-        question: 'Where does photosynthesis occur in plant cells?',
-        options: ['Mitochondria', 'Chloroplasts', 'Nucleus', 'Cell membrane'],
-        correctAnswer: 1,
-        numOptions: 4,
-        source: {
-          text: '...photosynthesis occurs in the chloroplasts, specialized organelles that contain chlorophyll and convert light energy into chemical energy...',
-          page: 12,
-          fileName: 'Introduction to Biology - Chapter 5.pdf'
-        }
-      }
-    ]
-  }
-];
 
 const mockActivities: Activity[] = [
   {
@@ -82,7 +50,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [currentPage, setCurrentPage] = useState(firstPage);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [libraryFiles, setLibraryFiles] = useState<LibraryFile[]>([]);
-  const [assessments, setAssessments] = useState<Assessment[]>(mockAssessments);
+  const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [currentAssessment, setCurrentAssessment] = useState<Assessment | null>(null);
   const [activities, setActivities] = useState<Activity[]>(mockActivities);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -90,6 +58,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (currentUser) {
       fetchLibraryFiles();
+      fetchAssessments();
     }
   }, [currentUser]);
 
@@ -125,6 +94,35 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const fetchAssessments = async () => {
+    try {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (!session?.access_token) {
+        console.error('no session token available');
+        return;
+      }
+      const data = await get('api/v1/assessments', session.access_token);
+      console.log(data);
+      const assessments: Assessment[] = data.map((ass: any) => ({
+        id: ass.id,
+        title: ass.title,
+        createdAt: new Date(ass.createdAt),
+        status: ass.status as 'pending' | 'completed',
+        sourceFiles: [ass.sourceFiles], // !!! Backend returns single document_id; wrap in array for now
+        questionCount: ass.questionCount,
+        difficulty: ass.difficulty as 'easy' | 'medium' | 'hard' | 'none',
+        bestScore: undefined, // !!! Not provided; set later if needed
+        lastScore: undefined, // !!! Not provided; set later if needed
+        attempts: { attempts: [], scores: [] }, // !!! Default empty
+        questions: [], // !!! Not provided by get assessments endpoint; initialize empty
+        topic: ass.query || '', // !!! Map 'query' to 'topic'
+      }));
+      setAssessments(assessments);
+    } catch (err) {
+      console.error('error loading assessments', err);
+    }
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -140,6 +138,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         fetchLibraryFiles,
         assessments,
         setAssessments,
+        fetchAssessments,
         currentAssessment,
         setCurrentAssessment,
         activities,
