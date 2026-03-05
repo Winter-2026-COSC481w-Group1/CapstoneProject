@@ -101,8 +101,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         console.error('no session token available');
         return;
       }
-      const data = await get('api/v1/assessments', session.access_token);
-      console.log(data);
+
+      // Fetch all assessments
+      const data = await get('api/v1/assessments', session.access_token); // fetch assessments
       const assessments: Assessment[] = data.map((ass: any) => ({
         id: ass.id,
         title: ass.title,
@@ -117,6 +118,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
         questions: [], // !!! Not provided by get assessments endpoint; initialize empty
         topic: ass.query || '', // !!! Map 'query' to 'topic'
       }));
+
+      // Fetch questions
+      for (const ass of assessments) {
+        const questions = await get(`api/v1/assessments/${ass.id}`, session.access_token);
+        console.log(questions);
+        ass.questions = questions.map((que: any) => ({
+          id: que.id,
+          type: que.type,
+          question: que.question,
+          options: que.options,
+          correctAnswer: que.correctAnswer,
+          numOptions: que.options.length,
+          source: que.source,
+        }));
+      }
+      
       setAssessments(assessments);
     } catch (err) {
       console.error('error loading assessments', err);
