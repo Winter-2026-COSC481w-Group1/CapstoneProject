@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { Play, Download, Clock, CheckCircle, CircleX, FileText, EllipsisVertical } from 'lucide-react';
 import { useApp } from '../AppContext';
+import { supabaseClient } from '../supabase';
+
+const VITE_API_URL = import.meta.env.VITE_API_URL;
 
 export default function AssessmentsHub() {
-  const { assessments, setCurrentPage, setCurrentAssessment } = useApp();
+  const { assessments, setAssessments, setCurrentPage, setCurrentAssessment } = useApp();
   const [showDownloadMenu, setShowDownloadMenu] = useState<string | null>(null);
   const [showOptionsMenu, setShowOptionsMenu] = useState<string | null>(null);
   const [assessmentsFilter, setAssessmentsFilter] = useState < string | null>(null);
@@ -18,6 +21,32 @@ export default function AssessmentsHub() {
 
   const handleDownloadMenu = (assessmentId: string) => {
     setShowDownloadMenu(showDownloadMenu === assessmentId ? null : assessmentId);
+  };
+
+  // Delete document handler
+  const handleDelete = async (id: string) => {
+    try {
+      // obtain supabase session for auth token
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (!session?.access_token) {
+        console.error('no session token available for delete');
+        return;
+      }
+      const res = await fetch(`${VITE_API_URL}/api/v1/assessments/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+      if (res.ok) {
+        // remove from UI state only after backend confirms deletion
+        setAssessments(assessments.filter(f => f.id !== id));
+      } else {
+        console.error('failed deleting assessment', res.status);
+      }
+    } catch (err) {
+      console.error('error deleting assessment', err);
+    }
   };
 
   return (
@@ -81,7 +110,10 @@ export default function AssessmentsHub() {
                       <button className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-sm font-medium text-gray-700">
                         Copy
                       </button>
-                  <button className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-sm font-medium text-gray-700">
+                  <button
+                    onClick={() => handleDelete(assessment.id)}
+                    className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-sm font-medium text-gray-700"
+                  >
                     Delete
                     </button>
                   </div>)}
