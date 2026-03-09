@@ -13,6 +13,7 @@ interface AppContextType {
   fetchLibraryFiles: () => Promise<void>;
   assessments: Assessment[];
   setAssessments: (assessments: Assessment[]) => void;
+  fetchAssessments: () => Promise<void>;
   currentAssessment: Assessment | null;
   setCurrentAssessment: (assessment: Assessment | null) => void;
   activities: Activity[];
@@ -22,188 +23,6 @@ interface AppContextType {
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
-
-const mockAssessments: Assessment[] = [
-  {
-    id: '1',
-    title: 'Biology Chapter 5 - Cell Structure Quiz',
-    createdAt: new Date('2024-01-16'),
-    status: 'completed',
-    sourceFiles: ['Introduction to Biology - Chapter 5.pdf'],
-    questionCount: 15,
-    difficulty: 'medium',
-    bestScore: 80,
-    lastScore: 79,
-    attempts: {
-      attempts: [[]],
-      scores: []
-    },
-    questions: [
-      {
-        id: 'q1',
-        type: 'multiple-choice',
-        question: 'Where does photosynthesis occur in plant cells?',
-        options: ['Mitochondria', 'Chloroplasts', 'Nucleus', 'Cell membrane'],
-        correctAnswer: 'Chloroplasts',
-        source: {
-          text: '...photosynthesis occurs in the chloroplasts, specialized organelles that contain chlorophyll and convert light energy into chemical energy...',
-          page: 12,
-          fileName: 'Introduction to Biology - Chapter 5.pdf'
-        }
-      },
-      {
-        id: 'q2',
-        type: 'multiple-choice',
-        question: 'What is the primary function of mitochondria?',
-        options: ['Protein synthesis', 'Energy production', 'Waste removal', 'Cell division'],
-        correctAnswer: 'Energy production',
-        source: {
-          text: '...mitochondria are known as the powerhouse of the cell, responsible for producing ATP through cellular respiration...',
-          page: 15,
-          fileName: 'Introduction to Biology - Chapter 5.pdf'
-        }
-      },
-      {
-        id: 'q3',
-        type: 'true-false',
-        question: 'The cell membrane is selectively permeable.',
-        correctAnswer: 'True',
-        source: {
-          text: '...the cell membrane exhibits selective permeability, allowing certain molecules to pass while blocking others...',
-          page: 8,
-          fileName: 'Introduction to Biology - Chapter 5.pdf'
-        }
-      },
-      {
-        id: 'q4',
-        type: 'multiple-choice',
-        question: 'Which organelle contains the cell\'s genetic material?',
-        options: ['Ribosome', 'Golgi apparatus', 'Nucleus', 'Lysosome'],
-        correctAnswer: 'Nucleus',
-        source: {
-          text: '...the nucleus serves as the control center of the cell, housing DNA and directing cellular activities...',
-          page: 10,
-          fileName: 'Introduction to Biology - Chapter 5.pdf'
-        }
-      },
-      {
-        id: 'q5',
-        type: 'short-answer',
-        question: 'Explain the role of ribosomes in the cell.',
-        correctAnswer: 'Ribosomes are responsible for protein synthesis by translating mRNA into polypeptide chains.',
-        source: {
-          text: '...ribosomes are the site of protein synthesis, where messenger RNA is translated into polypeptide chains...',
-          page: 14,
-          fileName: 'Introduction to Biology - Chapter 5.pdf'
-        }
-      }
-    ]
-  },
-  {
-    id: '2',
-    title: 'Second Mock test',
-    createdAt: new Date('2024-01-16'),
-    status: 'new',
-    sourceFiles: ['Introduction to Biology - Chapter 5.pdf'],
-    questionCount: 5,
-    difficulty: 'hard',
-    bestScore: undefined,
-    lastScore: undefined,
-    attempts: {
-      attempts: [[]],
-      scores: []
-    },
-    questions: [
-      {
-        id: 'q1',
-        type: 'multiple-choice',
-        question: 'Where does photosynthesis occur in plant cells?',
-        options: ['Mitochondria', 'Chloroplasts', 'Nucleus', 'Cell membrane'],
-        correctAnswer: 'Chloroplasts',
-        source: {
-          text: '...photosynthesis occurs in the chloroplasts, specialized organelles that contain chlorophyll and convert light energy into chemical energy...',
-          page: 12,
-          fileName: 'Introduction to Biology - Chapter 5.pdf'
-        }
-      },
-      {
-        id: 'q2',
-        type: 'multiple-choice',
-        question: 'What is the primary function of mitochondria?',
-        options: ['Protein synthesis', 'Energy production', 'Waste removal', 'Cell division'],
-        correctAnswer: 'Energy production',
-        source: {
-          text: '...mitochondria are known as the powerhouse of the cell, responsible for producing ATP through cellular respiration...',
-          page: 15,
-          fileName: 'Introduction to Biology - Chapter 5.pdf'
-        }
-      },
-      {
-        id: 'q3',
-        type: 'true-false',
-        question: 'The cell membrane is selectively permeable.',
-        correctAnswer: 'True',
-        source: {
-          text: '...the cell membrane exhibits selective permeability, allowing certain molecules to pass while blocking others...',
-          page: 8,
-          fileName: 'Introduction to Biology - Chapter 5.pdf'
-        }
-      },
-      {
-        id: 'q4',
-        type: 'multiple-choice',
-        question: 'Which organelle contains the cell\'s genetic material?',
-        options: ['Ribosome', 'Golgi apparatus', 'Nucleus', 'Lysosome'],
-        correctAnswer: 'Nucleus',
-        source: {
-          text: '...the nucleus serves as the control center of the cell, housing DNA and directing cellular activities...',
-          page: 10,
-          fileName: 'Introduction to Biology - Chapter 5.pdf'
-        }
-      },
-      {
-        id: 'q5',
-        type: 'short-answer',
-        question: 'Explain the role of ribosomes in the cell.',
-        correctAnswer: 'Ribosomes are responsible for protein synthesis by translating mRNA into polypeptide chains.',
-        source: {
-          text: '...ribosomes are the site of protein synthesis, where messenger RNA is translated into polypeptide chains...',
-          page: 14,
-          fileName: 'Introduction to Biology - Chapter 5.pdf'
-        }
-      }
-    ]
-  },
-  {
-    id: '3',
-    title: 'Mock Test 3',
-    createdAt: new Date('2024-01-16'),
-    status: 'new',
-    sourceFiles: ['Introduction to Biology - Chapter 5.pdf'],
-    questionCount: 1,
-    difficulty: 'easy',
-    bestScore: undefined,
-    lastScore: undefined,
-    attempts: {
-      attempts: [[]],
-      scores: []
-    },
-    questions: [
-      {
-        id: 'q1',
-        type: 'multiple-choice',
-        question: 'Where does photosynthesis occur in plant cells?',
-        options: ['Mitochondria', 'Chloroplasts', 'Nucleus', 'Cell membrane'],
-        correctAnswer: 'Chloroplasts',
-        source: {
-          text: '...photosynthesis occurs in the chloroplasts, specialized organelles that contain chlorophyll and convert light energy into chemical energy...',
-          page: 12,
-          fileName: 'Introduction to Biology - Chapter 5.pdf'
-        }
-      }
-    ]
-  }
-];
 
 const mockActivities: Activity[] = [
   {
@@ -231,7 +50,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [currentPage, setCurrentPage] = useState(firstPage);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [libraryFiles, setLibraryFiles] = useState<LibraryFile[]>([]);
-  const [assessments, setAssessments] = useState<Assessment[]>(mockAssessments);
+  const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [currentAssessment, setCurrentAssessment] = useState<Assessment | null>(null);
   const [activities, setActivities] = useState<Activity[]>(mockActivities);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -239,6 +58,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (currentUser) {
       fetchLibraryFiles();
+      fetchAssessments();
     }
   }, [currentUser]);
 
@@ -260,9 +80,70 @@ export function AppProvider({ children }: { children: ReactNode }) {
         status: doc.status as 'ready' | 'indexing' | 'processing' | 'pending' | 'failed',
         pageCount: doc.pageCount ?? 0,
       }));
+
       setLibraryFiles(files);
+
+      // Check if any files are either pending/processing/indexing
+      if (files.some(file => file.status !== 'ready' && file.status !== 'failed')) {
+        setTimeout(() => {
+          fetchLibraryFiles();
+        }, 3000); // wait 3 seconds
+      }
     } catch (err) {
       console.error('error loading documents', err);
+    }
+  };
+
+  const fetchAssessments = async () => {
+    try {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (!session?.access_token) {
+        console.error('no session token available');
+        return;
+      }
+
+      // Fetch all assessments
+      const data = await get('api/v1/assessments', session.access_token); // fetch assessments
+      const assessments: Assessment[] = data.map((ass: any) => ({
+        id: ass.id,
+        title: ass.title,
+        topic: ass.topic || '', // !!! backend should return this maybe
+        createdAt: new Date(ass.createdAt),
+        status: ass.status as 'completed' | 'pending' | 'failed',
+        sourceFiles: [ass.sourceFiles], // !!! Backend returns single document_id; wrap in array for now
+        questionCount: ass.questionCount,
+        difficulty: ass.difficulty as 'easy' | 'medium' | 'hard' | 'none',
+        questions: [], // !!! Not provided by get assessments endpoint; initialize empty
+        bestScore: undefined, // !!! Not provided; set later if needed
+        lastScore: undefined, // !!! Not provided; set later if needed
+        attempts: { attempts: [], scores: [] }, // !!! Default empty
+      }));
+
+      // Fetch questions
+      for (const ass of assessments) {
+        const questions = await get(`api/v1/assessments/${ass.id}`, session.access_token);
+        ass.questions = questions.map((que: any) => ({
+          id: que.id,
+          type: que.type,
+          question: que.question,
+          numOptions: que.options.length, // !!! consider removing?
+          options: que.options,
+          correctAnswer: que.correctAnswer,
+          userAnswer: que.userAnswer,
+          source: que.source,
+        }));
+      }
+
+      setAssessments(assessments);
+
+      // Check if any assessments are either pending/processing
+      if (assessments.some(ass => ass.status !== 'completed' && ass.status !== 'failed')) {
+        setTimeout(() => {
+          fetchAssessments();
+        }, 10000); // wait 10 seconds
+      }
+    } catch (err) {
+      console.error('error loading assessments', err);
     }
   };
 
@@ -281,6 +162,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         fetchLibraryFiles,
         assessments,
         setAssessments,
+        fetchAssessments,
         currentAssessment,
         setCurrentAssessment,
         activities,

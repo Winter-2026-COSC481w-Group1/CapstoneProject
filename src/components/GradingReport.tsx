@@ -1,4 +1,4 @@
-import { CheckCircle, XCircle, Download, ArrowLeft, FileText, ExternalLink } from 'lucide-react';
+import { CheckCircle, XCircle, Download, ArrowLeft, FileText } from 'lucide-react';
 import { useApp } from '../AppContext';
 
 export default function GradingReport() {
@@ -10,10 +10,10 @@ export default function GradingReport() {
   }
 
   const assessment = assessments.find(a => a.id === currentAssessment.id) || currentAssessment;
-  const score = assessment.score || 0;
+  const score = assessment.lastScore || 0;
   const questions = assessment.questions;
   const correctCount = questions.filter(q =>
-    q.userAnswer?.toLowerCase().trim() === q.correctAnswer.toLowerCase().trim()
+    q.userAnswer?.toLowerCase().trim() === q.options![correctAnswer].toLowerCase().trim()
   ).length;
 
   const getScoreColor = (score: number) => {

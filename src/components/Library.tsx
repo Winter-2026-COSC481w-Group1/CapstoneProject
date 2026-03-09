@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Upload, FileText, Loader2, CheckCircle, Trash2, Eye } from 'lucide-react';
+import { useState } from 'react';
+import { Upload, FileText, Loader2, CheckCircle, CircleX, Trash2, Eye } from 'lucide-react';
 import { useApp } from '../AppContext';
 import { LibraryFile } from '../types';
 import { supabaseClient } from '../supabase';
@@ -9,7 +9,7 @@ import { post } from '../api';
 const VITE_API_URL = import.meta.env.VITE_API_URL;
 
 export default function Library() {
-  const { libraryFiles, setLibraryFiles } = useApp();
+  const { libraryFiles, setLibraryFiles, fetchLibraryFiles } = useApp();
   const [isDragging, setIsDragging] = useState(false);
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -50,7 +50,7 @@ export default function Library() {
       name: file.name,
       size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
       uploadedAt: new Date(),
-      status: 'indexing',
+      status: 'pending',
       pageCount: 0 // Will be updated from backend
     };
 
@@ -75,6 +75,7 @@ export default function Library() {
           pageCount: doc.pageCount ?? 0
         } : f)
       );
+      fetchLibraryFiles(); // will poll until uploaded document either completes or fails
     } catch (error) {
       console.error('Error uploading file:', error);
       // Handle upload error, maybe remove the file from the list
@@ -202,15 +203,25 @@ export default function Library() {
                       <CheckCircle className="w-4 h-4 text-emerald-600" />
                       <span className="text-sm font-medium text-emerald-700">Ready</span>
                     </div>
+                  ) : file.status === 'pending' ? (
+                    <div className="flex items-center gap-2 bg-blue-100 px-4 py-2 rounded-full">
+                      <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
+                      <span className="text-sm font-medium text-blue-700">Pending...</span>
+                    </div>
+                  ) : file.status === 'processing' ? (
+                    <div className="flex items-center gap-2 bg-blue-100 px-4 py-2 rounded-full">
+                      <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
+                      <span className="text-sm font-medium text-blue-700">Processing...</span>
+                    </div>
                   ) : file.status === 'indexing' ? (
                     <div className="flex items-center gap-2 bg-amber-100 px-4 py-2 rounded-full">
                       <Loader2 className="w-4 h-4 text-amber-600 animate-spin" />
                       <span className="text-sm font-medium text-amber-700">Indexing...</span>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-2 bg-blue-100 px-4 py-2 rounded-full">
-                      <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
-                      <span className="text-sm font-medium text-blue-700">Processing...</span>
+                    <div className="flex items-center gap-2 bg-red-100 px-4 py-2 rounded-full">
+                      <CircleX className="w-4 h-4 text-red-600" />
+                      <span className="text-sm font-medium text-red-700">Failed</span>
                     </div>
                   )}
 

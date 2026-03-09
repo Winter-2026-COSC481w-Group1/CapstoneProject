@@ -1,9 +1,12 @@
 import { useState } from 'react';
-import { Play, Download, Clock, CheckCircle, FileText, EllipsisVertical } from 'lucide-react';
+import { Play, Download, Clock, CheckCircle, CircleX, FileText, EllipsisVertical } from 'lucide-react';
 import { useApp } from '../AppContext';
+import { supabaseClient } from '../supabase';
+
+const VITE_API_URL = import.meta.env.VITE_API_URL;
 
 export default function AssessmentsHub() {
-  const { assessments, setCurrentPage, setCurrentAssessment } = useApp();
+  const { assessments, setAssessments, setCurrentPage, setCurrentAssessment } = useApp();
   const [showDownloadMenu, setShowDownloadMenu] = useState<string | null>(null);
   const [showOptionsMenu, setShowOptionsMenu] = useState<string | null>(null);
   const [assessmentsFilter, setAssessmentsFilter] = useState < string | null>(null);
@@ -20,6 +23,32 @@ export default function AssessmentsHub() {
     setShowDownloadMenu(showDownloadMenu === assessmentId ? null : assessmentId);
   };
 
+  // Delete document handler
+  const handleDelete = async (id: string) => {
+    try {
+      // obtain supabase session for auth token
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (!session?.access_token) {
+        console.error('no session token available for delete');
+        return;
+      }
+      const res = await fetch(`${VITE_API_URL}/api/v1/assessments/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+      if (res.ok) {
+        // remove from UI state only after backend confirms deletion
+        setAssessments(assessments.filter(f => f.id !== id));
+      } else {
+        console.error('failed deleting assessment', res.status);
+      }
+    } catch (err) {
+      console.error('error deleting assessment', err);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-stone-50 pt-28 pb-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
@@ -34,10 +63,10 @@ export default function AssessmentsHub() {
           >
             All ({assessments.length})
           </button>
-          <button className={"px-4 py-2 rounded-full font-medium " + ((assessmentsFilter === 'new') ? "bg-emerald-600 text-white" : "text-gray-600 hover:bg-gray-300 bg-gray-200")}
-            onClick={() => setAssessmentsFilter('new')}
+          <button className={"px-4 py-2 rounded-full font-medium " + ((assessmentsFilter === 'pending') ? "bg-emerald-600 text-white" : "text-gray-600 hover:bg-gray-300 bg-gray-200")}
+            onClick={() => setAssessmentsFilter('pending')}
           >
-            New ({assessments.filter(a => a.status === 'new').length})
+            Pending ({assessments.filter(a => a.status === 'pending').length})
           </button>
           <button className={"px-4 py-2 rounded-full font-medium " + ((assessmentsFilter === 'completed') ? "bg-emerald-600 text-white" : "text-gray-600 hover:bg-gray-300 bg-gray-200")}
             onClick={() => setAssessmentsFilter('completed')}
@@ -81,7 +110,10 @@ export default function AssessmentsHub() {
                       <button className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-sm font-medium text-gray-700">
                         Copy
                       </button>
-                  <button className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-sm font-medium text-gray-700">
+                  <button
+                    onClick={() => handleDelete(assessment.id)}
+                    className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-sm font-medium text-gray-700"
+                  >
                     Delete
                     </button>
                   </div>)}
@@ -90,10 +122,20 @@ export default function AssessmentsHub() {
               
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  {assessment.status === 'new' && (
+                  {assessment.status === 'pending' && (
                     <div className="inline-flex items-center gap-2 bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-medium mb-3">
                       <Clock className="w-3 h-3" />
-                      Ready to Start
+                      Pending
+                    </div>
+                  ) || assessment.status === 'processing' && (
+                    <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-medium mb-3">
+                      <Clock className="w-3 h-3" />
+                      Processing
+                    </div>
+                  ) || assessment.status === 'failed' && (
+                    <div className="inline-flex items-center gap-2 bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-medium mb-3">
+                      <CircleX className="w-3 h-3" />
+                      Failed
                     </div>
                   )}
                 </div>
@@ -137,7 +179,7 @@ export default function AssessmentsHub() {
                 
               )}
               
-              {assessment.status === "new" && (
+              {assessment.status === "pending" && (
                   <div className="flex flex-grow"></div>
               )}
                   
@@ -148,7 +190,7 @@ export default function AssessmentsHub() {
                     setCurrentPage('grading-report');
                   }
                   }}
-                  className={"w-full flex items-center justify-center gap-2 " + ((assessment.status === "completed") ? "bg-blue-100 hover:bg-blue-200 text-blue-600" : "bg-gray-200 text-gray-600") + " py-3 rounded-xl font-semibold"}
+                  className={"w-full flex items-center justify-center gap-2 " + ((assessment.status === "completed") ? "bg-blue-100 hover:bg-blue-200 text-blue-600" : "bg-gray-200 text-gray-600 cursor-default") + " py-3 rounded-xl font-semibold"}
                 >
                   <CheckCircle className="w-4 h-4" />
                   View Results
@@ -156,16 +198,24 @@ export default function AssessmentsHub() {
                 
               <div className="flex gap-2">
                 <button
-                  onClick={() => handleStartExam(assessment.id)}
-                  className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-semibold transition-colors"
+                  onClick={() => {
+                    if (assessment.status === "completed") {
+                      handleStartExam(assessment.id);
+                    }
+                  }}
+                  className={"flex-1 flex items-center justify-center gap-2 " + ((assessment.status === "completed") ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-gray-200 text-gray-600 cursor-default") + " py-3 rounded-xl font-semibold transition-colors"}
                 >
                   <Play className="w-4 h-4" />
                   Start Online
                 </button>
                 <div className="relative">
                   <button
-                    onClick={() => handleDownloadMenu(assessment.id)}
-                    className="p-3 border-2 border-gray-200 hover:border-emerald-500 rounded-xl transition-colors"
+                    onClick={() => {
+                      if (assessment.status === "completed") {
+                        handleDownloadMenu(assessment.id);
+                      }
+                    }}
+                    className={"p-3 border-2 border-gray-200 " + ((assessment.status === "completed") ? "hover:border-emerald-500" : "bg-gray-200 cursor-default") + " rounded-xl transition-colors"}
                   >
                     <Download className="w-5 h-5 text-gray-600" />
                   </button>

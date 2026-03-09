@@ -19,8 +19,9 @@ export interface Question {
   id: string;
   type: 'multiple-choice' | 'true-false' | 'short-answer';
   question: string;
+  numOptions: number
   options?: string[];
-  correctAnswer: string;
+  correctAnswer: number;
   userAnswer?: string;
   source?: {
     text: string;
@@ -38,8 +39,9 @@ export interface Attempts {
 export interface Assessment {
   id: string;
   title: string;
+  topic: string;
   createdAt: Date;
-  status: 'new' | 'completed';
+  status: 'completed' | 'processing' | 'pending' | 'failed';
   sourceFiles: string[];
   questionCount: number;
   difficulty: 'easy' | 'medium' | 'hard' | 'none';
