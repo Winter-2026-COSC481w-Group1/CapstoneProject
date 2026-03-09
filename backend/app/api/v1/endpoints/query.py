@@ -45,8 +45,8 @@ async def get_exam_sources(
     formatted_results = []
     for item in raw_results:
         # vecs results usually follow: (id, metadata) if include_value=False
-        row = {"id": item[0], "value": item[1]}
+        row = {"id": item[0], "distance": item[1], "similarity_score": 1 - item[1]}
         row.update(item[2])
         formatted_results.append(row)
 
-    return {"results": formatted_results}
+    return {"query": request.prompt, "results": formatted_results}

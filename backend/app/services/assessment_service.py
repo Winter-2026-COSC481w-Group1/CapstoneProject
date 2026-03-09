@@ -95,16 +95,31 @@ class AssessmentService:
 
         retrieved_chunks = await self.vector_service.query(
             embedding,
-            limit=limit,
+            limit=10,
             filters=filters,
-            include_value=False,
+            include_value=True,
             include_metadata=True,
         )
 
+        valid_chunks = []
+        for item in retrieved_chunks:
+            distance = item[1]
+            similarity = 1 - distance
+
+            if similarity > 0.60:  # keep only 60% or better matches
+                valid_chunks.append(
+                    {"id": item[0], "score": similarity, "metadata": item[2]}
+                )
+
+        valid_chunks.sort(key=lambda x: x["score"], reverse=True)
+
+        # take the top 5 for the LLM
+        final_selection = valid_chunks[:5]
+
         # format the context for the LLM
         formatted_context = []
-        for i, chunk in enumerate(retrieved_chunks):
-            metadata = chunk[1]
+        for i, chunk in enumerate(final_selection):
+            metadata = chunk["metadata"]
             text = metadata.get("text", "")
 
             if text:
@@ -112,8 +127,10 @@ class AssessmentService:
                 formatted_context.append(f"--- SOURCE {i + 1} ---\n{text.strip()}")
 
         return "\n\n".join(formatted_context)
-    
-    async def _save_assessment_to_db(self, assessment_id: str, assessment_data: AssessmentSchema):
+
+    async def _save_assessment_to_db(
+        self, assessment_id: str, assessment_data: AssessmentSchema
+    ):
         """
         Maps AssessmentSchema to 'questions' and 'question_options' tables.
         """
@@ -123,17 +140,19 @@ class AssessmentService:
             q_type_map = {
                 "multiple-choice": "MCQ",
                 "true-false": "TF",
-                "short-answer": "SA"
+                "short-answer": "SA",
             }
 
             question_insert = {
                 "assessment_id": assessment_id,
                 "question_text": q_data.question,
                 "question_type": q_type_map.get(q_data.type, "MCQ"),
-                "explanation": f"Page: {q_data.page_number} Text: {q_data.source_text}" # Using source_text as explanation/context
+                "explanation": f"Page: {q_data.page_number} Text: {q_data.source_text}",  # Using source_text as explanation/context
             }
 
-            q_result = self.db_client.table("questions").insert(question_insert).execute()
+            q_result = (
+                self.db_client.table("questions").insert(question_insert).execute()
+            )
 
             if q_result.data:
                 new_q_id = q_result.data[0]["id"]
@@ -142,24 +161,28 @@ class AssessmentService:
                 if q_data.options:
                     options_to_insert = []
                     for option in q_data.options:
-                        options_to_insert.append({
-                            "question_id": new_q_id,
-                            "option_text": option,
-                            "is_correct": option == q_data.correctAnswer
-                        })
+                        options_to_insert.append(
+                            {
+                                "question_id": new_q_id,
+                                "option_text": option,
+                                "is_correct": option == q_data.correctAnswer,
+                            }
+                        )
 
                     if options_to_insert:
-                        self.db_client.table("question_options").insert(options_to_insert).execute()
+                        self.db_client.table("question_options").insert(
+                            options_to_insert
+                        ).execute()
 
     async def generate_assessment(
         self,
         assessment_id: str,
-        document_id: list[str],
+        document_id: str,
         query: str,
         user_id: str,
         num_questions: int,
         question_types: list[str],
-        difficulty: str
+        difficulty: str,
     ):
         """
         MANAGER: Orchestrates the entire background task.
@@ -187,7 +210,9 @@ class AssessmentService:
             # mark as completed if the above is successful. so do a try catch?
             # await self.update_assessment_status(assessment_id, "completed")
             try:
-                result = await self.llm_service.generate_assessment(context, num_questions, difficulty, question_types)
+                result = await self.llm_service.generate_assessment(
+                    query, context, num_questions, difficulty, question_types
+                )
 
                 await self._save_assessment_to_db(assessment_id, result)
 
