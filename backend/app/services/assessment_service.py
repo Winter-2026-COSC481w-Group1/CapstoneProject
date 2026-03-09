@@ -200,16 +200,31 @@ class AssessmentService:
 
         retrieved_chunks = await self.vector_service.query(
             embedding,
-            limit=limit,
+            limit=10,
             filters=filters,
-            include_value=False,
+            include_value=True,
             include_metadata=True,
         )
 
+        valid_chunks = []
+        for item in retrieved_chunks:
+            distance = item[1]
+            similarity = 1 - distance
+
+            if similarity > 0.60:  # keep only 60% or better matches
+                valid_chunks.append(
+                    {"id": item[0], "score": similarity, "metadata": item[2]}
+                )
+
+        valid_chunks.sort(key=lambda x: x["score"], reverse=True)
+
+        # take the top 5 for the LLM
+        final_selection = valid_chunks[:5]
+
         # format the context for the LLM
         formatted_context = []
-        for i, chunk in enumerate(retrieved_chunks):
-            metadata = chunk[1]
+        for i, chunk in enumerate(final_selection):
+            metadata = chunk["metadata"]
             text = metadata.get("text", "")
 
             if text:
@@ -299,7 +314,7 @@ class AssessmentService:
             # await self.update_assessment_status(assessment_id, "completed")
             try:
                 result = await self.llm_service.generate_assessment(
-                    context, num_questions, difficulty, question_types
+                    query, context, num_questions, difficulty, question_types
                 )
 
                 await self._save_assessment_to_db(assessment_id, result)
