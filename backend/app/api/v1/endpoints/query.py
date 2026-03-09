@@ -37,6 +37,7 @@ async def get_exam_sources(
     raw_results = await vector_service.query(
         data=query_vector,
         limit=request.top_k,
+        include_value=True,
         filters=filters,
     )
 
@@ -44,11 +45,8 @@ async def get_exam_sources(
     formatted_results = []
     for item in raw_results:
         # vecs results usually follow: (id, metadata) if include_value=False
-        formatted_results.append(
-            {
-                "id": item[0],
-                "metadata": item[1],
-            }
-        )
+        row = {"id": item[0], "value": item[1]}
+        row.update(item[2])
+        formatted_results.append(row)
 
     return {"results": formatted_results}
