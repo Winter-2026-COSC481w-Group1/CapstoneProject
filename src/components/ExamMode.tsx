@@ -5,7 +5,7 @@ import { useApp } from '../AppContext';
 export default function ExamMode() {
   const { currentAssessment, setCurrentPage, assessments, setAssessments } = useApp();
   const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [answers, setAnswers] = useState<Record<string, number | string>>({});
 
   if (!currentAssessment) {
     setCurrentPage('assessments');
@@ -16,7 +16,7 @@ export default function ExamMode() {
   const question = questions[currentQuestion];
   const progress = ((currentQuestion + 1) / questions.length) * 100;
 
-  const handleAnswer = (answer: string) => {
+  const handleAnswer = (answer: number | string) => {
     setAnswers({
       ...answers,
       [question.id]: answer
@@ -38,12 +38,19 @@ export default function ExamMode() {
   const handleSubmit = () => {
     const updatedQuestions = questions.map(q => ({
       ...q,
-      userAnswer: answers[q.id] || ''
+      userAnswer: answers[q.id] ?? q.userAnswer ?? (q.type === 'short-answer' ? '' : -1)
     }));
 
-    const correctCount = updatedQuestions.filter(q =>
-      q.userAnswer?.toLowerCase().trim() === q.correctAnswer.toLowerCase().trim()
-    ).length;
+    const correctCount = updatedQuestions.filter(q => {
+      if (q.type === 'short-answer') {
+        return (
+          typeof q.userAnswer === 'string' &&
+          typeof q.correctAnswer === 'string' &&
+          q.userAnswer.toLowerCase().trim() === q.correctAnswer.toLowerCase().trim()
+        );
+      }
+      return q.userAnswer === q.correctAnswer;
+    }).length;
 
     const score = Math.round((correctCount / questions.length) * 100);
 
@@ -112,20 +119,20 @@ export default function ExamMode() {
                 {question.options.map((option, idx) => (
                   <button
                     key={idx}
-                    onClick={() => handleAnswer(option)}
+                    onClick={() => handleAnswer(idx)}
                     className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
-                      answers[question.id] === option
+                      answers[question.id] === idx
                         ? 'border-emerald-500 bg-emerald-50'
                         : 'border-gray-200 hover:border-emerald-300 bg-white'
                     }`}
                   >
                     <div className="flex items-center gap-3">
                       <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                        answers[question.id] === option
+                        answers[question.id] === idx
                           ? 'border-emerald-500 bg-emerald-500'
                           : 'border-gray-300'
                       }`}>
-                        {answers[question.id] === option && (
+                        {answers[question.id] === idx && (
                           <div className="w-2 h-2 bg-white rounded-full"></div>
                         )}
                       </div>
@@ -138,23 +145,23 @@ export default function ExamMode() {
 
             {question.type === 'true-false' && (
               <>
-                {['True', 'False'].map((option) => (
+                {['True', 'False'].map((option, idx) => (
                   <button
                     key={option}
-                    onClick={() => handleAnswer(option)}
+                    onClick={() => handleAnswer(idx)}
                     className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
-                      answers[question.id] === option
+                      answers[question.id] === idx
                         ? 'border-emerald-500 bg-emerald-50'
                         : 'border-gray-200 hover:border-emerald-300 bg-white'
                     }`}
                   >
                     <div className="flex items-center gap-3">
                       <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                        answers[question.id] === option
+                        answers[question.id] === idx
                           ? 'border-emerald-500 bg-emerald-500'
                           : 'border-gray-300'
                       }`}>
-                        {answers[question.id] === option && (
+                        {answers[question.id] === idx && (
                           <div className="w-2 h-2 bg-white rounded-full"></div>
                         )}
                       </div>
@@ -200,7 +207,7 @@ export default function ExamMode() {
                 className={`w-8 h-8 rounded-lg font-semibold text-sm transition-all ${
                   idx === currentQuestion
                     ? 'bg-emerald-600 text-white'
-                    : answers[questions[idx].id]
+                    : answers[questions[idx].id] !== undefined
                     ? 'bg-emerald-100 text-emerald-700'
                     : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
                 }`}
