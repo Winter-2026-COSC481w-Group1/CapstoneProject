@@ -3,7 +3,7 @@ from app.api.v1.endpoints import documents, user, dev, query, assessments, notif
 
 api_router = APIRouter()
 
-api_router.include_router(query.router, prefix="/query", tags=["Development"])
+api_router.include_router(query.router, prefix="/dev", tags=["Development"])
 
 api_router.include_router(user.router, prefix="/api/users", tags=["User Management"])
 
