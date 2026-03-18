@@ -21,8 +21,8 @@ export interface Question {
   question: string;
   numOptions: number
   options?: string[];
-  correctAnswer: number;
-  userAnswer?: string;
+  correctAnswer: number | string;
+  userAnswer?: number | string;
   source?: {
     text: string;
     page: number;
