@@ -63,7 +63,7 @@ class UploadService:
             token_count = len(encoding.encode(full_text))
 
         # Check page count limit
-        MAX_PAGES = int(os.getenv("MAX_PDF_PAGES", "1500"))
+        MAX_PAGES = int(os.getenv("MAX_PDF_PAGES", "2000"))
         if page_count > MAX_PAGES:
             raise HTTPException(
                 status_code=413,
@@ -71,7 +71,7 @@ class UploadService:
             )
 
         # Check token count limit
-        MAX_DOCUMENT_TOKENS = int(os.getenv("MAX_DOCUMENT_TOKENS", "55000"))
+        MAX_DOCUMENT_TOKENS = int(os.getenv("MAX_DOCUMENT_TOKENS", "1000000"))
         if token_count > MAX_DOCUMENT_TOKENS:
             raise HTTPException(
                 status_code=413,
