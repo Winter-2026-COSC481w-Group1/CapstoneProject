@@ -2,7 +2,7 @@ services:
   backend:
     build: ./backend
     ports:
-      - "8000:8000"
+      - "${PORT}:${PORT}"
     environment:
       DATABASE_URL: ${DATABASE_URL}
       SUPABASE_URL: ${SUPABASE_URL}
@@ -12,6 +12,7 @@ services:
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       NOMIC_API_KEY: ${NOMIC_API_KEY} 
       PYTHONUNBUFFERED: 1
+      PORT: ${PORT}
 
   #frontend:
   #    build:

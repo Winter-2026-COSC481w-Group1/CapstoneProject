@@ -19,8 +19,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # copy the rest of the application's code
 COPY ./app ./app
 
-# expose port 8000 to the outside world
-EXPOSE 8000
+COPY ./entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh 
 
 # command to run the application
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
