@@ -23,7 +23,6 @@ def pdf_process_to_chunks(
 
     for page_num, page in enumerate(doc):
         raw_text = page.get_text("text")
-        raw_token_count = len(encoding.encode(raw_text))
 
         # split page into lines/paragraphs
         lines = raw_text.split("\n")

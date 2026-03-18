@@ -12,6 +12,8 @@ services:
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       NOMIC_API_KEY: ${NOMIC_API_KEY} 
       PYTHONUNBUFFERED: 1
+      MAX_PDF_PAGES: ${MAX_PDF_PAGES:1100}
+      MAX_DOCUMENT_TOKENS: ${MAX_DOCUMENT_TOKENS:55000}
 
   #frontend:
   #    build:
