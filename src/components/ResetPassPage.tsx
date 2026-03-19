@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { ArrowLeft, Lock } from 'lucide-react';
 import { supabaseClient } from '../supabase';
 import { useApp } from '../AppContext';
+import { useNavigate } from 'react-router-dom';
 
-export default function AuthPage() {
-  const { setCurrentPage, currentUser } = useApp();
+export default function ResetPassPage() {
+  const navigate = useNavigate();
+  const { currentUser } = useApp();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [err, setErr] = useState('');
@@ -64,11 +66,11 @@ export default function AuthPage() {
       <div className="flex-1 flex items-center justify-center bg-white p-8">
         <div className="w-full max-w-md">
           <button
-            onClick={() => setCurrentPage('spinningCircle')}
+            onClick={() => navigate('/dashboard/home')}
             className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-8 transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
-            Back to home
+            Go to home
           </button>
           
           {!resetSuccess && <form onSubmit={handlePasswordReset} className="space-y-4">

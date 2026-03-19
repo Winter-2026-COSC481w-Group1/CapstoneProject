@@ -2,12 +2,13 @@ import { useState } from "react";
 import { CheckCircle, Circle, FileText, X, Plus } from "lucide-react";
 import { useApp } from "../AppContext";
 import { Assessment } from "../types";
+import { useNavigate } from 'react-router-dom';
 
 export default function EditingStudio() {
+  const navigate = useNavigate();
   const {
     libraryFiles,
     assessments,
-    setCurrentPage,
     currentAssessment,
     setCurrentAssessment,
   } = useApp();
@@ -15,7 +16,7 @@ export default function EditingStudio() {
   const [isEdited, setIsEdited] = useState(false);
   
   if (!currentAssessment) {
-    setCurrentPage('assessments');
+    navigate('/dashbaord/assessments');
     return null;
   }
 

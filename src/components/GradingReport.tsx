@@ -1,11 +1,14 @@
 import { CheckCircle, XCircle, Download, ArrowLeft, FileText } from 'lucide-react';
 import { useApp } from '../AppContext';
+import { useNavigate } from 'react-router-dom';
+
 
 export default function GradingReport() {
-  const { currentAssessment, setCurrentPage, assessments } = useApp();
+  const { currentAssessment, assessments } = useApp();
+  const navigate = useNavigate();
 
   if (!currentAssessment) {
-    setCurrentPage('assessments');
+    navigate('/dashboard/assessments');
     return null;
   }
 
@@ -39,7 +42,7 @@ export default function GradingReport() {
     <div className="min-h-screen bg-stone-50 pt-28 pb-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
         <button
-          onClick={() => setCurrentPage('assessments')}
+          onClick={() => navigate('/dashboard/assessments')}
           className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -229,7 +232,7 @@ export default function GradingReport() {
 
         <div className="mt-8 text-center">
           <button
-            onClick={() => setCurrentPage('assessments')}
+            onClick={() => navigate('/dashboard/assessments')}
             className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-4 rounded-xl font-semibold transition-colors"
           >
             Back to Assessments
