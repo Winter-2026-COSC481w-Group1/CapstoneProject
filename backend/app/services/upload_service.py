@@ -1,8 +1,11 @@
+import tiktoken
+import os
 import hashlib
 from uuid import uuid4
 
 from fastapi import BackgroundTasks, HTTPException, UploadFile
 import fitz
+import tiktoken
 from app.services.embedding_service import EmbeddingService
 from app.services.vector_db_service import VectorDBService
 from app.tasks import process_pdf_in_background
@@ -41,7 +44,8 @@ class UploadService:
 
         # Check file size limit (50MB)
         MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB in bytes
-        if len(contents) > MAX_FILE_SIZE:
+        file_size = len(contents)
+        if file_size > MAX_FILE_SIZE:
             raise HTTPException(
                 status_code=413,
                 detail=f"File size exceeds 50MB limit. File size: {len(contents) / (1024 * 1024):.2f}MB",
@@ -49,10 +53,33 @@ class UploadService:
 
         with fitz.open(stream=contents, filetype="pdf") as doc:
             page_count = len(doc)
+            
+            full_text = ""
+            for page_num in range(page_count):
+                page = doc.load_page(page_num)
+                full_text += page.get_text("text") + "\n"
+
+            encoding = tiktoken.get_encoding("cl100k_base")
+            token_count = len(encoding.encode(full_text))
+
+        # Check page count limit
+        MAX_PAGES = int(os.getenv("MAX_PDF_PAGES", "2000"))
+        if page_count > MAX_PAGES:
+            raise HTTPException(
+                status_code=413,
+                detail=f"File exceeds the {MAX_PAGES}-page limit. It has {page_count} pages.",
+            )
+
+        # Check token count limit
+        MAX_DOCUMENT_TOKENS = int(os.getenv("MAX_DOCUMENT_TOKENS", "1000000"))
+        if token_count > MAX_DOCUMENT_TOKENS:
+            raise HTTPException(
+                status_code=413,
+                detail=f"File exceeds the {MAX_DOCUMENT_TOKENS}-token limit. It contains {token_count} tokens.",
+            )
 
         sha256 = hashlib.sha256(contents).hexdigest()
         file_name = file.filename or "upload.pdf"
-        file_size = len(contents)
 
         existing = (
             self.db.table("documents")
@@ -80,6 +107,7 @@ class UploadService:
                 "file_path": storage_path,
                 "file_size": file_size,
                 "page_count": page_count,
+                "token_count": token_count, # Add token_count here
                 "status": "pending",
             }
 
