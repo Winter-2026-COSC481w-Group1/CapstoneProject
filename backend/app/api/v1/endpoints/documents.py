@@ -18,7 +18,6 @@ router = APIRouter()
 @router.post("")
 async def upload_pdf(
     current_user: Annotated[dict, Depends(get_current_user)],
-    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     upload_service: UploadService = Depends(get_upload_service),
 ):
@@ -33,7 +32,6 @@ async def upload_pdf(
         result = await upload_service.execute(
             file=file,
             user_id=user_id,
-            background_tasks=background_tasks,
         )
         return result
 

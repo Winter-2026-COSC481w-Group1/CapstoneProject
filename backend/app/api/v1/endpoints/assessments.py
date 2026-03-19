@@ -15,7 +15,6 @@ router = APIRouter()
 async def generate_assessment(
     request: AssessmentRequest,
     current_user: Annotated[dict, Depends(get_current_user)],
-    background_tasks: BackgroundTasks,
     assessment_service: AssessmentService = Depends(get_assessment_service),
 ):
 
@@ -24,9 +23,8 @@ async def generate_assessment(
     # create the record in Supabase immediately
     assessment_id = await assessment_service.create_pending_record(request, user_id)
 
-    # hand off the heavy task to the background
-    background_tasks.add_task(
-        assessment_service.generate_assessment,
+    # await the heavy task directly (Google Cloud Run request-based billing)
+    await assessment_service.generate_assessment(
         assessment_id=assessment_id,
         document_id=request.document_id,
         query=request.query,
