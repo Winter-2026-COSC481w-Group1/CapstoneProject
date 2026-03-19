@@ -12,9 +12,16 @@ export default function GradingReport() {
   const assessment = assessments.find(a => a.id === currentAssessment.id) || currentAssessment;
   const score = assessment.lastScore || 0;
   const questions = assessment.questions;
-  const correctCount = questions.filter(q =>
-    q.userAnswer?.toLowerCase().trim() === q.options![correctAnswer].toLowerCase().trim()
-  ).length;
+  const correctCount = questions.filter((q) => {
+    if (q.type === 'short-answer') {
+      return (
+        typeof q.userAnswer === 'string' &&
+        typeof q.correctAnswer === 'string' &&
+        q.userAnswer.toLowerCase().trim() === q.correctAnswer.toLowerCase().trim()
+      );
+    }
+    return q.userAnswer === q.correctAnswer;
+  }).length;
 
   const getScoreColor = (score: number) => {
     if (score >= 90) return 'text-emerald-600';
@@ -76,8 +83,16 @@ export default function GradingReport() {
 
         <div className="space-y-6">
           {questions.map((question, idx) => {
-            const isCorrect = question.userAnswer?.toLowerCase().trim() === question.correctAnswer.toLowerCase().trim();
-            const hasAnswer = question.userAnswer && question.userAnswer.trim() !== '';
+            const isCorrect =
+              question.type === 'short-answer'
+                ? typeof question.userAnswer === 'string' &&
+                  typeof question.correctAnswer === 'string' &&
+                  question.userAnswer.toLowerCase().trim() === question.correctAnswer.toLowerCase().trim()
+                : question.userAnswer === question.correctAnswer;
+            const hasAnswer =
+              question.type === 'short-answer'
+                ? typeof question.userAnswer === 'string' && question.userAnswer.trim() !== ''
+                : question.userAnswer !== undefined && question.userAnswer !== null;
 
             return (
               <div
@@ -111,8 +126,8 @@ export default function GradingReport() {
                     {question.type === 'multiple-choice' && question.options && (
                       <div className="space-y-2 mb-4">
                         {question.options.map((option, optIdx) => {
-                          const isUserAnswer = option === question.userAnswer;
-                          const isCorrectAnswer = option === question.correctAnswer;
+                          const isUserAnswer = optIdx === question.userAnswer;
+                          const isCorrectAnswer = optIdx === question.correctAnswer;
 
                           return (
                             <div
@@ -142,9 +157,9 @@ export default function GradingReport() {
 
                     {question.type === 'true-false' && (
                       <div className="space-y-2 mb-4">
-                        {['True', 'False'].map((option) => {
-                          const isUserAnswer = option === question.userAnswer;
-                          const isCorrectAnswer = option === question.correctAnswer;
+                        {['True', 'False'].map((option, optIdx) => {
+                          const isUserAnswer = optIdx === question.userAnswer;
+                          const isCorrectAnswer = optIdx === question.correctAnswer;
 
                           return (
                             <div
