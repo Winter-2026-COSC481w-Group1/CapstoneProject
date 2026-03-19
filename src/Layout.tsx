@@ -1,10 +1,12 @@
+import Navigation from './components/Navigation';
+import { Outlet, useNavigate } from "react-router-dom";
 import { useEffect } from 'react';
-import { supabaseClient } from '../supabase';
-import { useApp } from '../AppContext';
-import '../spinner.css';
+import { supabaseClient } from './supabase';
+import { useApp } from './AppContext';
 
-export default function AuthPage() {
-  const { setCurrentUser, setCurrentPage } = useApp();
+export default function Layout() {
+  const { setCurrentUser } = useApp();
+  const navigate = useNavigate();
   
   useEffect(() => {
     supabaseClient.auth.getSession().then(result => {
@@ -20,24 +22,21 @@ export default function AuthPage() {
         } : null;
         if (realUser) {
           setCurrentUser(realUser);
-          const savedPage = localStorage.getItem('saved-page');
-          if (savedPage === null) {
-            setCurrentPage('dashboard');
-          } else {
-            setCurrentPage(savedPage);
-          }
         } else {
-          setCurrentPage('landing');
+          navigate('/');
         }
       } else {
-        setCurrentPage('landing');
+        navigate('/');
       }
     }).catch(error => {
       console.log(error);
     });
-  });
-
+  }, []);
+  
   return (
-      <div className="spinner"></div>
+    <>
+      <Navigation />
+      <Outlet />
+    </>
   );
 }

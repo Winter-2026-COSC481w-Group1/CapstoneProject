@@ -1,13 +1,15 @@
 import { Plus, FileText, TrendingUp, Clock, CheckCircle, FileUp, FileCheck } from 'lucide-react';
 import { useApp } from '../AppContext';
+import { useNavigate } from 'react-router-dom';
 
 export default function Dashboard() {
-  const { currentUser, libraryFiles, assessments, activities, setCurrentPage } = useApp();
+  const navigate = useNavigate();
+  const { currentUser, libraryFiles, assessments, activities } = useApp();
 
   const readyFiles = libraryFiles.filter(f => f.status === 'ready').length;
   const completedAssessments = assessments.filter(a => a.status === 'completed');
   const avgScore = completedAssessments.length > 0
-    ? Math.round(completedAssessments.reduce((acc, a) => acc + (a.score || 0), 0) / completedAssessments.length)
+    ? Math.round(completedAssessments.reduce((acc, a) => acc + (a.bestScore || 0), 0) / completedAssessments.length)
     : 0;
 
   const today = new Date().toLocaleDateString('en-US', {
@@ -49,7 +51,7 @@ export default function Dashboard() {
                 Create intelligent, context-aware exams from your library materials in seconds.
               </p>
               <button
-                onClick={() => setCurrentPage('exam-studio')}
+                onClick={() => navigate('/dashboard/exam-studio')}
                 className="inline-flex items-center gap-2 bg-white text-emerald-600 px-6 py-3 rounded-xl font-semibold hover:bg-emerald-50 transition-colors shadow-lg group-hover:scale-105 transform duration-300"
               >
                 <Plus className="w-5 h-5" />
@@ -76,7 +78,7 @@ export default function Dashboard() {
               <div className="text-gray-600 text-sm">Files in Library</div>
             </div>
             <button
-              onClick={() => setCurrentPage('library')}
+              onClick={() => navigate('/dashboard/library')}
               className="text-emerald-600 text-sm font-medium hover:text-emerald-700 flex items-center gap-1 mt-4"
             >
               View all files

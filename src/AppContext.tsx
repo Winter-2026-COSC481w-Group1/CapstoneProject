@@ -6,8 +6,6 @@ import { get } from './api';
 interface AppContextType {
   currentUser: User | null;
   setCurrentUser: (user: User | null) => void;
-  currentPage: string;
-  setCurrentPage: (page: string) => void;
   libraryFiles: LibraryFile[];
   setLibraryFiles: (files: LibraryFile[] | ((prevFiles: LibraryFile[]) => LibraryFile[])) => void;
   fetchLibraryFiles: () => Promise<void>;
@@ -46,8 +44,6 @@ const mockActivities: Activity[] = [
 ];
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const firstPage = 'spinningCircle';
-  const [currentPage, setCurrentPage] = useState(firstPage);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [libraryFiles, setLibraryFiles] = useState<LibraryFile[]>([]);
   const [assessments, setAssessments] = useState<Assessment[]>([]);
@@ -152,11 +148,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       value={{
         currentUser,
         setCurrentUser,
-        currentPage,
-        setCurrentPage: (page) => {
-          localStorage.setItem('saved-page', page);
-          setCurrentPage(page);
-        },
         libraryFiles,
         setLibraryFiles,
         fetchLibraryFiles,

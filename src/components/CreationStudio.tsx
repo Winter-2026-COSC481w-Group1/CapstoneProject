@@ -2,49 +2,48 @@ import { useState } from "react";
 import { CheckSquare, Square, Zap } from "lucide-react";
 import { useApp } from "../AppContext";
 import { Assessment } from "../types";
-import { supabaseClient } from '../supabase';
-import { post } from '../api';
+import { supabaseClient } from "../supabase";
+import { post } from "../api";
+import { useNavigate } from "react-router-dom";
 
-export default function CreationStudio() { 
-const {
-  libraryFiles,
-  assessments,
-  setAssessments,
-  fetchAssessments,
-  setCurrentPage
-} = useApp();
+export default function CreationStudio() {
+  const navigate = useNavigate();
 
-const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
-const [selectedTypes, setSelectedTypes] = useState<string[]>([
-  "multiple-choice",
-]);
-const [questionCount, setQuestionCount] = useState(15);
-const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">(
-  "medium",
-);
+  const { libraryFiles, assessments, setAssessments, fetchAssessments } =
+    useApp();
 
-const readyFiles = libraryFiles.filter((f) => f.status === "ready");
-
-const [topic, setTopic] = useState('');
-
-const toggleFile = (fileName: string) => {
-  setSelectedFiles((prev) =>
-    prev.includes(fileName)
-      ? prev.filter((f) => f !== fileName)
-      : [...prev, fileName],
+  const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
+  const [selectedTypes, setSelectedTypes] = useState<string[]>([
+    "multiple-choice",
+  ]);
+  const [questionCount, setQuestionCount] = useState(15);
+  const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">(
+    "medium",
   );
-};
 
-const toggleType = (type: string) => {
-  setSelectedTypes((prev) =>
-    prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type],
-  );
-};
+  const readyFiles = libraryFiles.filter((f) => f.status === "ready");
 
- const handleGenerate = async () => {
+  const [topic, setTopic] = useState("");
 
+  const toggleFile = (fileName: string) => {
+    setSelectedFiles((prev) =>
+      prev.includes(fileName)
+        ? prev.filter((f) => f !== fileName)
+        : [...prev, fileName],
+    );
+  };
+
+  const toggleType = (type: string) => {
+    setSelectedTypes((prev) =>
+      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type],
+    );
+  };
+
+  const handleGenerate = async () => {
     // find file opject
-    const selectedFileObjects = libraryFiles.filter(f => selectedFiles.includes(f.name));
+    const selectedFileObjects = libraryFiles.filter((f) =>
+      selectedFiles.includes(f.name),
+    );
 
     //currently the backend supports one file
     const primaryFile = selectedFileObjects[0];
@@ -54,20 +53,26 @@ const toggleType = (type: string) => {
       query: topic, // topic/query
       num_questions: questionCount,
       difficulty: difficulty,
-      question_types: selectedTypes.map(t => t.replace('-', '_')) // match 'multiple_choice' backend format
+      question_types: selectedTypes.map((t) => t.replace("-", "_")), // match 'multiple_choice' backend format
     };
 
     try {
-      setCurrentPage('loading');
+      navigate("/dashboard/loading");
 
       //get session token
-      const { data: {session} } = await supabaseClient.auth.getSession();
-      if(!session?.access_token) {
-        console.error('no session token available'); //do something else here?
+      const {
+        data: { session },
+      } = await supabaseClient.auth.getSession();
+      if (!session?.access_token) {
+        console.error("no session token available"); //do something else here?
         return;
       }
 
-      const res = await post('api/v1/assessments', requestBody, session.access_token)
+      const res = await post(
+        "api/v1/assessments",
+        requestBody,
+        session.access_token,
+      );
 
       const assessmentId = await res;
 
@@ -76,15 +81,15 @@ const toggleType = (type: string) => {
         topic: topic,
         title: `Assessment: ${primaryFile.name}`,
         createdAt: new Date(),
-        status: 'pending', // or 'processing'
+        status: "pending", // or 'processing'
         sourceFiles: selectedFiles,
         questionCount,
         difficulty,
         questions: [],
         attempts: {
           attempts: [],
-          scores: []
-        }
+          scores: [],
+        },
       };
 
       setAssessments([newAssessment, ...assessments]);
@@ -92,28 +97,25 @@ const toggleType = (type: string) => {
       fetchAssessments(); // will poll until assessment finishes processing (completes or fails)
 
       // Navigate to assessments hub where you can poll for status
-      setCurrentPage('assessments');
-
+      navigate("/dashboard/assessments");
     } catch (error) {
       console.error("Generation error:", error);
       alert("Error generating assessment. Please try again.");
-      setCurrentPage('examStudio');
+      navigate("/dashboard/examStudio");
     }
   };
 
-const canGenerate = selectedFiles.length > 0 && selectedTypes.length > 0;
+  const canGenerate = selectedFiles.length > 0 && selectedTypes.length > 0;
 
-
-return (<>
+  return (
+    <>
       <div className="grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200">
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
               Source Materials
             </h2>
-            <p className="text-gray-600 mb-6">
-              Select files from your library
-            </p>
+            <p className="text-gray-600 mb-6">Select files from your library</p>
 
             {readyFiles.length === 0 ? (
               <div className="text-center py-12 border-2 border-dashed border-gray-300 rounded-2xl">
@@ -121,7 +123,7 @@ return (<>
                   No ready files in your library
                 </p>
                 <button
-                  onClick={() => setCurrentPage("library")}
+                  onClick={() => navigate("/dashboard/library")}
                   className="text-emerald-600 font-medium hover:text-emerald-700"
                 >
                   Go to Library →
@@ -159,17 +161,21 @@ return (<>
           </div>
 
           <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Assessment Topic</h2>
-              <p className="text-gray-600 mb-6">What specific topic or chapter should the questions focus on?</p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              Assessment Topic
+            </h2>
+            <p className="text-gray-600 mb-6">
+              What specific topic or chapter should the questions focus on?
+            </p>
 
-              <input
-                type="text"
-                value={topic}
-                onChange={(e) => setTopic(e.target.value)}
-                placeholder="e.g., Cellular Respiration, The French Revolution, Quantum Mechanics..."
-                className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-gray-900"
-              />
-            </div>
+            <input
+              type="text"
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+              placeholder="e.g., Cellular Respiration, The French Revolution, Quantum Mechanics..."
+              className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-gray-900"
+            />
+          </div>
 
           <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200">
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
@@ -202,12 +208,8 @@ return (<>
                 }`}
               >
                 <div className="text-4xl mb-3">✓✗</div>
-                <div className="font-semibold text-gray-900">
-                  True/False
-                </div>
-                <div className="text-sm text-gray-600 mt-1">
-                  Binary choice
-                </div>
+                <div className="font-semibold text-gray-900">True/False</div>
+                <div className="text-sm text-gray-600 mt-1">Binary choice</div>
               </button>
 
               <button
@@ -219,9 +221,7 @@ return (<>
                 }`}
               >
                 <div className="text-4xl mb-3">✍️</div>
-                <div className="font-semibold text-gray-900">
-                  Short Answer
-                </div>
+                <div className="font-semibold text-gray-900">Short Answer</div>
                 <div className="text-sm text-gray-600 mt-1">Free text</div>
               </button>
             </div>
@@ -308,9 +308,7 @@ return (<>
 
               <div className="space-y-4 mb-6">
                 <div className="pb-4 border-b border-gray-200">
-                  <div className="text-sm text-gray-600 mb-2">
-                    Source Files
-                  </div>
+                  <div className="text-sm text-gray-600 mb-2">Source Files</div>
                   {selectedFiles.length === 0 ? (
                     <div className="text-sm text-gray-400 italic">
                       None selected
@@ -350,9 +348,7 @@ return (<>
                         >
                           {type
                             .split("-")
-                            .map(
-                              (w) => w.charAt(0).toUpperCase() + w.slice(1),
-                            )
+                            .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
                             .join(" ")}
                         </span>
                       ))}
@@ -370,12 +366,9 @@ return (<>
                 </div>
 
                 <div>
-                  <div className="text-sm text-gray-600 mb-2">
-                    Difficulty
-                  </div>
+                  <div className="text-sm text-gray-600 mb-2">Difficulty</div>
                   <div className="inline-flex items-center gap-2 bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-sm font-medium">
-                    {difficulty.charAt(0).toUpperCase() +
-                      difficulty.slice(1)}
+                    {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
                   </div>
                 </div>
               </div>
@@ -403,6 +396,5 @@ return (<>
         </div>
       </div>
     </>
-    
-);
+  );
 }

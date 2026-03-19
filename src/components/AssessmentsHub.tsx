@@ -2,20 +2,22 @@ import { useState } from 'react';
 import { Play, Download, Clock, CheckCircle, CircleX, FileText, EllipsisVertical } from 'lucide-react';
 import { useApp } from '../AppContext';
 import { supabaseClient } from '../supabase';
+import { useNavigate } from 'react-router-dom';
 
 const VITE_API_URL = import.meta.env.VITE_API_URL;
 
 export default function AssessmentsHub() {
-  const { assessments, setAssessments, setCurrentPage, setCurrentAssessment } = useApp();
+  const { assessments, setAssessments, setCurrentAssessment } = useApp();
   const [showDownloadMenu, setShowDownloadMenu] = useState<string | null>(null);
   const [showOptionsMenu, setShowOptionsMenu] = useState<string | null>(null);
-  const [assessmentsFilter, setAssessmentsFilter] = useState < string | null>(null);
+  const [assessmentsFilter, setAssessmentsFilter] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const handleStartExam = (assessmentId: string) => {
     const assessment = assessments.find(a => a.id === assessmentId);
     if (assessment) {
       setCurrentAssessment(assessment);
-      setCurrentPage('exam-mode');
+      navigate('/dashboard/exam-mode');
     }
   };
 
@@ -187,7 +189,7 @@ export default function AssessmentsHub() {
                 onClick={() => {
                   if (assessment.status === "completed") {
                     setCurrentAssessment(assessment);
-                    setCurrentPage('grading-report');
+                    navigate('/dashboard/grading-report');
                   }
                   }}
                   className={"w-full flex items-center justify-center gap-2 " + ((assessment.status === "completed") ? "bg-blue-100 hover:bg-blue-200 text-blue-600" : "bg-gray-200 text-gray-600 cursor-default") + " py-3 rounded-xl font-semibold"}
@@ -241,7 +243,7 @@ export default function AssessmentsHub() {
               <h3 className="text-lg font-semibold text-gray-900 mb-2">No assessments yet</h3>
               <p className="text-gray-600 mb-4">Create your first assessment to get started</p>
               <button
-                onClick={() => setCurrentPage('exam-studio')}
+                onClick={() => navigate('/dashboard/exam-studio')}
                 className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors"
               >
                 <Play className="w-4 h-4" />

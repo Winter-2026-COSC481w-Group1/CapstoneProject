@@ -1,9 +1,11 @@
 import { User, HardDrive, FileText, LogOut, Trash2, Hash } from 'lucide-react';
 import { useApp } from '../AppContext';
 import { supabaseClient } from '../supabase';
+import { useNavigate } from 'react-router-dom';
 
 export default function Profile() {
-  const { currentUser, libraryFiles, assessments, setCurrentPage } = useApp();
+  const navigate = useNavigate();
+  const { currentUser, libraryFiles, assessments } = useApp();
 
   if (!currentUser) {
     window.location.reload();
@@ -18,7 +20,7 @@ export default function Profile() {
   const handleLogout = async () => {
     const { error } = await supabaseClient.auth.signOut();
     console.log(error); // not using this value currently...
-    window.location.reload(); // returns to landing page
+    navigate('/');
   };
 
   const handlePurgeLibrary = () => {
@@ -168,7 +170,7 @@ export default function Profile() {
               </button>
               
               <button
-                  onClick={() => { setCurrentPage('resetPass'); }}
+                  onClick={() => { navigate('/resetPass'); }}
                 className="w-full flex items-center justify-between p-4 bg-white border-2 border-red-300 rounded-xl hover:border-red-500 hover:bg-red-50 transition-all group"
               >
                 

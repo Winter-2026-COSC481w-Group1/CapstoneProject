@@ -1,16 +1,18 @@
 import { Bell, Menu, X } from 'lucide-react';
 import { useApp } from '../AppContext';
+import { Link, useLocation } from 'react-router-dom';
 
 export default function Navigation() {
-  const { currentUser, currentPage, setCurrentPage, showMobileMenu, setShowMobileMenu } = useApp();
+  const { currentUser, showMobileMenu, setShowMobileMenu } = useApp();
+  const location = useLocation();
 
-  if (!currentUser || currentPage === 'resetPass') return null;
+  if (!currentUser) return null;
 
   const navLinks = [
-    { id: 'dashboard', label: 'Dashboard' },
-    { id: 'library', label: 'Library' },
-    { id: 'exam-studio', label: 'Exam Studio' },
-    { id: 'assessments', label: 'Assessments' }
+    { id: '/dashboard/home', label: 'Home' },
+    { id: '/dashboard/library', label: 'Library' },
+    { id: '/dashboard/exam-studio', label: 'Exam Studio' },
+    { id: '/dashboard/assessments', label: 'Assessments' }
   ];
 
   return (
@@ -26,17 +28,17 @@ export default function Navigation() {
 
           <div className="hidden md:flex items-center gap-2 flex-1 justify-center">
             {navLinks.map((link) => (
-              <button
+              <Link
                 key={link.id}
-                onClick={() => setCurrentPage(link.id)}
+                to={link.id}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                  currentPage === link.id
+                  location.pathname === link.id
                     ? 'bg-emerald-100 text-emerald-700'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                 }`}
               >
                 {link.label}
-              </button>
+              </Link>
             ))}
           </div>
 
@@ -46,12 +48,12 @@ export default function Navigation() {
               <span className="absolute top-1 right-1 w-2 h-2 bg-emerald-500 rounded-full"></span>
             </button>
 
-            <button
-              onClick={() => setCurrentPage('profile')}
+            <Link
+              to='profile'
               className="w-10 h-10 bg-emerald-600 rounded-full flex items-center justify-center text-white font-semibold hover:bg-emerald-700 transition-colors"
             >
               {currentUser.avatar}
-            </button>
+            </Link>
 
             <button
               onClick={() => setShowMobileMenu(!showMobileMenu)}
@@ -71,20 +73,20 @@ export default function Navigation() {
         <div className="fixed top-24 left-0 right-0 z-40 flex justify-center px-4 md:hidden">
           <div className="backdrop-blur-xl bg-white/90 border border-white/40 shadow-lg rounded-3xl p-4 w-full max-w-md">
             {navLinks.map((link) => (
-              <button
+              <Link
                 key={link.id}
+                to={link.id}
                 onClick={() => {
-                  setCurrentPage(link.id);
                   setShowMobileMenu(false);
                 }}
                 className={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all mb-2 ${
-                  currentPage === link.id
+                  location.pathname === link.id
                     ? 'bg-emerald-100 text-emerald-700'
                     : 'text-gray-600 hover:bg-gray-100'
                 }`}
               >
                 {link.label}
-              </button>
+              </Link>
             ))}
           </div>
         </div>
