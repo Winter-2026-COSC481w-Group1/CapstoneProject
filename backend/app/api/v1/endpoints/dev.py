@@ -2,7 +2,8 @@ import os
 from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
-from supabase import Client
+from app.api.dependencies import get_vector_service, get_embedding_service
+from app.auth import get_current_user
 
 router = APIRouter()
 
@@ -13,6 +14,12 @@ router = APIRouter()
 class LoginBody(BaseModel):
     email: str
     password: str
+
+
+class QueryRequest(BaseModel):
+    prompt: str
+    document_id: str
+    top_k: int = 5
 
 
 APP_ENV = os.getenv("APP_ENV", "production")
@@ -43,3 +50,41 @@ if APP_ENV == "development":
             )
 
         raise HTTPException(status_code=401, detail="Login failed (no session)")
+
+    @router.post("/query")
+    async def get_exam_sources(
+        request: QueryRequest,
+        current_user: Annotated[dict, Depends(get_current_user)],
+        vector_service=Depends(get_vector_service),
+        embedding_service=Depends(get_embedding_service),
+    ):
+        user_id = current_user["user_id"]
+
+        # generate the embedding for the search term
+        query_vector = await embedding_service.embed_query(request.prompt)
+
+        filters = {
+            "$and": [
+                {"user_id": {"$eq": user_id}},
+                {"document_id": {"$eq": request.document_id}},
+            ]
+        }
+
+        # query the Vector DB with a Metadata Filter
+        # filtering by user_id AND document_id
+        raw_results = await vector_service.query(
+            data=query_vector,
+            limit=request.top_k,
+            include_value=True,
+            filters=filters,
+        )
+
+        # raw_results is a list of objects or tuples; we map them to dicts
+        formatted_results = []
+        for item in raw_results:
+            # vecs results usually follow: (id, metadata) if include_value=False
+            row = {"id": item[0], "distance": item[1], "similarity_score": 1 - item[1]}
+            row.update(item[2])
+            formatted_results.append(row)
+
+        return {"query": request.prompt, "results": formatted_results}

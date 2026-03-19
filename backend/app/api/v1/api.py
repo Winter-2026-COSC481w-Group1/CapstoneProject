@@ -1,9 +1,7 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import documents, user, dev, query, assessments, notifications
+from app.api.v1.endpoints import documents, user, dev, assessments, notifications
 
 api_router = APIRouter()
-
-api_router.include_router(query.router, prefix="/query", tags=["Development"])
 
 api_router.include_router(user.router, prefix="/api/users", tags=["User Management"])
 
