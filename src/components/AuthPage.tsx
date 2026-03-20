@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Mail, Lock, ArrowLeft } from 'lucide-react';
-import { supabaseClient } from '../supabase';
+import { convertUser, supabaseClient } from '../supabase';
 import { useApp } from '../AppContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -41,13 +41,7 @@ export default function AuthPage() {
       setErr(error.message);
     } else {
       const user = data.user!;
-      const convertedUser = {
-        id: user.id,
-        name: user.user_metadata.full_name, // Should we assume there is always a name...?
-        email: user.email!,
-        avatar: user.user_metadata.full_name.match(/\b(\w)/g).join(''),
-        sessionHash: 'something' // TODO remove this field or populate with useful data
-      };
+      const convertedUser = convertUser(user);
       setCurrentUser(convertedUser);
       navigate("/dashboard/home");
     }
