@@ -1,3 +1,4 @@
+import { User } from "@supabase/supabase-js";
 // This imports the stuff for and sets up a supabase client
 import { createClient } from '@supabase/supabase-js';
 
@@ -11,3 +12,13 @@ if (!supabaseUrl || !supabaseKey) {
 }
 
 export const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+// Convert from supabase User type to the User type in types.ts
+export function convertUser(user: User) {
+  return {
+    id: user.id,
+    name: user.user_metadata.full_name ?? "Guest User",
+    email: user.email!,
+    avatar: (user.user_metadata.full_name ?? "Guest User").match(/\b(\w)/g).join(''),
+  };
+}

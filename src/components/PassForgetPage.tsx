@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Mail, ArrowLeft } from 'lucide-react';
-import { supabaseClient } from '../supabase';
+import { convertUser, supabaseClient } from '../supabase';
 import { useApp } from '../AppContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -38,15 +38,9 @@ export default function PassForgetPage() {
     
     if (data) {
       const user = data.user;
-      const realUser = user ? {
-        id: user.id,
-        name: user.user_metadata.full_name,
-        email: user.email!,
-        avatar: user.user_metadata.full_name.match(/\b(\w)/g).join(''),
-        sessionHash: 'something' // TODO remove this field or populate with useful data
-      } : null;
-      if (realUser) {
-        setCurrentUser(realUser);
+      const appUser = user ? convertUser(user) : null;
+      if (appUser) {
+        setCurrentUser(appUser);
         navigate('/resetPass');
       } else {
         setOtpErr('Could not verify OTP code.');

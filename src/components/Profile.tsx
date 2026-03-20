@@ -1,4 +1,4 @@
-import { User, HardDrive, FileText, LogOut, Trash2, Hash } from 'lucide-react';
+import { User, HardDrive, FileText, LogOut, Trash2 } from 'lucide-react';
 import { useApp } from '../AppContext';
 import { supabaseClient } from '../supabase';
 import { useNavigate } from 'react-router-dom';
@@ -56,16 +56,6 @@ export default function Profile() {
                   <div>
                     <div className="text-sm text-gray-600">Account Type</div>
                     <div className="font-semibold text-gray-900">Premium</div>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3 p-4 bg-blue-50 rounded-xl">
-                  <Hash className="w-5 h-5 text-blue-600 mt-0.5" />
-                  <div>
-                    <div className="text-sm text-gray-600">Session Hash</div>
-                    <div className="font-mono text-xs text-gray-900 break-all">
-                      {currentUser!.sessionHash}
-                    </div>
                   </div>
                 </div>
               </div>
