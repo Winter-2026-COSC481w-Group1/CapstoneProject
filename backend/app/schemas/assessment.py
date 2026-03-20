@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing import List, Optional
 
 
@@ -10,7 +10,7 @@ class QuestionSource(BaseModel):
 
 class QuestionDetail(BaseModel):
     id: str
-    type: str  # 'multiple-choice' | 'true-false' | 'short-answer'
+    type: str  # 'multiple_choice' | 'true_false' | 'short_answer'
     question: str
     options: Optional[List[str]] = None
     correctAnswer: int
@@ -19,11 +19,11 @@ class QuestionDetail(BaseModel):
 
 
 class QuestionSchema(BaseModel):
-    type: str  # 'multiple-choice' | 'true-false' | 'short-answer'
+    type: str  # 'multiple_choice' | 'true_false' | 'short_answer'
     question: str
-    numOptions: int #this will be used later when we add the option to choose number of multiple choice questions
+    numOptions: int  # this will be used later when we add the option to choose number of multiple choice questions
     options: List[str]
-    correctAnswer: int #index of correct option in list
+    correctAnswer: int  # index of correct option in list
     # metadata for RAG traceability
     source_text: str
     page_number: int
@@ -34,4 +34,4 @@ class AssessmentSchema(BaseModel):
     types: List[str]  # true/false, multiple choice, short answer
     difficulty: str  # 'easy' | 'medium' | 'hard'
     questions: List[QuestionSchema]
-    topic: str #either the original query or one entered when edited
+    topic: str  # either the original query or one entered when edited

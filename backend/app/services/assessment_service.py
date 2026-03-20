@@ -241,11 +241,11 @@ class AssessmentService:
         """
         for q_data in assessment_data.questions:
             # 1. Insert into 'questions' table
-            # Note: Map your frontend types to your DB check constraints (MCQ, TF, SA)
+            # Handle both hyphenated and underscored formats from frontend/LLM
             q_type_map = {
-                "multiple-choice": "MCQ",
-                "true-false": "TF",
-                "short-answer": "SA",
+                "multiple_choice": "MCQ",
+                "true_false": "TF",
+                "short_answer": "SA",
             }
 
             question_insert = {
@@ -266,11 +266,13 @@ class AssessmentService:
                 if q_data.options:
                     options_to_insert = []
                     for i, option in enumerate(q_data.options):
-                        options_to_insert.append({
-                            "question_id": new_q_id,
-                            "option_text": option,
-                            "is_correct": i == q_data.correctAnswer
-                        })
+                        options_to_insert.append(
+                            {
+                                "question_id": new_q_id,
+                                "option_text": option,
+                                "is_correct": i == q_data.correctAnswer,
+                            }
+                        )
 
                     if options_to_insert:
                         self.db_client.table("question_options").insert(
@@ -301,8 +303,6 @@ class AssessmentService:
                 query=query, document_id=document_id, limit=5, user_id=user_id
             )
 
-            print(context)
-
             if not context:
                 raise ValueError(f"No relevant content found for: {query}")
 
@@ -330,8 +330,7 @@ class AssessmentService:
             print(f"Error in generate_assessment {assessment_id}: {e}")
             await self.update_assessment_status(assessment_id, "failed", str(e))
 
-
-    #return assessment metadata for user
+    # return assessment metadata for user
     async def get_assessments(self, user_id: str) -> list:
         response = (
             self.db_client.table("assessments")
@@ -351,24 +350,24 @@ class AssessmentService:
                     "status": row.get("status"),
                     "sourceFiles": row.get("document_id"),  # Standardize key
                     "questionCount": row.get("num_questions"),
-                    "difficulty": row.get("difficulty"), # Rename for frontend
-                    #TODO add attempts when added to db
+                    "difficulty": row.get("difficulty"),  # Rename for frontend
+                    # TODO add attempts when added to db
                 }
             )
 
         return assessments
-    
-    async def update_assessment(self, 
-                                assessment_id: str, 
-                                assessment_data: AssessmentSchema, 
-                                user_id: str
-                                ):
+
+    async def update_assessment(
+        self, assessment_id: str, assessment_data: AssessmentSchema, user_id: str
+    ):
         metadata_update = {
             "title": assessment_data.title,
-            "num_questions": len(assessment_data.questions), # Automatically sync the count
+            "num_questions": len(
+                assessment_data.questions
+            ),  # Automatically sync the count
             "difficulty": assessment_data.difficulty,
             "query": assessment_data.topic,
-            "status": "completed" # Or whatever status is appropriate
+            "status": "completed",  # Or whatever status is appropriate
         }
 
         update_result = (
@@ -382,7 +381,7 @@ class AssessmentService:
         if not update_result.data:
             raise HTTPException(status_code=404, detail="Assessment not found")
 
-        #delete existing questions
+        # delete existing questions
         delete_result = (
             self.db_client.table("questions")
             .delete()
@@ -392,13 +391,12 @@ class AssessmentService:
 
         if not delete_result.data:
             raise HTTPException(status_code=404, detail="No questions found")
-        
+
         await self._save_assessment_to_db(assessment_id, assessment_data)
 
         return {"message": "Assessment updated successfully"}
 
-
-    async def delete_assessment(self, assessment_id: str, user_id:str):
+    async def delete_assessment(self, assessment_id: str, user_id: str):
         result = (
             self.db_client.table("assessments")
             .delete()
@@ -409,8 +407,8 @@ class AssessmentService:
 
         if not result.data:
             raise HTTPException(status_code=404, detail="Assessment not found")
-        
+
         return {
             "message": "Assessment deleted successfully",
-            "assessment_id": assessment_id
+            "assessment_id": assessment_id,
         }

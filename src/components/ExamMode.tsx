@@ -147,7 +147,7 @@ export default function ExamMode() {
 
             {question.type === 'true-false' && (
               <>
-                {['True', 'False'].map((option, idx) => (
+                {question.options?.map((option, idx) => (
                   <button
                     key={option}
                     onClick={() => handleAnswer(idx)}
