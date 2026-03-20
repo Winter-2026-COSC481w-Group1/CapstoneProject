@@ -1,9 +1,8 @@
 export interface User {
   id: string;
-  name: string;
+  name?: string;
   email: string;
   avatar: string;
-  sessionHash: string;
 }
 
 export interface LibraryFile {
