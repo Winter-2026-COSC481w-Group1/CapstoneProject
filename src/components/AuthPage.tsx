@@ -50,7 +50,7 @@ export default function AuthPage() {
   const handleGoogleSignIn = async () => {
     await supabaseClient.auth.signInWithOAuth({
       provider: 'google',
-      options: {redirectTo: window.location.origin + "/dashboard/home"}
+      options: {redirectTo: window.location.origin + "/#/dashboard/home"}
     });
   };
 

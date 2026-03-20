@@ -11,14 +11,14 @@ import Profile from './components/Profile';
 import PassForgetPage from './components/PassForgetPage';
 import ResetPassPage from './components/ResetPassPage';
 import Layout from './Layout';
-import { BrowserRouter } from 'react-router-dom';
+import { HashRouter } from 'react-router-dom';
 import { Routes, Route } from 'react-router-dom';
 import { AppProvider } from './AppContext';
 
 
 function App() {
   return (
-    <BrowserRouter>
+    <HashRouter>
       <AppProvider>
       <Routes>
         {/* Landing page*/ }
@@ -42,7 +42,7 @@ function App() {
         </Route>
         </Routes>
       </AppProvider>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
 
