@@ -47,6 +47,8 @@ class LLMService:
                     2. Conceptual: Explain "How" or "Why" (e.g., "What is the difference between X and Y?").
                     3. Applied: Scenario-based (e.g., "If a developer needs to do Z, which class should they use?").
                 - QUOTA: Aim for exactly {num_questions}. Only stop early if the relevant CONTEXT is completely exhausted.
+                - TRUE/FALSE RULE: For "true-false" types, the "options" list MUST be exactly ["True", "False"]. 
+                - The "correctAnswer" index must be 0 if the statement is True, and 1 if it is False.
 
                 INSTRUCTIONS:
                 1. Generate a JSON object that matches the structure below EXACTLY.
@@ -64,10 +66,7 @@ class LLMService:
 
             # check that response text exists
             if not raw_response.text:
-             raise ValueError("LLM returned an empty response")
-            
-            #print(f"{raw_response}")
-            print(f"{raw_response.text}")
+                raise ValueError("LLM returned an empty response")
 
             return AssessmentSchema.model_validate_json(raw_response.text)
 
