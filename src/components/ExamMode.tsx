@@ -10,7 +10,7 @@ export default function ExamMode() {
   const [answers, setAnswers] = useState<Record<string, number | string>>({});
 
   if (!currentAssessment) {
-    navigate('/dashbaord/assessments');
+    navigate('/dashboard/assessments');
     return null;
   }
 

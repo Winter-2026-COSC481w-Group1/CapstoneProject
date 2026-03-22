@@ -16,7 +16,7 @@ export default function EditingStudio() {
   const [isEdited, setIsEdited] = useState(false);
   
   if (!currentAssessment) {
-    navigate('/dashbaord/assessments');
+    navigate('/dashboard/assessments');
     return null;
   }
 
