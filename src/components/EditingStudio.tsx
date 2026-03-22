@@ -16,6 +16,7 @@ export default function EditingStudio() {
   } = useApp();
 
   const [isEdited, setIsEdited] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   
   if (!currentAssessment) {
     navigate('/dashboard/assessments');
@@ -41,6 +42,7 @@ export default function EditingStudio() {
   const handleSaving = async function () {
     if (!currentAssessment) return;
 
+    setIsSaving(true);
     try {
       const { data: { session } } = await supabaseClient.auth.getSession();
       if (!session?.access_token) {
@@ -80,6 +82,8 @@ export default function EditingStudio() {
     } catch (error) {
       console.error('Error updating assessment:', error);
       // Optionally, show an error message to the user
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -203,14 +207,14 @@ export default function EditingStudio() {
 
             <button
               onClick={handleSaving}
-              disabled={!isEdited}
+              disabled={!isEdited || isSaving}
               className={`w-full py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2 ${
-                isEdited
+                isEdited && !isSaving
                   ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg hover:shadow-xl"
                   : "bg-gray-200 text-gray-400 cursor-not-allowed"
               }`}
             >
-              Save Edits
+              {isSaving ? "Saving..." : "Save Edits"}
             </button>
 
             {!isEdited && (
