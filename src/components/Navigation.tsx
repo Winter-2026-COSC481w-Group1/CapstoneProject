@@ -1,9 +1,11 @@
-import { Bell, Menu, X } from 'lucide-react';
+import { Bell, CircleQuestionMark, ExternalLink, Menu, X } from 'lucide-react';
 import { useApp } from '../AppContext';
 import { Link, useLocation } from 'react-router-dom';
+import { useState } from 'react';
 
 export default function Navigation() {
   const { currentUser, showMobileMenu, setShowMobileMenu } = useApp();
+  const [showBugReportMenu, setShowBugReportMenu] = useState(false);
   const location = useLocation();
 
   if (!currentUser) return null;
@@ -42,7 +44,19 @@ export default function Navigation() {
             ))}
           </div>
 
-          <div className="flex items-center gap-4 ml-auto">
+          <div className="flex items-center gap-3 ml-auto">
+            <button className="relative p-2 hover:bg-gray-100 rounded-full transition-colors" onClick={() => { setShowBugReportMenu(!showBugReportMenu) }}>
+              <CircleQuestionMark className="w-5 h-5 text-gray-600" />
+              {showBugReportMenu && (
+                <div className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-200 py-2 min-w-[180px] z-10">
+                  <a className="inline-flex w-full text-left px-4 py-2 hover:bg-emerald-50 text-sm font-medium text-gray-700" href="https://docs.google.com/forms/d/e/1FAIpQLSfHOyMmNEj4jzZT_MQoPgkXWuzxD2Bwr_Lv_G7fUOKGTOXTBQ/viewform?usp=publish-editor" target="_blank">
+                      <span>Report an issue</span>
+                      <ExternalLink className="w-4 h-4 text-gray-700 ms-auto my-auto" />
+                  </a>
+                </div>
+              )}
+            </button>
+            
             <button className="relative p-2 hover:bg-gray-100 rounded-full transition-colors">
               <Bell className="w-5 h-5 text-gray-600" />
               <span className="absolute top-1 right-1 w-2 h-2 bg-emerald-500 rounded-full"></span>
