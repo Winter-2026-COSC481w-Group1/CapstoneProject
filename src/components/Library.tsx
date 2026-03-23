@@ -131,7 +131,7 @@ export default function Library() {
             type="file"
             id="file-upload"
             className="hidden"
-            accept=".pdf"
+            accept=".pdf,.pptx"
             onChange={handleFileInput}
           />
           <label
@@ -150,7 +150,7 @@ export default function Library() {
               Drag and drop or click to browse
             </p>
             <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 px-4 py-2 rounded-full text-sm">
-              PDF files up to 50MB
+              PDF or PPTX files up to 50MB
             </div>
           </label>
         </div>
