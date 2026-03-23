@@ -37,7 +37,7 @@ class AssessmentService:
         # ownership check
         assessment_response = (
             self.db_client.table("assessments")
-            .select("id, document_id")
+            .select("id, document_id, document_ids")
             .eq("id", assessment_id)
             .eq("user_id", user_id)
             .maybe_single()
@@ -46,16 +46,24 @@ class AssessmentService:
         if not assessment_response.data:
             raise PermissionError("Assessment not found or user does not have access.")
 
-        # get document filename
-        document_id = assessment_response.data["document_id"]
-        doc_response = (
-            self.db_client.table("documents")
-            .select("file_name")
-            .eq("id", document_id)
-            .maybe_single()
-            .execute()
-        )
-        file_name = doc_response.data["file_name"] if doc_response else "Unknown"
+        data = assessment_response.data
+        all_ids = []
+        if data.get("document_id"):
+            all_ids.append(data["document_id"])
+        if data.get("document_ids"):
+            all_ids.extend(data["document_ids"])
+
+        unique_doc_ids = list(set(all_ids))
+
+        doc_names_map = {}
+        if unique_doc_ids:
+            doc_res = (
+                self.db_client.table("documents")
+                .select("id, file_name")
+                .in_("id", unique_doc_ids)
+                .execute()
+            )
+            doc_names_map = {doc["id"]: doc["file_name"] for doc in doc_res.data}
 
         # fetch questions
         questions_response = (
@@ -109,8 +117,18 @@ class AssessmentService:
                 match = re.search(r"Page: (\d+) Text: (.*)", explanation)
                 if match:
                     page, text = match.groups()
+                    q_doc_id = q.get("document_id")
+
+                    if q_doc_id and q_doc_id in doc_names_map:
+                        current_file_name = doc_names_map[q_doc_id]
+                    elif doc_names_map:
+                        # Fallback to the first file in the list for this assessment
+                        current_file_name = list(doc_names_map.values())[0]
+                    else:
+                        current_file_name = "Unknown"
+
                     source = QuestionSource(
-                        text=text.strip(), page=int(page), fileName=file_name
+                        text=text.strip(), page=int(page), fileName=current_file_name
                     )
 
             detailed_questions.append(
@@ -136,14 +154,20 @@ class AssessmentService:
             self.db_client.table("user_library")
             .select("document_id")
             .eq("user_id", user_id)
-            .eq("document_id", request.document_id)  # Use .eq for a single ID
-            .maybe_single()
+            .in_("document_id", request.document_ids)
             .execute()
         )
 
         if not check_ownership.data:
             raise PermissionError(
                 f"User {user_id} does not have access to document {request.document_id}"
+            )
+
+        owned_ids = [row["document_id"] for row in check_ownership.data]
+        if len(owned_ids) != len(request.document_ids):
+            missing = set(request.document_ids) - set(owned_ids)
+            raise PermissionError(
+                f"User {user_id} does not have access to documents: {missing}"
             )
 
         # convert Pydantic model to dict
@@ -164,7 +188,7 @@ class AssessmentService:
         )
 
         # execute the insert
-        # result.data will contain the newly created row, including its UUID 'id'
+        # result.data will contain the newly created row
         result = self.db_client.table("assessments").insert(insert_data).execute()
 
         if not result.data:
@@ -185,7 +209,7 @@ class AssessmentService:
         ).execute()
 
     async def get_context_for_assessment(
-        self, query: str, document_id: str, limit: int, user_id: str
+        self, query: str, document_ids: list[str], chunks: int, user_id: str
     ) -> str:
         """
         SPECIALIST: Just handles the RAG retrieval and formatting.
@@ -196,11 +220,16 @@ class AssessmentService:
             return ""
 
         #  query Vector DB ensure only documents that the user owns
-        filters = {"document_id": {"$eq": document_id}}
+        filters = {
+            "$and": [
+                {"document_id": {"$in": document_ids}},
+                {"user_id": {"$eq": user_id}},
+            ]
+        }
 
         retrieved_chunks = await self.vector_service.query(
             embedding,
-            limit=10,
+            chunks=chunks,
             filters=filters,
             include_value=True,
             include_metadata=True,
@@ -218,18 +247,19 @@ class AssessmentService:
 
         valid_chunks.sort(key=lambda x: x["score"], reverse=True)
 
-        # take the top 5 for the LLM
-        final_selection = valid_chunks[:5]
-
         # format the context for the LLM
         formatted_context = []
-        for i, chunk in enumerate(final_selection):
+        for i, chunk in enumerate(valid_chunks):
             metadata = chunk["metadata"]
             text = metadata.get("text", "")
+            doc_id = metadata.get("document_id", "unknown")  # Get the ID from metadata
+            page_num = metadata.get("page_number")
 
             if text:
                 # Adding 'Source' headers helps LLM cite its answers???
-                formatted_context.append(f"--- SOURCE {i + 1} ---\n{text.strip()}")
+                formatted_context.append(
+                    f"--- SOURCE {i + 1} (ID: {doc_id} | PAGE: {page_num}) ---\n{text.strip()}"
+                )
 
         return "\n\n".join(formatted_context)
 
@@ -253,6 +283,7 @@ class AssessmentService:
                 "question_text": q_data.question,
                 "question_type": q_type_map.get(q_data.type, "MCQ"),
                 "explanation": f"Page: {q_data.page_number} Text: {q_data.source_text}",  # Using source_text as explanation/context
+                "document_id": q_data.document_id,
             }
 
             q_result = (
@@ -282,7 +313,7 @@ class AssessmentService:
     async def generate_assessment(
         self,
         assessment_id: str,
-        document_id: str,
+        document_ids: list[str],
         query: str,
         user_id: str,
         num_questions: int,
@@ -296,11 +327,17 @@ class AssessmentService:
             # update status to processing
             await self.update_assessment_status(assessment_id, "processing")
 
-            if not document_id:
+            if not document_ids:
                 raise ValueError("At least one document must be selected.")
 
+            # will query 3 chunks per question requested, minimum 10, upper limit 35
+            chunks_to_request = max(10, min(num_questions * 3, 35))
+
             context = await self.get_context_for_assessment(
-                query=query, document_id=document_id, limit=5, user_id=user_id
+                query=query,
+                document_ids=document_ids,
+                chunks=chunks_to_request,
+                user_id=user_id,
             )
 
             if not context:

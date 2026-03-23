@@ -51,7 +51,7 @@ class VectorDBService:
     async def query(
         self,
         data: list[float],
-        limit: int,
+        chunks: int,
         filters: dict[str, any],
         include_value: bool = False,
         include_metadata: bool = True,
@@ -62,7 +62,7 @@ class VectorDBService:
         try:
             results = self.collection.query(
                 data=data,  # the single embedding
-                limit=limit,
+                limit=chunks,
                 filters=filters,  # metadata filtering
                 include_value=include_value,  # this returns the distance/score
                 include_metadata=include_metadata,  # this returns your metadata dict (with 'text')
@@ -104,12 +104,16 @@ class VectorDBService:
                 chunk_ids = [chunk[0] for chunk in chunks_to_delete]
                 self.collection.delete(ids=chunk_ids)
                 total_deleted += len(chunk_ids)
-                print(f"Deleted {len(chunk_ids)} vector chunks (total: {total_deleted}) for document {document_id}")
+                print(
+                    f"Deleted {len(chunk_ids)} vector chunks (total: {total_deleted}) for document {document_id}"
+                )
 
                 # If we got fewer than batch_size, we've deleted all chunks
                 if len(chunk_ids) < batch_size:
                     break
 
-            print(f"Completed: Deleted {total_deleted} total vector chunks for document {document_id}")
+            print(
+                f"Completed: Deleted {total_deleted} total vector chunks for document {document_id}"
+            )
         except Exception as e:
             print(f"Vector delete warning: {e}")

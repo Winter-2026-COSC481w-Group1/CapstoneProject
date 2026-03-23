@@ -27,6 +27,7 @@ class QuestionSchema(BaseModel):
     # metadata for RAG traceability
     source_text: str
     page_number: int
+    document_id: str
 
 
 class AssessmentSchema(BaseModel):
