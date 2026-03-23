@@ -30,7 +30,6 @@ class UploadService:
         self,
         file: UploadFile,
         user_id: str,
-        background_tasks: BackgroundTasks,
     ):
         # 1) Basic validation
         if file.content_type not in ("application/pdf", "application/octet-stream"):
@@ -166,8 +165,7 @@ class UploadService:
         # 6) Enqueue background task for further processing (e.g., chunking, embedding)
         # only process/index if the document isn't already 'ready' OR 'processing' or 'indexing'
         if document.get("status") not in ["ready", "processing", "indexing"]:
-            background_tasks.add_task(
-                process_pdf_in_background,
+            await process_pdf_in_background(
                 document_id,
                 sha256,
                 document["file_path"],
