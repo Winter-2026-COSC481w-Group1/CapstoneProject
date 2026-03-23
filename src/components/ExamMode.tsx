@@ -67,7 +67,7 @@ export default function ExamMode() {
       assessments.map(a => a.id === currentAssessment.id ? updatedAssessment : a)
     );
 
-    navigate('/dashboardgrading-report');
+    navigate('/dashboard/grading-report');
   };
 
   const isLastQuestion = currentQuestion === questions.length - 1;
