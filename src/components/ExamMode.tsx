@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight, Save } from 'lucide-react';
 import { useApp } from '../AppContext';
+import { useNavigate } from 'react-router-dom';
 
 export default function ExamMode() {
-  const { currentAssessment, setCurrentPage, assessments, setAssessments } = useApp();
+  const navigate = useNavigate();
+  const { currentAssessment, assessments, setAssessments } = useApp();
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number | string>>({});
 
   if (!currentAssessment) {
-    setCurrentPage('assessments');
+    navigate('/dashbaord/assessments');
     return null;
   }
 
@@ -65,7 +67,7 @@ export default function ExamMode() {
       assessments.map(a => a.id === currentAssessment.id ? updatedAssessment : a)
     );
 
-    setCurrentPage('grading-report');
+    navigate('/dashboardgrading-report');
   };
 
   const isLastQuestion = currentQuestion === questions.length - 1;
@@ -83,7 +85,7 @@ export default function ExamMode() {
             </div>
 
             <button
-              onClick={() => setCurrentPage('assessments')}
+              onClick={() => navigate('/dashboard/assessments')}
               className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <Save className="w-4 h-4" />
@@ -145,7 +147,7 @@ export default function ExamMode() {
 
             {question.type === 'true-false' && (
               <>
-                {['True', 'False'].map((option, idx) => (
+                {question.options?.map((option, idx) => (
                   <button
                     key={option}
                     onClick={() => handleAnswer(idx)}

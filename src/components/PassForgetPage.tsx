@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { Mail, ArrowLeft } from 'lucide-react';
-import { supabaseClient } from '../supabase';
+import { convertUser, supabaseClient } from '../supabase';
 import { useApp } from '../AppContext';
+import { useNavigate } from 'react-router-dom';
 
-export default function AuthPage() {
-  const { setCurrentUser, setCurrentPage } = useApp();
+export default function PassForgetPage() {
+  const navigate = useNavigate();
+  const { setCurrentUser } = useApp();
   const [emailSent, setEmailSent] = useState(false);
   const [otpErr, setOtpErr] = useState('');
   const [otp, setOtp] = useState('');
@@ -36,16 +38,10 @@ export default function AuthPage() {
     
     if (data) {
       const user = data.user;
-      const realUser = user ? {
-        id: user.id,
-        name: user.user_metadata.full_name,
-        email: user.email!,
-        avatar: user.user_metadata.full_name.match(/\b(\w)/g).join(''),
-        sessionHash: 'something' // TODO remove this field or populate with useful data
-      } : null;
-      if (realUser) {
-        setCurrentUser(realUser);
-        setCurrentPage('resetPass');
+      const appUser = user ? convertUser(user) : null;
+      if (appUser) {
+        setCurrentUser(appUser);
+        navigate('/resetPass');
       } else {
         setOtpErr('Could not verify OTP code.');
       }
@@ -83,7 +79,7 @@ export default function AuthPage() {
       <div className="flex-1 flex items-center justify-center bg-white p-8">
         <div className="w-full max-w-md">
           <button
-            onClick={() => setCurrentPage('landing')}
+            onClick={() => navigate('/')}
             className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-8 transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />

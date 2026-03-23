@@ -1,8 +1,8 @@
 import { BookOpen, Search, Zap, ArrowRight } from 'lucide-react';
-import { useApp } from '../AppContext';
+import { useNavigate } from 'react-router-dom';
 
 export default function LandingPage() {
-  const { setCurrentPage } = useApp();
+  const navigate = useNavigate();
   
   return (
     <div className="min-h-screen bg-stone-50">
@@ -25,7 +25,7 @@ export default function LandingPage() {
 
             <button
               onClick={() => {
-                setCurrentPage('auth');
+                navigate('/auth');
               }}
               className="group inline-flex items-center gap-3 bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-4 rounded-full text-lg font-semibold transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
             >
@@ -125,7 +125,7 @@ export default function LandingPage() {
             Join thousands of educators creating better exams with AI.
           </p>
           <button
-            onClick={() => setCurrentPage('auth')}
+            onClick={() => navigate('/auth')}
             className="inline-flex items-center gap-3 bg-white text-emerald-600 px-8 py-4 rounded-full text-lg font-semibold hover:bg-emerald-50 transition-colors shadow-lg"
           >
             Get Started Free

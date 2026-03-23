@@ -1,18 +1,20 @@
 import { useState } from 'react';
 import { Mail, Lock, ArrowLeft } from 'lucide-react';
-import { supabaseClient } from '../supabase';
+import { convertUser, supabaseClient } from '../supabase';
 import { useApp } from '../AppContext';
+import { useNavigate } from 'react-router-dom';
 
 export default function AuthPage() {
-  const { setCurrentUser, setCurrentPage } = useApp();
+  const { setCurrentUser } = useApp();
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [err, setErr] = useState<string | null>(null);
+  const navigate = useNavigate();
   
   const handleForgottenPassword = () => {
-    setCurrentPage('passForgetPage');
+    navigate('/passForgetPage');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -39,22 +41,16 @@ export default function AuthPage() {
       setErr(error.message);
     } else {
       const user = data.user!;
-      const convertedUser = {
-        id: user.id,
-        name: user.user_metadata.full_name, // Should we assume there is always a name...?
-        email: user.email!,
-        avatar: user.user_metadata.full_name.match(/\b(\w)/g).join(''),
-        sessionHash: 'something' // TODO remove this field or populate with useful data
-      };
+      const convertedUser = convertUser(user);
       setCurrentUser(convertedUser);
-      setCurrentPage('dashboard');
+      navigate("/dashboard/home");
     }
   };
 
   const handleGoogleSignIn = async () => {
     await supabaseClient.auth.signInWithOAuth({
       provider: 'google',
-      options: {redirectTo: window.location.origin}
+      options: {redirectTo: window.location.origin + "/#/dashboard/home"}
     });
   };
 
@@ -87,7 +83,7 @@ export default function AuthPage() {
       <div className="flex-1 flex items-center justify-center bg-white p-8">
         <div className="w-full max-w-md">
           <button
-            onClick={() => setCurrentPage('landing')}
+            onClick={() => navigate('/')}
             className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-8 transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
