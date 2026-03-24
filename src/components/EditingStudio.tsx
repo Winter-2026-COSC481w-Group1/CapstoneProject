@@ -3,6 +3,8 @@ import { CheckCircle, Circle, FileText, X, Plus } from "lucide-react";
 import { useApp } from "../AppContext";
 import { Assessment } from "../types";
 import { useNavigate } from 'react-router-dom';
+import { put } from '../api';
+import { supabaseClient } from '../supabase';
 
 export default function EditingStudio() {
   const navigate = useNavigate();
@@ -14,9 +16,10 @@ export default function EditingStudio() {
   } = useApp();
 
   const [isEdited, setIsEdited] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   
   if (!currentAssessment) {
-    navigate('/dashbaord/assessments');
+    navigate('/dashboard/assessments');
     return null;
   }
 
@@ -36,16 +39,52 @@ export default function EditingStudio() {
     setIsEdited(true);
   };
 
-  const handleSaving = function () {
-    console.log("saved!");
-    // TODO actually save the currentAssessment
-    if (currentAssessment) {
-      const assessmentIndex = assessments.findIndex((test) => test.id === currentAssessment.id );
-      if (assessmentIndex >= 0)
-        assessments[assessmentIndex] = currentAssessment; // saves into the assessments in local state
-      // this is where an api call is necessary
+  const handleSaving = async function () {
+    if (!currentAssessment) return;
+
+    setIsSaving(true);
+    try {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (!session?.access_token) {
+        console.error('No session token available');
+        return;
+      }
+
+      const types = Array.from(new Set(currentAssessment.questions.map(q => q.type)));
+      const questions = currentAssessment.questions.map(q => ({
+        type: q.type,
+        question: q.question,
+        numOptions: q.numOptions,
+        options: q.options || [],
+        correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : parseInt(q.correctAnswer as string),
+        source_text: q.source?.text || '',
+        page_number: q.source?.page || 0,
+      }));
+
+      const data = {
+        title: currentAssessment.title,
+        types,
+        difficulty: currentAssessment.difficulty,
+        questions,
+        topic: currentAssessment.topic,
+      };
+
+      await put(`api/v1/assessments/${currentAssessment.id}`, data, session.access_token);
+
+      // Update local state
+      const assessmentIndex = assessments.findIndex((test) => test.id === currentAssessment.id);
+      if (assessmentIndex >= 0) {
+        assessments[assessmentIndex] = { ...currentAssessment };
+      }
+
+      setIsEdited(false);
+      console.log("Assessment updated successfully");
+    } catch (error) {
+      console.error('Error updating assessment:', error);
+      // Optionally, show an error message to the user
+    } finally {
+      setIsSaving(false);
     }
-    setIsEdited(false);
   };
 
   const handleCorrectOptionChange = function (
@@ -168,14 +207,14 @@ export default function EditingStudio() {
 
             <button
               onClick={handleSaving}
-              disabled={!isEdited}
+              disabled={!isEdited || isSaving}
               className={`w-full py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2 ${
-                isEdited
+                isEdited && !isSaving
                   ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg hover:shadow-xl"
                   : "bg-gray-200 text-gray-400 cursor-not-allowed"
               }`}
             >
-              Save Edits
+              {isSaving ? "Saving..." : "Save Edits"}
             </button>
 
             {!isEdited && (
