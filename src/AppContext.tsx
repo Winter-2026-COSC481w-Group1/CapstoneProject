@@ -75,7 +75,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         uploadedAt: new Date(doc.uploadedAt),
         status: doc.status as 'ready' | 'indexing' | 'processing' | 'pending' | 'failed',
         pageCount: doc.pageCount ?? 0,
-      }));
+      })).sort((a: LibraryFile, b: LibraryFile) => b.uploadedAt.getTime() - a.uploadedAt.getTime());
 
       setLibraryFiles(files);
 
@@ -113,7 +113,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         bestScore: undefined, // !!! Not provided; set later if needed
         lastScore: undefined, // !!! Not provided; set later if needed
         attempts: { attempts: [], scores: [] }, // !!! Default empty
-      }));
+      })).sort((a: Assessment, b: Assessment) => b.createdAt.getTime() - a.createdAt.getTime());
 
       // Fetch questions
       for (const ass of assessments) {
