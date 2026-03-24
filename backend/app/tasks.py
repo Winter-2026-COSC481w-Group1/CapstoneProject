@@ -2,9 +2,11 @@ from supabase import Client
 from app.services.vector_db_service import VectorDBService
 from app.services.embedding_service import EmbeddingService
 from app.utils.pdf_processor import pdf_process_to_chunks
+from app.utils.pptx_processor import pptx_process_to_chunks
+import os
 
 
-async def process_pdf_in_background(
+async def process_document(
     document_id: str,
     file_hash: str,
     file_path: str,
@@ -13,7 +15,6 @@ async def process_pdf_in_background(
     vector_service: VectorDBService,
     embedding_service: EmbeddingService,
 ):
-    print(f"Starting background processing for document: {document_id}")
     try:
         # update document status to 'processing'
         db_client.table("documents").update({"status": "processing"}).eq(
@@ -21,12 +22,17 @@ async def process_pdf_in_background(
         ).execute()
 
         # fetch the file from Supabase Storage
-        storage_path = f"user-uploads/{user_id}/{document_id}.pdf"
+        file_bytes = db_client.storage.from_("pdfs").download(file_path)
 
-        file_bytes = db_client.storage.from_("pdfs").download(storage_path)
+        # Determine which processor to use based on extension
+        file_ext = os.path.splitext(file_path)[1].lower()
 
-        # process PDF to chunks
-        chunks = pdf_process_to_chunks(file_bytes, file_hash)
+        if file_ext == ".pdf":
+            chunks = pdf_process_to_chunks(file_bytes, file_hash)
+        elif file_ext == ".pptx":
+            chunks = pptx_process_to_chunks(file_bytes, file_hash)
+        else:
+            raise ValueError(f"Unsupported file extension: {file_ext}")
 
         batch_size = 20
         total_chunks = len(chunks)
@@ -39,13 +45,13 @@ async def process_pdf_in_background(
 
         for i in range(0, total_chunks, batch_size):
             batch = chunks[i : i + batch_size]
-            batch_texts = [chunk["text"] for chunk in chunks]
+            batch_texts = [chunk["text"] for chunk in batch]
             print(
                 f"Indexing batch {i // batch_size + 1} for doc {document_id} ({len(batch)} chunks)..."
             )
             embeddings = await embedding_service.embed_chunks(batch_texts)
             await vector_service.upsert_chunks(
-                chunks=chunks,
+                chunks=batch,
                 embeddings=embeddings,
                 file_hash=file_hash,
                 user_id=user_id,
