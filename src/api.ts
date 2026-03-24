@@ -59,3 +59,19 @@ export async function del(path: string, token: string) {
   }
   return response.json();
 }
+
+export async function put(path: string, data: object, token: string) {
+  const response = await fetch(`${VITE_API_URL}/${path}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail);
+  }
+  return response.json();
+}
