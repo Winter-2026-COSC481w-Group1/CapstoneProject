@@ -56,6 +56,11 @@ class LLMService:
                 3. For "questions", generate exactly {num_questions} items.
                 4. Use the difficulty level: "{difficulty}".
                 5. Use these question types: {json.dumps(types)}.
+                6. STRICT SOURCE ATTRIBUTION: Every question in the "questions" list MUST include the "document_id". 
+                Identify this ID in the context header formatted as: --- SOURCE [Number] (ID: [UUID] | PAGE: [Number]) ---. 
+                Extract the UUID string (e.g., 550e8400-e29b...) and copy it exactly into the "document_id" field.
+                7. PAGE ATTRIBUTION: For every question, identify the PAGE number inside that same header: (ID: [UUID] | PAGE: [Number]). 
+                Extract only the numeric value and put it into the "page_number" integer field in the JSON.
 
                 REQUIRED JSON STRUCTURE:
                 {schema_json}

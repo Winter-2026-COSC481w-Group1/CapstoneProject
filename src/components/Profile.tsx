@@ -6,10 +6,8 @@ import { useNavigate } from 'react-router-dom';
 export default function Profile() {
   const navigate = useNavigate();
   const { currentUser, libraryFiles, assessments } = useApp();
-
-  if (!currentUser) {
-    window.location.reload();
-  }
+  
+  if (!currentUser) return null;
 
   const totalQuestions = assessments.reduce((sum, a) => sum + a.questionCount, 0);
   const totalStorage = libraryFiles.reduce((sum, f) => {

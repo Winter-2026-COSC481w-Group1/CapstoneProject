@@ -45,11 +45,11 @@ export default function CreationStudio() {
       selectedFiles.includes(f.name),
     );
 
-    //currently the backend supports one file
-    const primaryFile = selectedFileObjects[0];
+    // collect the document id's of the files
+    const documentIds = selectedFileObjects.map(file => file.id);
 
     const requestBody = {
-      document_id: primaryFile.id,
+      document_ids: documentIds,
       query: topic, // topic/query
       num_questions: questionCount,
       difficulty: difficulty,
@@ -79,7 +79,7 @@ export default function CreationStudio() {
       const newAssessment: Assessment = {
         id: assessmentId,
         topic: topic,
-        title: `Assessment: ${primaryFile.name}`,
+        title: `Assessment: ${topic}`,
         createdAt: new Date(),
         status: "pending", // or 'processing'
         sourceFiles: selectedFiles,
