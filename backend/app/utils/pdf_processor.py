@@ -9,7 +9,6 @@ def pdf_process_to_chunks(
 ) -> list[dict]:
 
     doc = fitz.open(stream=file_bytes, filetype="pdf")
-    encoding = tiktoken.get_encoding("cl100k_base")
 
     splitter = TokenTextSplitter(
         chunk_size=chunk_size,
