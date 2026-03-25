@@ -1,5 +1,6 @@
 from typing import List, Dict, Any
 from uuid import uuid4
+from datetime import datetime, timezone
 import re
 
 from fastapi import HTTPException
@@ -393,6 +394,49 @@ class AssessmentService:
             )
 
         return assessments
+
+    async def record_assessment_attempt(
+        self,
+        assessment_id: str,
+        user_id: str,
+        attempt_data: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        """Stores the latest attempt in the assessments.attempts column."""
+        # ownership check + existence
+        existing = (
+            self.db_client.table("assessments")
+            .select("id, attempts")
+            .eq("id", assessment_id)
+            .eq("user_id", user_id)
+            .maybe_single()
+            .execute()
+        )
+        if not existing.data:
+            raise PermissionError("Assessment not found or user does not have access.")
+
+        # save additional info (total attempts, time completed)
+        if not existing.data["attempts"]:
+            attempt_data["numAttempts"] = 1
+        else:
+            attempt_data["numAttempts"] = existing.data["attempts"]["numAttempts"] + 1
+        attempt_data["completed_at"] = datetime.now(timezone.utc).isoformat()
+
+        update_payload = {
+            "attempts": attempt_data,
+        }
+
+        response = (
+            self.db_client.table("assessments")
+            .update(update_payload)
+            .eq("id", assessment_id)
+            .eq("user_id", user_id)
+            .execute()
+        )
+
+        if not response.data:
+            raise ValueError("Failed to save assessment attempt")
+
+        return response.data[0]
 
     async def update_assessment(
         self, assessment_id: str, assessment_data: AssessmentSchema, user_id: str

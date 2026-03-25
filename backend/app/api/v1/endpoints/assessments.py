@@ -3,6 +3,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from app.auth import get_current_user
 from app.schemas.assessment_request import AssessmentRequest
 from app.schemas.assessment import QuestionDetail, AssessmentSchema
+from app.schemas.assessment_attempt import AssessmentAttempt
 
 # from app.schemas.assessment_generation import AssessmentContent # Commented out
 from app.api.dependencies import get_assessment_service
@@ -115,4 +116,34 @@ async def delete_assessment(
         print(f"Error deleting assessment: {e}")
         raise HTTPException(
             status_code=500, detail="Internal Server error during assessment deletion"
+        )
+
+
+@router.patch("/{assessment_id}/attempt", response_model=dict)
+async def submit_assessment_attempt(
+    assessment_id: str,
+    attempt: AssessmentAttempt,
+    current_user: Annotated[dict, Depends(get_current_user)],
+    assessment_service: AssessmentService = Depends(get_assessment_service),
+):
+    try:
+        user_id = current_user["user_id"]
+        result = await assessment_service.record_assessment_attempt(
+            assessment_id=assessment_id,
+            user_id=user_id,
+            attempt_data=attempt.model_dump(),
+        )
+        return {
+            "message": "Attempt saved",
+            "assessment_id": assessment_id,
+            "attempt": result.get("attempts"),
+        }
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        print(f"Error saving attempt: {e}")
+        raise HTTPException(
+            status_code=500, detail="Internal Server Error during attempt submission"
         )
