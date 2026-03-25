@@ -223,7 +223,6 @@ class AssessmentService:
         filters = {
             "$and": [
                 {"document_id": {"$in": document_ids}},
-                {"user_id": {"$eq": user_id}},
             ]
         }
 
@@ -240,10 +239,9 @@ class AssessmentService:
             distance = item[1]
             similarity = 1 - distance
 
-            if similarity > 0.60:  # keep only 60% or better matches
-                valid_chunks.append(
-                    {"id": item[0], "score": similarity, "metadata": item[2]}
-                )
+            valid_chunks.append(
+                {"id": item[0], "score": similarity, "metadata": item[2]}
+            )
 
         valid_chunks.sort(key=lambda x: x["score"], reverse=True)
 
