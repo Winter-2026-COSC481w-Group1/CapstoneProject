@@ -2,7 +2,7 @@ from typing import Annotated, List
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from app.auth import get_current_user
 from app.schemas.assessment_request import AssessmentRequest
-from app.schemas.assessment import QuestionDetail, AssessmentSchema
+from app.schemas.assessment import AssessmentSchema, AssessmentDetails
 from app.schemas.assessment_attempt import AssessmentAttempt
 
 # from app.schemas.assessment_generation import AssessmentContent # Commented out
@@ -60,7 +60,7 @@ async def get_assessments(
         ) from e
 
 
-@router.get("/{assessment_id}", response_model=List[QuestionDetail])
+@router.get("/{assessment_id}", response_model=AssessmentDetails)
 async def get_assessment_details(
     assessment_id: str,
     current_user: Annotated[dict, Depends(get_current_user)],

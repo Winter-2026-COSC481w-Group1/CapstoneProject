@@ -10,6 +10,4 @@ class Answer(BaseModel):
 
 
 class AssessmentAttempt(BaseModel):
-    #attempts: int
-    #time_submitted: datetime
     answers: List[Answer]

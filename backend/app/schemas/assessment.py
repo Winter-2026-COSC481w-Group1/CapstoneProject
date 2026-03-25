@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import List, Optional
+from .assessment_attempt import AssessmentAttempt
 
 
 class QuestionSource(BaseModel):
@@ -36,3 +37,8 @@ class AssessmentSchema(BaseModel):
     difficulty: str  # 'easy' | 'medium' | 'hard'
     questions: List[QuestionSchema]
     topic: str  # either the original query or one entered when edited
+
+
+class AssessmentDetails(BaseModel):
+    questions: List[QuestionDetail]
+    lastAttempt: Optional[AssessmentAttempt] = None

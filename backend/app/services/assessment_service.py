@@ -5,8 +5,9 @@ import re
 
 from fastapi import HTTPException
 
+from app.schemas.assessment import QuestionSource, QuestionDetail, AssessmentSchema, AssessmentDetails
+from app.schemas.assessment_attempt import AssessmentAttempt
 from app.schemas.assessment_request import AssessmentRequest
-from app.schemas.assessment import AssessmentSchema, QuestionDetail, QuestionSource
 
 from app.services.document_service import DocumentService
 from app.services.embedding_service import EmbeddingService
@@ -34,7 +35,7 @@ class AssessmentService:
 
     async def get_assessment_details(
         self, assessment_id: str, user_id: str
-    ) -> List[QuestionDetail]:
+    ) -> AssessmentDetails:
         # ownership check
         assessment_response = (
             self.db_client.table("assessments")
@@ -143,7 +144,21 @@ class AssessmentService:
                 )
             )
 
-        return detailed_questions
+        # fetch attempts data
+        attempts_response = (
+            self.db_client.table("assessments")
+            .select("attempts")
+            .eq("id", assessment_id)
+            .eq("user_id", user_id)
+            .maybe_single()
+            .execute()
+        )
+
+        last_attempt = None
+        if attempts_response.data and attempts_response.data.get("attempts"):
+            last_attempt = AssessmentAttempt(**attempts_response.data["attempts"])
+
+        return AssessmentDetails(questions=detailed_questions, lastAttempt=last_attempt)
 
     # creates a pending record for the assessment generating in the db, and returns assessment id
     async def create_pending_record(
