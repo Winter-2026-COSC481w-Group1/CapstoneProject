@@ -12,6 +12,7 @@ interface AppContextType {
   assessments: Assessment[];
   setAssessments: (assessments: Assessment[]) => void;
   fetchAssessments: () => Promise<void>;
+  fetchAssessmentDetails: (assessmentId: string) => Promise<Assessment | null>;
   currentAssessment: Assessment | null;
   setCurrentAssessment: (assessment: Assessment | null) => void;
   activities: Activity[];
@@ -103,32 +104,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const assessments: Assessment[] = data.map((ass: any) => ({
         id: ass.id,
         title: ass.title,
-        topic: ass.topic || '', // !!! backend should return this maybe
+        topic: ass.topic || '',
         createdAt: new Date(ass.createdAt),
-        status: ass.status as 'completed' | 'pending' | 'failed',
-        sourceFiles: [ass.sourceFiles], // !!! Backend returns single document_id; wrap in array for now
+        status: ass.status as 'completed' | 'processing' | 'pending' | 'failed',
+        sourceFiles: ass.sourceFiles || [],
         questionCount: ass.questionCount,
         difficulty: ass.difficulty as 'easy' | 'medium' | 'hard' | 'none',
-        questions: [], // !!! Not provided by get assessments endpoint; initialize empty
-        bestScore: undefined, // !!! Not provided; set later if needed
-        lastScore: undefined, // !!! Not provided; set later if needed
-        attempts: { attempts: [], scores: [] }, // !!! Default empty
+        questions: [], // Initialize empty; fetch details when needed
+        bestScore: undefined,
+        lastScore: undefined,
+        attempts: { attempts: [], scores: [] },
       })).sort((a: Assessment, b: Assessment) => b.createdAt.getTime() - a.createdAt.getTime());
-
-      // Fetch questions
-      for (const ass of assessments) {
-        const questions = await get(`api/v1/assessments/${ass.id}`, session.access_token);
-        ass.questions = questions.map((que: any) => ({
-          id: que.id,
-          type: que.type,
-          question: que.question,
-          numOptions: que.options.length, // !!! consider removing?
-          options: que.options,
-          correctAnswer: que.correctAnswer,
-          userAnswer: que.userAnswer,
-          source: que.source,
-        }));
-      }
 
       setAssessments(assessments);
 
@@ -136,10 +122,44 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (assessments.some(ass => ass.status !== 'completed' && ass.status !== 'failed')) {
         setTimeout(() => {
           fetchAssessments();
-        }, 10000); // wait 10 seconds
+        }, 5000); // Polling more frequently (5s instead of 10s)
       }
     } catch (err) {
       console.error('error loading assessments', err);
+    }
+  };
+
+  const fetchAssessmentDetails = async (assessmentId: string): Promise<Assessment | null> => {
+    try {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (!session?.access_token) return null;
+
+      const questionsData = await get(`api/v1/assessments/${assessmentId}`, session.access_token);
+      const questions = questionsData.map((que: any) => ({
+        id: que.id,
+        type: que.type,
+        question: que.question,
+        numOptions: que.options ? que.options.length : 0,
+        options: que.options,
+        correctAnswer: que.correctAnswer,
+        userAnswer: que.userAnswer,
+        source: que.source,
+      }));
+
+      let updatedAssessment: Assessment | null = null;
+
+      setAssessments(prev => prev.map(ass => {
+        if (ass.id === assessmentId) {
+          updatedAssessment = { ...ass, questions };
+          return updatedAssessment;
+        }
+        return ass;
+      }));
+
+      return updatedAssessment;
+    } catch (err) {
+      console.error('error loading assessment details', err);
+      return null;
     }
   };
 
@@ -154,6 +174,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         assessments,
         setAssessments,
         fetchAssessments,
+        fetchAssessmentDetails,
         currentAssessment,
         setCurrentAssessment,
         activities,
