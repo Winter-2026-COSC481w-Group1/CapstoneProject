@@ -7,17 +7,22 @@ import { useNavigate } from 'react-router-dom';
 const VITE_API_URL = import.meta.env.VITE_API_URL;
 
 export default function AssessmentsHub() {
-  const { assessments, setAssessments, setCurrentAssessment } = useApp();
+  const { assessments, setAssessments, setCurrentAssessment, fetchAssessmentDetails } = useApp();
   const [showDownloadMenu, setShowDownloadMenu] = useState<string | null>(null);
   const [showOptionsMenu, setShowOptionsMenu] = useState<string | null>(null);
   const [assessmentsFilter, setAssessmentsFilter] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const handleStartExam = (assessmentId: string) => {
-    const assessment = assessments.find(a => a.id === assessmentId);
-    if (assessment) {
-      setCurrentAssessment(assessment);
-      navigate('/dashboard/exam-mode');
+  const handleStartExam = async (assessmentId: string) => {
+    try {
+      const updatedAssessment = await fetchAssessmentDetails(assessmentId);
+      if (updatedAssessment) {
+        setCurrentAssessment(updatedAssessment);
+        navigate('/dashboard/exam-mode');
+      }
+    } catch (error) {
+      console.error('Failed to start exam:', error);
+      alert('Could not load assessment details. Please try again.');
     }
   };
 
@@ -186,10 +191,18 @@ export default function AssessmentsHub() {
               )}
                   
                 <button
-                onClick={() => {
+                onClick={async () => {
                   if (assessment.status === "completed") {
-                    setCurrentAssessment(assessment);
-                    navigate('/dashboard/grading-report');
+                    try {
+                      const updatedAssessment = await fetchAssessmentDetails(assessment.id);
+                      if (updatedAssessment) {
+                        setCurrentAssessment(updatedAssessment);
+                        navigate('/dashboard/grading-report');
+                      }
+                    } catch (error) {
+                      console.error('Failed to view results:', error);
+                      alert('Could not load assessment results. Please try again.');
+                    }
                   }
                   }}
                   className={"w-full flex items-center justify-center gap-2 " + ((assessment.status === "completed") ? "bg-blue-100 hover:bg-blue-200 text-blue-600" : "bg-gray-200 text-gray-600 cursor-default") + " py-3 rounded-xl font-semibold"}
