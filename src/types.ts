@@ -29,11 +29,27 @@ export interface Question {
   };
 }
 
-export interface Attempts {
+/*export interface Attempts {
   attempts: Question[][];
   scores: number[];
-};
+};*/
 
+
+export interface AttemptAnswer {
+  questionId: string;
+  answer: number | boolean | string;
+  shortAnswerIsCorrect?: boolean | null;
+}
+
+export interface AssessmentAttemptRequest {
+  answers: AttemptAnswer[];
+}
+
+export interface AssessmentAttempt {
+  attempts: number;
+  time_submitted: string;
+  answers: AttemptAnswer[];
+}
 
 export interface Assessment {
   id: string;
@@ -45,9 +61,11 @@ export interface Assessment {
   questionCount: number;
   difficulty: 'easy' | 'medium' | 'hard' | 'none';
   questions: Question[];
-  bestScore?: number;
   lastScore?: number;
-  attempts: Attempts;
+  /*bestScore?: number;
+  lastScore?: number;
+  attempts: Attempts;*/
+  lastAttempt?: AssessmentAttempt;
 }
 
 export interface Activity {

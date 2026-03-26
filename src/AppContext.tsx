@@ -117,8 +117,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       // Fetch questions
       for (const ass of assessments) {
-        const questions = await get(`api/v1/assessments/${ass.id}`, session.access_token);
-        ass.questions = questions.map((que: any) => ({
+        const details = await get(`api/v1/assessments/${ass.id}`, session.access_token);
+        ass.questions = details.questions.map((que: any) => ({
           id: que.id,
           type: que.type,
           question: que.question,
@@ -128,6 +128,36 @@ export function AppProvider({ children }: { children: ReactNode }) {
           userAnswer: que.userAnswer,
           source: que.source,
         }));
+        ass.lastAttempt = details.lastAttempt;
+
+        // Calculate and set lastScore from attempt data
+        if (ass.lastAttempt && ass.lastAttempt.answers) {
+          const answersMap = new Map(
+            ass.lastAttempt.answers.map((a: any) => [a.questionId, a.answer])
+          );
+          ass.questions = ass.questions.map((q: any) => ({
+            ...q,
+            userAnswer: answersMap.get(q.id) ?? q.userAnswer
+          }));
+
+          // Calculate score from attempt answers
+          let correctCount = 0;
+          for (const question of ass.questions) {
+            const attemptAnswer = ass.lastAttempt.answers.find((a: any) => a.questionId === question.id);
+            if (!attemptAnswer) continue;
+
+            if (question.type === 'short-answer') {
+              if (attemptAnswer.shortAnswerIsCorrect === true) {
+                correctCount++;
+              }
+            } else { // MCQ or T/F
+              if (attemptAnswer.answer === question.correctAnswer) {
+                correctCount++;
+              }
+            }
+          }
+          ass.lastScore = ass.questions.length > 0 ? Math.round((correctCount / ass.questions.length) * 100) : 0;
+        }
       }
 
       setAssessments(assessments);
