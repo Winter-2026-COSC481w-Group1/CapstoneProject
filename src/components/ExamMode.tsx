@@ -7,9 +7,10 @@ import { supabaseClient } from '../supabase';
 
 export default function ExamMode() {
   const navigate = useNavigate();
-  const { currentAssessment, assessments, setAssessments } = useApp();
+  const { currentAssessment, assessments, setAssessments, fetchAssessments } = useApp();
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number | string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!currentAssessment) {
     navigate('/dashboard/assessments');
@@ -40,6 +41,7 @@ export default function ExamMode() {
   };
 
   const handleSubmit = async () => {
+    setIsSubmitting(true);
     try {
       const { data: { session } } = await supabaseClient.auth.getSession();
       if (!session?.access_token) {
@@ -70,30 +72,8 @@ export default function ExamMode() {
       // Submit attempt to backend
       await patch(`api/v1/assessments/${currentAssessment.id}/attempt`, attemptData, session.access_token);
 
-      const correctCount = updatedQuestions.filter(q => {
-        if (q.type === 'short-answer') {
-          return (
-            typeof q.userAnswer === 'string' &&
-            typeof q.correctAnswer === 'string' &&
-            q.userAnswer.toLowerCase().trim() === q.correctAnswer.toLowerCase().trim()
-          );
-        }
-        return q.userAnswer === q.correctAnswer;
-      }).length;
-
-      const score = Math.round((correctCount / questions.length) * 100);
-
-      const updatedAssessment = {
-        ...currentAssessment,
-        status: 'completed' as const,
-        lastScore: score,
-        questions: updatedQuestions,
-        lastAttempt: attemptData
-      };
-      
-      setAssessments(
-        assessments.map(a => a.id === currentAssessment.id ? updatedAssessment : a)
-      );
+      // Fetch results
+      await fetchAssessments();
 
       navigate('/dashboard/grading-report');
     } catch (error) {
@@ -284,9 +264,10 @@ export default function ExamMode() {
           {isLastQuestion ? (
             <button
               onClick={handleSubmit}
-              className="flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold transition-colors"
+              disabled={isSubmitting}
+              className="flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Submit
+              {isSubmitting ? 'Submitting...' : 'Submit'}
               <ChevronRight className="w-5 h-5" />
             </button>
           ) : (
