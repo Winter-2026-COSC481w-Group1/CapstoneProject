@@ -3,9 +3,8 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from app.auth import get_current_user
 from app.schemas.assessment_request import AssessmentRequest
 from app.schemas.assessment import AssessmentSchema, AssessmentDetails
-from app.schemas.assessment_attempt import AssessmentAttempt
+from app.schemas.assessment_attempt import AssessmentAttemptRequest
 
-# from app.schemas.assessment_generation import AssessmentContent # Commented out
 from app.api.dependencies import get_assessment_service
 from app.services.assessment_service import AssessmentService
 
@@ -122,7 +121,7 @@ async def delete_assessment(
 @router.patch("/{assessment_id}/attempt", response_model=dict)
 async def submit_assessment_attempt(
     assessment_id: str,
-    attempt: AssessmentAttempt,
+    attempt: AssessmentAttemptRequest,
     current_user: Annotated[dict, Depends(get_current_user)],
     assessment_service: AssessmentService = Depends(get_assessment_service),
 ):

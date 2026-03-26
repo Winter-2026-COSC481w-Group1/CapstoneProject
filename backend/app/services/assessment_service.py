@@ -75,7 +75,7 @@ class AssessmentService:
             .execute()
         )
         if not questions_response.data:
-            return []
+            return AssessmentDetails(questions=[], lastAttempt=None)
 
         # fetch all options for all questions in the assessment
         question_ids = [q["id"] for q in questions_response.data]
@@ -156,7 +156,20 @@ class AssessmentService:
 
         last_attempt = None
         if attempts_response.data and attempts_response.data.get("attempts"):
-            last_attempt = AssessmentAttempt(**attempts_response.data["attempts"])
+            try:
+                attempt_data = attempts_response.data["attempts"]
+                # Ensure answers is a list and handle any parsing issues
+                answers = attempt_data.get("answers", [])
+                if not isinstance(answers, list):
+                    answers = []
+                last_attempt = AssessmentAttempt(
+                    attempts=attempt_data.get("attempts", 0),
+                    time_submitted=attempt_data.get("time_submitted", ""),
+                    answers=answers
+                )
+            except Exception as e:
+                print(f"Error parsing attempt data: {e}")
+                last_attempt = None
 
         return AssessmentDetails(questions=detailed_questions, lastAttempt=last_attempt)
 
@@ -429,15 +442,22 @@ class AssessmentService:
         if not existing.data:
             raise PermissionError("Assessment not found or user does not have access.")
 
-        # save additional info (total attempts, time completed)
-        if not existing.data["attempts"]:
-            attempt_data["numAttempts"] = 1
-        else:
-            attempt_data["numAttempts"] = existing.data["attempts"]["numAttempts"] + 1
-        attempt_data["completed_at"] = datetime.now(timezone.utc).isoformat()
+        # Calculate attempts count
+        current_attempts = 1
+        if existing.data.get("attempts") and isinstance(existing.data["attempts"], dict):
+            current_attempts = existing.data["attempts"].get("attempts", 0) + 1
+        elif existing.data.get("attempts") and isinstance(existing.data["attempts"], int):
+            current_attempts = existing.data["attempts"] + 1
+
+        # Prepare complete attempt data
+        complete_attempt_data = {
+            "attempts": current_attempts,
+            "time_submitted": datetime.now(timezone.utc).isoformat() + "Z",
+            "answers": attempt_data["answers"]
+        }
 
         update_payload = {
-            "attempts": attempt_data,
+            "attempts": complete_attempt_data,
         }
 
         response = (
