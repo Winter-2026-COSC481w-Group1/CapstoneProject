@@ -1,6 +1,7 @@
 import { CheckCircle, XCircle, Download, ArrowLeft, FileText } from 'lucide-react';
 import { useApp } from '../AppContext';
 import { useNavigate } from 'react-router-dom';
+import { Question, AttemptAnswer } from '../types';
 
 
 export default function GradingReport() {
@@ -13,18 +14,69 @@ export default function GradingReport() {
   }
 
   const assessment = assessments.find(a => a.id === currentAssessment.id) || currentAssessment;
-  const score = assessment.lastScore || 0;
   const questions = assessment.questions;
-  const correctCount = questions.filter((q) => {
-    if (q.type === 'short-answer') {
+  const lastAttempt = assessment.lastAttempt;
+
+  // Calculate score dynamically from attempt data
+  const calculateScore = (): number => {
+    if (!lastAttempt || !lastAttempt.answers) return 0;
+
+    let correctCount = 0;
+    for (const question of questions) {
+      const attemptAnswer = lastAttempt.answers.find((a: AttemptAnswer) => a.questionId === question.id);
+      if (!attemptAnswer) continue;
+
+      if (question.type === 'short-answer') {
+        // Use the stored correctness for short answers
+        if (attemptAnswer.shortAnswerIsCorrect === true) {
+          correctCount++;
+        }
+      } else {
+        // For MCQ and True/False, compare answer to correct answer
+        if (attemptAnswer.answer === question.correctAnswer) {
+          correctCount++;
+        }
+      }
+    }
+
+    return questions.length > 0 ? Math.round((correctCount / questions.length) * 100) : 0;
+  };
+
+  // Helper function to safely parse date
+  const parseDate = (dateString: string | Date | undefined): Date | null => {
+    if (!dateString) return null;
+    if (dateString instanceof Date) return dateString;
+    try {
+      // Handle ISO strings (e.g., "2024-01-16T10:30:00Z")
+      console.log(dateString)
+      return new Date(dateString);
+    } catch (e) {
+      console.error('Error parsing date:', dateString, e);
+      return null;
+    }
+  };
+
+  // Helper function to determine if a question is correct
+  const isQuestionCorrect = (q: Question): boolean => {
+    if (q.type === 'short-answer' && lastAttempt) {
+      // For short-answer, use the shortAnswerIsCorrect from attempt data if available
+      const attemptAnswer = lastAttempt.answers?.find((a: AttemptAnswer) => a.questionId === q.id);
+      if (attemptAnswer && attemptAnswer.shortAnswerIsCorrect !== null && attemptAnswer.shortAnswerIsCorrect !== undefined) {
+        return attemptAnswer.shortAnswerIsCorrect;
+      }
+      // Fallback to string comparison if shortAnswerIsCorrect not available
       return (
         typeof q.userAnswer === 'string' &&
         typeof q.correctAnswer === 'string' &&
         q.userAnswer.toLowerCase().trim() === q.correctAnswer.toLowerCase().trim()
       );
     }
+    // For MCQ and True/False, compare answer to correct answer index
     return q.userAnswer === q.correctAnswer;
-  }).length;
+  };
+
+  const correctCount = questions.filter(isQuestionCorrect).length;
+  const score = calculateScore();
 
   const getScoreColor = (score: number) => {
     if (score >= 90) return 'text-emerald-600';
@@ -79,6 +131,30 @@ export default function GradingReport() {
           </div>
         </div>
 
+        {lastAttempt && (
+          <div className="bg-white rounded-3xl p-6 shadow-lg border border-gray-200 mb-8">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Attempt Information</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-gray-900">{lastAttempt.attempts}</div>
+                <div className="text-sm text-gray-600">Attempt Number</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-gray-900">
+                  {lastAttempt && parseDate(lastAttempt.time_submitted) ? parseDate(lastAttempt.time_submitted)!.toLocaleDateString() : 'N/A'}
+                </div>
+                <div className="text-sm text-gray-600">Submitted</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-gray-900">
+                  {lastAttempt && parseDate(lastAttempt.time_submitted) ? parseDate(lastAttempt.time_submitted)!.toLocaleTimeString() : 'N/A'}
+                </div>
+                <div className="text-sm text-gray-600">Time</div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-gray-900">Question Review</h2>
           <p className="text-gray-600">Review your answers with source citations</p>
@@ -86,12 +162,7 @@ export default function GradingReport() {
 
         <div className="space-y-6">
           {questions.map((question, idx) => {
-            const isCorrect =
-              question.type === 'short-answer'
-                ? typeof question.userAnswer === 'string' &&
-                  typeof question.correctAnswer === 'string' &&
-                  question.userAnswer.toLowerCase().trim() === question.correctAnswer.toLowerCase().trim()
-                : question.userAnswer === question.correctAnswer;
+            const isCorrect = isQuestionCorrect(question);
             const hasAnswer =
               question.type === 'short-answer'
                 ? typeof question.userAnswer === 'string' && question.userAnswer.trim() !== ''
