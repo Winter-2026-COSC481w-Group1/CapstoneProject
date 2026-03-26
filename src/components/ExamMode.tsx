@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { ChevronLeft, ChevronRight, Save } from 'lucide-react';
 import { useApp } from '../AppContext';
 import { useNavigate } from 'react-router-dom';
+import { patch } from '../api';
+import { supabaseClient } from '../supabase';
 
 export default function ExamMode() {
   const navigate = useNavigate();
@@ -37,37 +39,97 @@ export default function ExamMode() {
     }
   };
 
-  const handleSubmit = () => {
-    const updatedQuestions = questions.map(q => ({
-      ...q,
-      userAnswer: answers[q.id] ?? q.userAnswer ?? (q.type === 'short-answer' ? '' : -1)
-    }));
-
-    const correctCount = updatedQuestions.filter(q => {
-      if (q.type === 'short-answer') {
-        return (
-          typeof q.userAnswer === 'string' &&
-          typeof q.correctAnswer === 'string' &&
-          q.userAnswer.toLowerCase().trim() === q.correctAnswer.toLowerCase().trim()
-        );
+  const handleSubmit = async () => {
+    try {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (!session?.access_token) {
+        console.error('no session token available');
+        return;
       }
-      return q.userAnswer === q.correctAnswer;
-    }).length;
 
-    const score = Math.round((correctCount / questions.length) * 100);
+      const updatedQuestions = questions.map(q => ({
+        ...q,
+        userAnswer: answers[q.id] ?? q.userAnswer ?? (q.type === 'short-answer' ? '' : -1)
+      }));
 
-    const updatedAssessment = {
-      ...currentAssessment,
-      status: 'completed' as const,
-      score,
-      questions: updatedQuestions
-    };
+      // Prepare attempt data
+      const attemptAnswers = updatedQuestions.map(q => ({
+        questionId: q.id,
+        answer: answers[q.id] ?? (q.type === 'short-answer' ? '' : -1),
+        shortAnswerIsCorrect: q.type === 'short-answer' ? (
+          typeof answers[q.id] === 'string' &&
+          typeof q.correctAnswer === 'string' &&
+          (answers[q.id] as string).toLowerCase().trim() === q.correctAnswer.toLowerCase().trim()
+        ) : null
+      }));
 
-    setAssessments(
-      assessments.map(a => a.id === currentAssessment.id ? updatedAssessment : a)
-    );
+      const attemptData = {
+        answers: attemptAnswers
+      };
 
-    navigate('/dashboard/grading-report');
+      // Submit attempt to backend
+      await patch(`api/v1/assessments/${currentAssessment.id}/attempt`, attemptData, session.access_token);
+
+      const correctCount = updatedQuestions.filter(q => {
+        if (q.type === 'short-answer') {
+          return (
+            typeof q.userAnswer === 'string' &&
+            typeof q.correctAnswer === 'string' &&
+            q.userAnswer.toLowerCase().trim() === q.correctAnswer.toLowerCase().trim()
+          );
+        }
+        return q.userAnswer === q.correctAnswer;
+      }).length;
+
+      const score = Math.round((correctCount / questions.length) * 100);
+
+      const updatedAssessment = {
+        ...currentAssessment,
+        status: 'completed' as const,
+        lastScore: score,
+        questions: updatedQuestions,
+        lastAttempt: attemptData
+      };
+      
+      setAssessments(
+        assessments.map(a => a.id === currentAssessment.id ? updatedAssessment : a)
+      );
+
+      navigate('/dashboard/grading-report');
+    } catch (error) {
+      console.error('Error submitting assessment attempt:', error);
+      // Still navigate to grading report even if backend submission fails
+      const updatedQuestions = questions.map(q => ({
+        ...q,
+        userAnswer: answers[q.id] ?? q.userAnswer ?? (q.type === 'short-answer' ? '' : -1)
+      }));
+
+      const correctCount = updatedQuestions.filter(q => {
+        if (q.type === 'short-answer') {
+          return (
+            typeof q.userAnswer === 'string' &&
+            typeof q.correctAnswer === 'string' &&
+            q.userAnswer.toLowerCase().trim() === q.correctAnswer.toLowerCase().trim()
+          );
+        }
+        return q.userAnswer === q.correctAnswer;
+      }).length;
+
+      const score = Math.round((correctCount / questions.length) * 100);
+
+      const updatedAssessment = {
+        ...currentAssessment,
+        status: 'completed' as const,
+        lastScore: score,
+        questions: updatedQuestions
+      };
+
+      setAssessments(
+        assessments.map(a => a.id === currentAssessment.id ? updatedAssessment : a)
+      );
+
+      navigate('/dashboard/grading-report');
+    }
   };
 
   const isLastQuestion = currentQuestion === questions.length - 1;

@@ -46,8 +46,8 @@ export interface AssessmentAttemptRequest {
 }
 
 export interface AssessmentAttempt {
-  attempts: number;
-  time_submitted: string;
+  attempts?: number;
+  time_submitted?: string;
   answers: AttemptAnswer[];
 }
 
@@ -65,7 +65,7 @@ export interface Assessment {
   /*bestScore?: number;
   lastScore?: number;
   attempts: Attempts;*/
-  lastAttempt?: AssessmentAttempt;
+  lastAttempt: AssessmentAttempt;
 }
 
 export interface Activity {

@@ -109,10 +109,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         sourceFiles: [ass.sourceFiles], // !!! Backend returns single document_id; wrap in array for now
         questionCount: ass.questionCount,
         difficulty: ass.difficulty as 'easy' | 'medium' | 'hard' | 'none',
-        questions: [], // !!! Not provided by get assessments endpoint; initialize empty
+        /*questions: [], // !!! Not provided by get assessments endpoint; initialize empty
         bestScore: undefined, // !!! Not provided; set later if needed
         lastScore: undefined, // !!! Not provided; set later if needed
-        attempts: { attempts: [], scores: [] }, // !!! Default empty
+        attempts: { attempts: [], scores: [] }, // !!! Default empty*/
       })).sort((a: Assessment, b: Assessment) => b.createdAt.getTime() - a.createdAt.getTime());
 
       // Fetch questions
