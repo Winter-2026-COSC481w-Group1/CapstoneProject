@@ -452,7 +452,7 @@ class AssessmentService:
         # Prepare complete attempt data
         complete_attempt_data = {
             "attempts": current_attempts,
-            "time_submitted": datetime.now(timezone.utc).isoformat() + "Z",
+            "time_submitted": datetime.now(timezone.utc).isoformat(),
             "answers": attempt_data["answers"]
         }
 
