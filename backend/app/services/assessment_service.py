@@ -319,7 +319,7 @@ class AssessmentService:
         difficulty: str,
     ):
         """
-        MANAGER: Orchestrates the task of generating an assessment
+        MANAGER: Orchestrates the entire background task.
         """
         try:
             # update status to processing
@@ -377,24 +377,13 @@ class AssessmentService:
         assessments = []
 
         for row in response.data:
-            # Handle source files (can be single document_id or list document_ids)
-            source_files = []
-            if row.get("document_id"):
-                source_files.append(row["document_id"])
-            if row.get("document_ids"):
-                source_files.extend(row["document_ids"])
-
-            # Ensure unique IDs and convert to list if it was a set
-            unique_source_files = list(set(source_files))
-
             assessments.append(
                 {
                     "id": row.get("id"),
                     "title": row.get("title"),  # Rename for frontend
-                    "topic": row.get("query") or "",  # Frontend expects topic
                     "createdAt": row.get("created_at"),
                     "status": row.get("status"),
-                    "sourceFiles": unique_source_files,  # Return list of IDs
+                    "sourceFiles": row.get("document_id"),  # Standardize key
                     "questionCount": row.get("num_questions"),
                     "difficulty": row.get("difficulty"),  # Rename for frontend
                     # TODO add attempts when added to db

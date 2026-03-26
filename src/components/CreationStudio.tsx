@@ -68,13 +68,33 @@ export default function CreationStudio() {
         return;
       }
 
-      await post(
+      const res = await post(
         "api/v1/assessments",
         requestBody,
         session.access_token,
       );
 
-      await fetchAssessments();
+      const assessmentId = await res;
+
+      const newAssessment: Assessment = {
+        id: assessmentId,
+        topic: topic,
+        title: `Assessment: ${topic}`,
+        createdAt: new Date(),
+        status: "pending", // or 'processing'
+        sourceFiles: selectedFiles,
+        questionCount,
+        difficulty,
+        questions: [],
+        attempts: {
+          attempts: [],
+          scores: [],
+        },
+      };
+
+      setAssessments([newAssessment, ...assessments]);
+
+      fetchAssessments(); // will poll until assessment finishes processing (completes or fails)
 
       // Navigate to assessments hub where you can poll for status
       navigate("/dashboard/assessments");
