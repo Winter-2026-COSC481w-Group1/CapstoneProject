@@ -70,26 +70,42 @@ export default function AssessmentsHub() {
           >
             Pending ({assessments.filter(a => a.status === 'pending').length})
           </button>
+          <button className={"px-4 py-2 rounded-full font-medium " + ((assessmentsFilter === 'incomplete') ? "bg-emerald-600 text-white" : "text-gray-600 hover:bg-gray-300 bg-gray-200")}
+            onClick={() => setAssessmentsFilter('incomplete')}
+          >
+            Incomplete ({assessments.filter(a => a.status === 'completed' && !a.lastAttempt).length})
+          </button>
           <button className={"px-4 py-2 rounded-full font-medium " + ((assessmentsFilter === 'completed') ? "bg-emerald-600 text-white" : "text-gray-600 hover:bg-gray-300 bg-gray-200")}
             onClick={() => setAssessmentsFilter('completed')}
           >
-            Completed ({assessments.filter(a => a.status === 'completed').length})
+            Completed ({assessments.filter(a => a.status === 'completed' && a.lastAttempt).length})
           </button>
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {assessments.filter(a => a.status === assessmentsFilter || assessmentsFilter === null).map((assessment) => (
+          {assessments.filter(a => {
+            if (assessmentsFilter === null) return true;
+            if (assessmentsFilter === 'pending') return a.status === 'pending';
+            if (assessmentsFilter === 'incomplete') return a.status === 'completed' && !a.lastAttempt;
+            if (assessmentsFilter === 'completed') return a.status === 'completed' && a.lastAttempt;
+            return false;
+          }).map((assessment) => (
             <div
               key={assessment.id}
-              className="bg-white rounded-3xl p-6 shadow-lg border border-gray-200 hover:shadow-xl transition-all group flex-col flex gap-y-2"
+              className="bg-white rounded-3xl p-6 shadow-lg border border-gray-200 hover:shadow-xl transition-all group flex-col flex gap-y-2 relative"
             >
               
-              <div className="flex flex-row gap-x-2">
-          
-              <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2 w-full">
+              <div>
+              <h3 className="text-lg font-bold text-gray-900 mb-1 line-clamp-2">
                 {assessment.title}
               </h3>
-              <div className="relative">
+              {assessment.status === "completed" && assessment.lastAttempt && (
+                <div className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-full text-xs font-medium text-gray-700 mb-3">
+                  {assessment.lastAttempt.attempts} attempt{assessment.lastAttempt.attempts !== 1 ? 's' : ''}
+                </div>
+              )}
+              <div className="flex flex-row items-center justify-between gap-x-2">
+              <div className="absolute top-4 right-4">
               <button
                     onClick={
                       () => {
@@ -141,6 +157,12 @@ export default function AssessmentsHub() {
                     </div>
                   )}
                 </div>
+                {assessment.status === "completed" && assessment.lastAttempt && assessment.lastScore !== undefined && (
+                  <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center text-lg font-bold text-emerald-600">
+                    {assessment.lastScore}%
+                  </div>
+                )}
+              </div>
               </div>
 
               <div className="space-y-2">
@@ -169,30 +191,18 @@ export default function AssessmentsHub() {
                 </div>
               </div>
 
-              {assessment.status === "completed" && (
-                  <div className="flex flex-row gap-x-2">
-                  <div className="w-1/2 flex items-center justify-center bg-emerald-100 text-white py-1 rounded-xl hover:bg-emerald-200">
-                      <div className="text-xl text-emerald-700">Best: {assessment.bestScore}%</div>
-                  </div>
-                  <div className="w-1/2 flex items-center justify-center bg-emerald-100 text-white py-1 rounded-xl hover:bg-emerald-200">
-                      <div className="text-xl text-emerald-700">Last: {assessment.lastScore}%</div>
-                    </div>
-                  </div>
-                
-              )}
-              
               {assessment.status === "pending" && (
                   <div className="flex flex-grow"></div>
               )}
                   
                 <button
                 onClick={() => {
-                  if (assessment.status === "completed") {
+                  if (assessment.status === "completed" && assessment.lastAttempt) {
                     setCurrentAssessment(assessment);
                     navigate('/dashboard/grading-report');
                   }
                   }}
-                  className={"w-full flex items-center justify-center gap-2 " + ((assessment.status === "completed") ? "bg-blue-100 hover:bg-blue-200 text-blue-600" : "bg-gray-200 text-gray-600 cursor-default") + " py-3 rounded-xl font-semibold"}
+                  className={"w-full flex items-center justify-center gap-2 " + ((assessment.status === "completed" && assessment.lastAttempt) ? "bg-blue-100 hover:bg-blue-200 text-blue-600" : "bg-gray-200 text-gray-600 cursor-default") + " py-3 rounded-xl font-semibold"}
                 >
                   <CheckCircle className="w-4 h-4" />
                   View Results
