@@ -48,7 +48,6 @@ export default function GradingReport() {
     if (dateString instanceof Date) return dateString;
     try {
       // Handle ISO strings (e.g., "2024-01-16T10:30:00Z")
-      console.log(dateString)
       return new Date(dateString);
     } catch (e) {
       console.error('Error parsing date:', dateString, e);
@@ -143,7 +142,7 @@ export default function GradingReport() {
                 <div className="text-2xl font-bold text-gray-900">
                   {lastAttempt && parseDate(lastAttempt.time_submitted) ? parseDate(lastAttempt.time_submitted)!.toLocaleDateString() : 'N/A'}
                 </div>
-                <div className="text-sm text-gray-600">Submitted</div>
+                <div className="text-sm text-gray-600">Date</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-gray-900">

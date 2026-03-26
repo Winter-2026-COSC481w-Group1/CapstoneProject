@@ -51,6 +51,18 @@ export default function AssessmentsHub() {
     }
   };
 
+  const getScoreColor = (score: number) => {
+    if (score >= 90) return 'text-emerald-600';
+    if (score >= 70) return 'text-amber-600';
+    return 'text-red-600';
+  };
+
+  const getScoreBgColor = (score: number) => {
+    if (score >= 90) return 'bg-emerald-100';
+    if (score >= 70) return 'bg-amber-100';
+    return 'bg-red-100';
+  };
+
   return (
     <div className="min-h-screen bg-stone-50 pt-28 pb-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
@@ -158,7 +170,7 @@ export default function AssessmentsHub() {
                   )}
                 </div>
                 {assessment.status === "completed" && assessment.lastAttempt && assessment.lastScore !== undefined && (
-                  <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center text-lg font-bold text-emerald-600">
+                  <div className={`w-12 h-12 ${getScoreBgColor(assessment.lastScore)} rounded-full flex items-center justify-center text-lg font-bold ${getScoreColor(assessment.lastScore)}`}>
                     {assessment.lastScore}%
                   </div>
                 )}

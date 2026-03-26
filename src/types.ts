@@ -29,12 +29,6 @@ export interface Question {
   };
 }
 
-/*export interface Attempts {
-  attempts: Question[][];
-  scores: number[];
-};*/
-
-
 export interface AttemptAnswer {
   questionId: string;
   answer: number | boolean | string;
@@ -62,9 +56,6 @@ export interface Assessment {
   difficulty: 'easy' | 'medium' | 'hard' | 'none';
   questions: Question[];
   lastScore?: number;
-  /*bestScore?: number;
-  lastScore?: number;
-  attempts: Attempts;*/
   lastAttempt: AssessmentAttempt;
 }
 
