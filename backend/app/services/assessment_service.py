@@ -6,7 +6,7 @@ import re
 from fastapi import HTTPException
 
 from app.schemas.assessment import QuestionSource, QuestionDetail, AssessmentSchema, AssessmentDetails
-from app.schemas.assessment_attempt import AssessmentAttempt
+from app.schemas.assessment_attempt import Answer, AssessmentAttempt
 from app.schemas.assessment_request import AssessmentRequest
 
 from app.services.document_service import DocumentService
@@ -147,7 +147,7 @@ class AssessmentService:
         # fetch attempts data
         attempts_response = (
             self.db_client.table("assessments")
-            .select("attempts")
+            .select("attempt")
             .eq("id", assessment_id)
             .eq("user_id", user_id)
             .maybe_single()
@@ -155,17 +155,18 @@ class AssessmentService:
         )
 
         last_attempt = None
-        if attempts_response.data and attempts_response.data.get("attempts"):
+        if attempts_response.data:
             try:
-                attempt_data = attempts_response.data["attempts"]
-                # Ensure answers is a list and handle any parsing issues
-                answers = attempt_data.get("answers", [])
-                if not isinstance(answers, list):
-                    answers = []
+                attempt_data = attempts_response.data["attempt"]
+                answers = []
+                for ans in attempt_data.get("answers"):
+                    answers.append(Answer(**ans))
+                print(attempt_data)
                 last_attempt = AssessmentAttempt(
-                    attempts=attempt_data.get("attempts", 0),
-                    time_submitted=attempt_data.get("time_submitted", ""),
-                    answers=answers
+                    numAttempts=attempt_data.get("numAttempts"),
+                    answers=answers,
+                    numCorrect=attempt_data.get("numCorrect"),
+                    time_submitted=attempt_data.get("time_submitted")
                 )
             except Exception as e:
                 print(f"Error parsing attempt data: {e}")
@@ -252,7 +253,6 @@ class AssessmentService:
         filters = {
             "$and": [
                 {"document_id": {"$in": document_ids}},
-                {"user_id": {"$eq": user_id}},
             ]
         }
 
@@ -269,10 +269,9 @@ class AssessmentService:
             distance = item[1]
             similarity = 1 - distance
 
-            if similarity > 0.60:  # keep only 60% or better matches
-                valid_chunks.append(
-                    {"id": item[0], "score": similarity, "metadata": item[2]}
-                )
+            valid_chunks.append(
+                {"id": item[0], "score": similarity, "metadata": item[2]}
+            )
 
         valid_chunks.sort(key=lambda x: x["score"], reverse=True)
 
@@ -350,7 +349,7 @@ class AssessmentService:
         difficulty: str,
     ):
         """
-        MANAGER: Orchestrates the entire background task.
+        MANAGER: Orchestrates the task of generating an assessment
         """
         try:
             # update status to processing
@@ -408,16 +407,35 @@ class AssessmentService:
         assessments = []
 
         for row in response.data:
+            # Handle source files (can be single document_id or list document_ids)
+            source_files = []
+            if row.get("document_id"):
+                source_files.append(row["document_id"])
+            if row.get("document_ids"):
+                source_files.extend(row["document_ids"])
+
+            # Ensure unique IDs and convert to list if it was a set
+            unique_source_files = list(set(source_files))
+
+            # Get superficial attempt information
+            numAttempts = 0
+            numCorrect = 0
+            if row.get("attempt"):
+                numAttempts = row.get("attempt")["numAttempts"]
+                numCorrect = row.get("attempt")["numCorrect"]
+
             assessments.append(
                 {
                     "id": row.get("id"),
                     "title": row.get("title"),  # Rename for frontend
+                    "topic": row.get("query") or "",  # Frontend expects topic
                     "createdAt": row.get("created_at"),
                     "status": row.get("status"),
-                    "sourceFiles": row.get("document_id"),  # Standardize key
+                    "sourceFiles": unique_source_files,  # Return list of IDs
                     "questionCount": row.get("num_questions"),
                     "difficulty": row.get("difficulty"),  # Rename for frontend
-                    # TODO add attempts when added to db
+                    "numAttempts": numAttempts,
+                    "numCorrect": numCorrect
                 }
             )
 
@@ -429,11 +447,11 @@ class AssessmentService:
         user_id: str,
         attempt_data: Dict[str, Any],
     ) -> Dict[str, Any]:
-        """Stores the latest attempt in the assessments.attempts column."""
+        """Stores the latest attempt in the assessments.attempt column."""
         # ownership check + existence
         existing = (
             self.db_client.table("assessments")
-            .select("id, attempts")
+            .select("id, attempt")
             .eq("id", assessment_id)
             .eq("user_id", user_id)
             .maybe_single()
@@ -442,22 +460,73 @@ class AssessmentService:
         if not existing.data:
             raise PermissionError("Assessment not found or user does not have access.")
 
-        # Calculate attempts count
+        # Update attempts count
         current_attempts = 1
-        if existing.data.get("attempts") and isinstance(existing.data["attempts"], dict):
-            current_attempts = existing.data["attempts"].get("attempts", 0) + 1
-        elif existing.data.get("attempts") and isinstance(existing.data["attempts"], int):
-            current_attempts = existing.data["attempts"] + 1
+        if existing.data.get("attempt"):
+            current_attempts = existing.data.get("attempt")["numAttempts"] + 1
 
+        # Calculate number of questions correct
+        numCorrect = 0
+
+        # Fetch questions
+        questions_response = (
+            self.db_client.table("questions")
+            .select("*")
+            .eq("assessment_id", assessment_id)
+            .execute()
+        )
+
+        # Fetch all options for all questions in the assessment
+        question_ids = [q["id"] for q in questions_response.data]
+        options_response = (
+            self.db_client.table("question_options")
+            .select("*")
+            .in_("question_id", question_ids)
+            .execute()
+        )
+
+        # Associate options with questions
+        options_by_question_id = {}
+        for option in options_response.data:
+            qid = option["question_id"]
+            if qid not in options_by_question_id:
+                options_by_question_id[qid] = []
+            options_by_question_id[qid].append(option)
+
+        # Retrieve correct answer (MCQ only?)
+        correct_answers = []
+        for q in questions_response.data:
+            question_id = q["id"]
+            options_data = options_by_question_id.get(question_id, [])
+            correct_answer_index = -1
+            for index, opt in enumerate(options_data):
+                if opt["is_correct"]:
+                    correct_answer_index = index
+                    break
+            correct_answers.append(correct_answer_index)
+
+        # Update answers
+        answers = []
+        for i in range(min(len(attempt_data["answers"]), len(correct_answers))):
+            ans = Answer(
+                value=attempt_data["answers"][i],
+                isCorrect=False
+            )
+            if attempt_data["answers"][i] == correct_answers[i]:
+                ans.isCorrect = True
+                numCorrect += 1
+            answers.append(ans)
+            
         # Prepare complete attempt data
-        complete_attempt_data = {
-            "attempts": current_attempts,
-            "time_submitted": datetime.now(timezone.utc).isoformat(),
-            "answers": attempt_data["answers"]
-        }
+        complete_attempt_data = AssessmentAttempt(
+            numAttempts=current_attempts,
+            answers=answers,
+            numCorrect=numCorrect,
+            time_submitted=datetime.now(timezone.utc).isoformat()
+        )
 
         update_payload = {
-            "attempts": complete_attempt_data,
+            "attempt": complete_attempt_data.model_dump(),
         }
 
         response = (
@@ -470,7 +539,7 @@ class AssessmentService:
 
         if not response.data:
             raise ValueError("Failed to save assessment attempt")
-
+        
         return response.data[0]
 
     async def update_assessment(

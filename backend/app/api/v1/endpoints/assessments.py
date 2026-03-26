@@ -135,7 +135,7 @@ async def submit_assessment_attempt(
         return {
             "message": "Attempt saved",
             "assessment_id": assessment_id,
-            "attempt": result.get("attempts"),
+            "attempt": result.get("attempt"),
         }
     except PermissionError as e:
         raise HTTPException(status_code=403, detail=str(e))

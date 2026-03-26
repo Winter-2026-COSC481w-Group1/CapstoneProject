@@ -15,7 +15,6 @@ class QuestionDetail(BaseModel):
     question: str
     options: Optional[List[str]] = None
     correctAnswer: int
-    userAnswer: Optional[str] = None
     source: Optional[QuestionSource] = None
 
 

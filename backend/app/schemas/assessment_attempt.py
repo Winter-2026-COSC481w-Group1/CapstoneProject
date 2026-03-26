@@ -1,19 +1,18 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing import Optional, Union, List
-from datetime import datetime
 
 
 class Answer(BaseModel):
-    questionId: str
-    answer: Union[int, bool, str, None] = None
-    shortAnswerIsCorrect: Optional[bool] = None
+    value: Union[int, bool, str, None]
+    isCorrect: Optional[bool]
 
 
 class AssessmentAttemptRequest(BaseModel):
-    answers: List[Answer]
+    answers: List[Union[int, bool, str, None]]
 
 
 class AssessmentAttempt(BaseModel):
-    attempts: int
-    time_submitted: Union[datetime, str] = Field(..., description="Submission timestamp")
+    numAttempts: int
     answers: List[Answer]
+    numCorrect: int
+    time_submitted: str
