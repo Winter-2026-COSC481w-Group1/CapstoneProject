@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Play, Download, Clock, CheckCircle, CircleX, FileText, EllipsisVertical } from 'lucide-react';
 import { useApp } from '../AppContext';
 import { supabaseClient } from '../supabase';
@@ -7,17 +7,28 @@ import { useNavigate } from 'react-router-dom';
 const VITE_API_URL = import.meta.env.VITE_API_URL;
 
 export default function AssessmentsHub() {
-  const { assessments, setAssessments, setCurrentAssessment } = useApp();
+  const { assessments, setAssessments, setCurrentAssessment, fetchAssessmentDetails, fetchAssessments } = useApp();
   const [showDownloadMenu, setShowDownloadMenu] = useState<string | null>(null);
   const [showOptionsMenu, setShowOptionsMenu] = useState<string | null>(null);
   const [assessmentsFilter, setAssessmentsFilter] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const handleStartExam = (assessmentId: string) => {
-    const assessment = assessments.find(a => a.id === assessmentId);
-    if (assessment) {
-      setCurrentAssessment(assessment);
-      navigate('/dashboard/exam-mode');
+  useEffect(() => {
+    if (assessments.length === 0) {
+      fetchAssessments();
+    }
+  }, [assessments.length, fetchAssessments]);
+
+  const handleStartExam = async (assessmentId: string) => {
+    try {
+      const updatedAssessment = await fetchAssessmentDetails(assessmentId);
+      if (updatedAssessment) {
+        setCurrentAssessment(updatedAssessment);
+        navigate('/dashboard/exam-mode');
+      }
+    } catch (error) {
+      console.error('Failed to start exam:', error);
+      alert('Could not load assessment details. Please try again.');
     }
   };
 
@@ -25,7 +36,7 @@ export default function AssessmentsHub() {
     setShowDownloadMenu(showDownloadMenu === assessmentId ? null : assessmentId);
   };
 
-  // Delete document handler
+  // Delete assessment handler
   const handleDelete = async (id: string) => {
     try {
       // obtain supabase session for auth token
@@ -85,12 +96,12 @@ export default function AssessmentsHub() {
           <button className={"px-4 py-2 rounded-full font-medium " + ((assessmentsFilter === 'incomplete') ? "bg-emerald-600 text-white" : "text-gray-600 hover:bg-gray-300 bg-gray-200")}
             onClick={() => setAssessmentsFilter('incomplete')}
           >
-            Incomplete ({assessments.filter(a => a.status === 'completed' && !a.lastAttempt).length})
+            Incomplete ({assessments.filter(a => a.status === 'ready').length})
           </button>
           <button className={"px-4 py-2 rounded-full font-medium " + ((assessmentsFilter === 'completed') ? "bg-emerald-600 text-white" : "text-gray-600 hover:bg-gray-300 bg-gray-200")}
             onClick={() => setAssessmentsFilter('completed')}
           >
-            Completed ({assessments.filter(a => a.status === 'completed' && a.lastAttempt).length})
+            Completed ({assessments.filter(a => a.status === 'completed').length})
           </button>
         </div>
 
@@ -98,8 +109,8 @@ export default function AssessmentsHub() {
           {assessments.filter(a => {
             if (assessmentsFilter === null) return true;
             if (assessmentsFilter === 'pending') return a.status === 'pending';
-            if (assessmentsFilter === 'incomplete') return a.status === 'completed' && !a.lastAttempt;
-            if (assessmentsFilter === 'completed') return a.status === 'completed' && a.lastAttempt;
+            if (assessmentsFilter === 'incomplete') return a.status === 'ready';
+            if (assessmentsFilter === 'completed') return a.status === 'completed';
             return false;
           }).map((assessment) => (
             <div
@@ -111,9 +122,9 @@ export default function AssessmentsHub() {
               <h3 className="text-lg font-bold text-gray-900 mb-1 line-clamp-2">
                 {assessment.title}
               </h3>
-              {assessment.status === "completed" && assessment.lastAttempt && (
+              {assessment.status === "completed" && (
                 <div className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-full text-xs font-medium text-gray-700 mb-3">
-                  {assessment.lastAttempt.attempts} attempt{assessment.lastAttempt.attempts !== 1 ? 's' : ''}
+                  {assessment.numAttempts} attempt{assessment.numAttempts !== 1 ? 's' : ''}
                 </div>
               )}
               <div className="flex flex-row items-center justify-between gap-x-2">
@@ -169,9 +180,9 @@ export default function AssessmentsHub() {
                     </div>
                   )}
                 </div>
-                {assessment.status === "completed" && assessment.lastAttempt && assessment.lastScore !== undefined && (
-                  <div className={`w-12 h-12 ${getScoreBgColor(assessment.lastScore)} rounded-full flex items-center justify-center text-lg font-bold ${getScoreColor(assessment.lastScore)}`}>
-                    {assessment.lastScore}%
+                {assessment.status === "completed" && (
+                  <div className={`w-12 h-12 ${getScoreBgColor(Math.round((assessment.numCorrect / assessment.questionCount) * 100))} rounded-full flex items-center justify-center text-lg font-bold ${getScoreColor(Math.round((assessment.numCorrect / assessment.questionCount) * 100))}`}>
+                    {Math.round((assessment.numCorrect / assessment.questionCount) * 100)}%
                   </div>
                 )}
               </div>
@@ -208,13 +219,22 @@ export default function AssessmentsHub() {
               )}
                   
                 <button
-                onClick={() => {
-                  if (assessment.status === "completed" && assessment.lastAttempt) {
-                    setCurrentAssessment(assessment);
-                    navigate('/dashboard/grading-report');
+                onClick={async () => {
+                  if (assessment.status === "completed") {
+                    try {
+                      const updatedAssessment = await fetchAssessmentDetails(assessment.id);
+                      console.log(updatedAssessment)
+                      if (updatedAssessment) {
+                        setCurrentAssessment(updatedAssessment);
+                        navigate('/dashboard/grading-report');
+                      }
+                    } catch (error) {
+                      console.error('Failed to view results:', error);
+                      alert('Could not load assessment results. Please try again.');
+                    }
                   }
                   }}
-                  className={"w-full flex items-center justify-center gap-2 " + ((assessment.status === "completed" && assessment.lastAttempt) ? "bg-blue-100 hover:bg-blue-200 text-blue-600" : "bg-gray-200 text-gray-600 cursor-default") + " py-3 rounded-xl font-semibold"}
+                  className={"w-full flex items-center justify-center gap-2 " + ((assessment.status === "completed") ? "bg-blue-100 hover:bg-blue-200 text-blue-600" : "bg-gray-200 text-gray-600 cursor-default") + " py-3 rounded-xl font-semibold"}
                 >
                   <CheckCircle className="w-4 h-4" />
                   View Results
@@ -223,11 +243,11 @@ export default function AssessmentsHub() {
               <div className="flex gap-2">
                 <button
                   onClick={() => {
-                    if (assessment.status === "completed") {
+                    if (assessment.status === "ready" || assessment.status === "completed") {
                       handleStartExam(assessment.id);
                     }
                   }}
-                  className={"flex-1 flex items-center justify-center gap-2 " + ((assessment.status === "completed") ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-gray-200 text-gray-600 cursor-default") + " py-3 rounded-xl font-semibold transition-colors"}
+                  className={"flex-1 flex items-center justify-center gap-2 " + ((assessment.status === "ready" || assessment.status === "completed") ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-gray-200 text-gray-600 cursor-default") + " py-3 rounded-xl font-semibold transition-colors"}
                 >
                   <Play className="w-4 h-4" />
                   Start Online
@@ -235,7 +255,7 @@ export default function AssessmentsHub() {
                 <div className="relative">
                   <button
                     onClick={() => {
-                      if (assessment.status === "completed") {
+                      if (assessment.status === "ready" || assessment.status === "completed") {
                         handleDownloadMenu(assessment.id);
                       }
                     }}

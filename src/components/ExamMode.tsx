@@ -7,7 +7,7 @@ import { supabaseClient } from '../supabase';
 
 export default function ExamMode() {
   const navigate = useNavigate();
-  const { currentAssessment, assessments, setAssessments, fetchAssessments } = useApp();
+  const { currentAssessment, assessments, setAssessments, setCurrentAssessment, fetchAssessmentDetails } = useApp();
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number | string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -46,34 +46,48 @@ export default function ExamMode() {
       const { data: { session } } = await supabaseClient.auth.getSession();
       if (!session?.access_token) {
         console.error('no session token available');
+        setIsSubmitting(false);
         return;
       }
 
-      const updatedQuestions = questions.map(q => ({
-        ...q,
-        userAnswer: answers[q.id] ?? q.userAnswer ?? (q.type === 'short-answer' ? '' : -1)
-      }));
+      const submitAnswers = questions.map((q) => {
+        const userValue = answers[q.id];
 
-      // Prepare attempt data
-      const attemptAnswers = updatedQuestions.map(q => ({
-        questionId: q.id,
-        answer: answers[q.id] ?? (q.type === 'short-answer' ? '' : -1),
-        shortAnswerIsCorrect: q.type === 'short-answer' ? (
-          typeof answers[q.id] === 'string' &&
-          typeof q.correctAnswer === 'string' &&
-          (answers[q.id] as string).toLowerCase().trim() === q.correctAnswer.toLowerCase().trim()
-        ) : null
-      }));
+        if (userValue !== undefined && userValue !== null) {
+          if (q.type === 'true-false') {
+            // For true/false, map selected index to boolean if options look like T/F
+            if (typeof userValue === 'number' && q.options?.length === 2) {
+              return userValue === 0 ? true : userValue === 1 ? false : userValue;
+            }
+          }
+          return userValue;
+        }
+
+        if (q.type === 'short-answer') {
+          return '';
+        }
+
+        if (q.type === 'true-false') {
+          return null;
+        }
+
+        // multiple-choice and default unanswered
+        return null;
+      });
 
       const attemptData = {
-        answers: attemptAnswers
+        answers: submitAnswers
       };
 
       // Submit attempt to backend
       await patch(`api/v1/assessments/${currentAssessment.id}/attempt`, attemptData, session.access_token);
 
       // Fetch results
-      await fetchAssessments();
+      const updatedAssessment = await fetchAssessmentDetails(currentAssessment.id);
+      if (updatedAssessment) {
+        updatedAssessment.status = "completed";
+        setCurrentAssessment(updatedAssessment);
+      }
 
       navigate('/dashboard/grading-report');
     } catch (error) {
@@ -107,8 +121,11 @@ export default function ExamMode() {
       setAssessments(
         assessments.map(a => a.id === currentAssessment.id ? updatedAssessment : a)
       );
+      setCurrentAssessment(updatedAssessment);
 
       navigate('/dashboard/grading-report');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 

@@ -1,7 +1,7 @@
 import { CheckCircle, XCircle, Download, ArrowLeft, FileText } from 'lucide-react';
 import { useApp } from '../AppContext';
 import { useNavigate } from 'react-router-dom';
-import { Question, AttemptAnswer } from '../types';
+import { Question } from '../types';
 
 
 export default function GradingReport() {
@@ -15,32 +15,86 @@ export default function GradingReport() {
 
   const assessment = assessments.find(a => a.id === currentAssessment.id) || currentAssessment;
   const questions = assessment.questions;
-  const lastAttempt = assessment.lastAttempt;
+  const attemptData = assessment.attempt;
+  const attemptAnswers = Array.isArray(attemptData?.answers) ? attemptData.answers : [];
 
-  // Calculate score dynamically from attempt data
-  const calculateScore = (): number => {
-    if (!lastAttempt || !lastAttempt.answers) return 0;
+  const normalizeAttemptEntry = (entry: unknown): { value: number | boolean | string | null; isCorrect: boolean | null } => {
+    if (entry === undefined || entry === null) return { value: null, isCorrect: null };
 
-    let correctCount = 0;
-    for (const question of questions) {
-      const attemptAnswer = lastAttempt.answers.find((a: AttemptAnswer) => a.questionId === question.id);
-      if (!attemptAnswer) continue;
-
-      if (question.type === 'short-answer') {
-        // Use the stored correctness for short answers
-        if (attemptAnswer.shortAnswerIsCorrect === true) {
-          correctCount++;
-        }
-      } else {
-        // For MCQ and True/False, compare answer to correct answer
-        if (attemptAnswer.answer === question.correctAnswer) {
-          correctCount++;
-        }
+    if (typeof entry === 'object' && entry !== null) {
+      const obj = entry as Record<string, unknown>;
+      const value = obj.value ?? obj.answer ?? null;
+      const isCorrect =
+        typeof obj.isCorrect === 'boolean'
+          ? obj.isCorrect
+          : typeof obj.is_correct === 'boolean'
+          ? obj.is_correct
+          : null;
+      if (value === undefined) {
+        // In some legacy cases, answers are sent as primitive objects with questionId/answer
+        return { value: null, isCorrect };
       }
+      return {
+        value: value as number | boolean | string | null,
+        isCorrect,
+      };
     }
 
-    return questions.length > 0 ? Math.round((correctCount / questions.length) * 100) : 0;
+    if (typeof entry === 'number' || typeof entry === 'boolean' || typeof entry === 'string') {
+      return { value: entry, isCorrect: null };
+    }
+
+    return { value: null, isCorrect: null };
   };
+
+  const getNormalizedAnswer = (index: number) => normalizeAttemptEntry(attemptAnswers[index]);
+  const getAnswerValue = (index: number) => getNormalizedAnswer(index).value;
+  const getAnswerCorrectFlag = (index: number) => getNormalizedAnswer(index).isCorrect;
+
+  const getAnswerIndex = (index: number): number | null => {
+    const value = getAnswerValue(index);
+    if (value === null || value === undefined || value === '') return null;
+
+    if (typeof value === 'boolean') {
+      return value ? 0 : 1;
+    }
+
+    const parsed = Number(value);
+    if (!Number.isNaN(parsed)) return parsed;
+
+    if (typeof value === 'string') {
+      const normalized = value.trim().toLowerCase();
+      if (normalized === 'true') return 0;
+      if (normalized === 'false') return 1;
+    }
+
+    return null;
+  };
+
+  const isQuestionCorrectByBackend = (index: number): boolean | null => {
+    const flag = getAnswerCorrectFlag(index);
+    return flag !== null ? flag : null;
+  };
+
+  const isQuestionCorrect = (question: Question, index: number): boolean => {
+    const backendFlag = isQuestionCorrectByBackend(index);
+    if (backendFlag !== null) return backendFlag;
+
+    const answerValue = getAnswerValue(index);
+    if (question.type === 'short-answer') {
+      if (typeof answerValue !== 'string') return false;
+      return answerValue.trim().toLowerCase() === String(question.correctAnswer).trim().toLowerCase();
+    }
+
+    const userIndex = getAnswerIndex(index);
+    if (userIndex === null) return false;
+
+    return userIndex === Number(question.correctAnswer);
+  };
+
+  const numCorrectSource = questions.filter((q, idx) => isQuestionCorrect(q, idx)).length;
+  const numCorrect = typeof attemptData?.numCorrect === 'number' ? attemptData.numCorrect : numCorrectSource;
+  const attemptNumber = typeof attemptData?.numAttempts === 'number' ? attemptData.numAttempts : assessment.numAttempts;
 
   // Helper function to safely parse date
   const parseDate = (dateString: string | Date | undefined): Date | null => {
@@ -55,27 +109,7 @@ export default function GradingReport() {
     }
   };
 
-  // Helper function to determine if a question is correct
-  const isQuestionCorrect = (q: Question): boolean => {
-    if (q.type === 'short-answer' && lastAttempt) {
-      // For short-answer, use the shortAnswerIsCorrect from attempt data if available
-      const attemptAnswer = lastAttempt.answers?.find((a: AttemptAnswer) => a.questionId === q.id);
-      if (attemptAnswer && attemptAnswer.shortAnswerIsCorrect !== null && attemptAnswer.shortAnswerIsCorrect !== undefined) {
-        return attemptAnswer.shortAnswerIsCorrect;
-      }
-      // Fallback to string comparison if shortAnswerIsCorrect not available
-      return (
-        typeof q.userAnswer === 'string' &&
-        typeof q.correctAnswer === 'string' &&
-        q.userAnswer.toLowerCase().trim() === q.correctAnswer.toLowerCase().trim()
-      );
-    }
-    // For MCQ and True/False, compare answer to correct answer index
-    return q.userAnswer === q.correctAnswer;
-  };
-
-  const correctCount = questions.filter(isQuestionCorrect).length;
-  const score = calculateScore();
+  const score = questions.length > 0 ? Math.round((numCorrect / questions.length) * 100) : 0;
 
   const getScoreColor = (score: number) => {
     if (score >= 90) return 'text-emerald-600';
@@ -108,9 +142,9 @@ export default function GradingReport() {
               <div className="flex items-center gap-4 text-sm text-gray-600">
                 <span>{questions.length} questions</span>
                 <span>•</span>
-                <span>{correctCount} correct</span>
+                <span>{numCorrect} correct</span>
                 <span>•</span>
-                <span>{questions.length - correctCount} incorrect</span>
+                <span>{questions.length - numCorrect} incorrect</span>
               </div>
             </div>
 
@@ -130,23 +164,23 @@ export default function GradingReport() {
           </div>
         </div>
 
-        {lastAttempt && (
+        {assessment.status === "completed" && (
           <div className="bg-white rounded-3xl p-6 shadow-lg border border-gray-200 mb-8">
             <h2 className="text-xl font-bold text-gray-900 mb-4">Attempt Information</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="text-center">
-                <div className="text-2xl font-bold text-gray-900">{lastAttempt.attempts}</div>
+                <div className="text-2xl font-bold text-gray-900">{attemptNumber}</div>
                 <div className="text-sm text-gray-600">Attempt Number</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-gray-900">
-                  {lastAttempt && parseDate(lastAttempt.time_submitted) ? parseDate(lastAttempt.time_submitted)!.toLocaleDateString() : 'N/A'}
+                  {assessment.status === "completed" && parseDate(assessment.attempt?.timeSubmitted) ? parseDate(assessment.attempt?.timeSubmitted)!.toLocaleDateString() : 'N/A'}
                 </div>
                 <div className="text-sm text-gray-600">Date</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-gray-900">
-                  {lastAttempt && parseDate(lastAttempt.time_submitted) ? parseDate(lastAttempt.time_submitted)!.toLocaleTimeString() : 'N/A'}
+                  {assessment.status === "completed" && parseDate(assessment.attempt?.timeSubmitted) ? parseDate(assessment.attempt?.timeSubmitted)!.toLocaleTimeString() : 'N/A'}
                 </div>
                 <div className="text-sm text-gray-600">Time</div>
               </div>
@@ -161,11 +195,8 @@ export default function GradingReport() {
 
         <div className="space-y-6">
           {questions.map((question, idx) => {
-            const isCorrect = isQuestionCorrect(question);
-            const hasAnswer =
-              question.type === 'short-answer'
-                ? typeof question.userAnswer === 'string' && question.userAnswer.trim() !== ''
-                : question.userAnswer !== undefined && question.userAnswer !== null;
+            const userAnswerIndex = getAnswerIndex(idx);
+            const isCorrect = isQuestionCorrect(question, idx);
 
             return (
               <div
@@ -199,8 +230,8 @@ export default function GradingReport() {
                     {question.type === 'multiple-choice' && question.options && (
                       <div className="space-y-2 mb-4">
                         {question.options.map((option, optIdx) => {
-                          const isUserAnswer = optIdx === question.userAnswer;
-                          const isCorrectAnswer = optIdx === question.correctAnswer;
+                          const isUserAnswer = optIdx === userAnswerIndex;
+                          const isCorrectAnswer = optIdx === Number(question.correctAnswer);
 
                           return (
                             <div
@@ -231,8 +262,8 @@ export default function GradingReport() {
                     {question.type === 'true-false' && (
                       <div className="space-y-2 mb-4">
                         {['True', 'False'].map((option, optIdx) => {
-                          const isUserAnswer = optIdx === question.userAnswer;
-                          const isCorrectAnswer = optIdx === question.correctAnswer;
+                          const isUserAnswer = optIdx === userAnswerIndex;
+                          const isCorrectAnswer = optIdx === Number(question.correctAnswer);
 
                           return (
                             <div
@@ -260,23 +291,6 @@ export default function GradingReport() {
                       </div>
                     )}
 
-                    {question.type === 'short-answer' && (
-                      <div className="space-y-3 mb-4">
-                        {hasAnswer && !isCorrect && (
-                          <div className="p-4 bg-red-50 border-2 border-red-500 rounded-xl">
-                            <div className="text-sm font-medium text-red-700 mb-1">Your Answer:</div>
-                            <div className="text-gray-900 line-through">{question.userAnswer}</div>
-                          </div>
-                        )}
-                        <div className="p-4 bg-emerald-50 border-2 border-emerald-500 rounded-xl">
-                          <div className="text-sm font-medium text-emerald-700 mb-1">
-                            {isCorrect ? 'Your Answer (Correct):' : 'Correct Answer:'}
-                          </div>
-                          <div className="text-gray-900 font-medium">{question.correctAnswer}</div>
-                        </div>
-                      </div>
-                    )}
-
                     {question.source && (
                       <div className="mt-4 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-lg">
                         <div className="flex items-start gap-3">
@@ -285,7 +299,9 @@ export default function GradingReport() {
                             <div className="text-sm font-semibold text-blue-900 mb-2">Source Citation</div>
                             <p className="text-sm text-gray-700 italic mb-2">"{question.source.text}"</p>
                             <div className="flex items-center gap-2 text-xs text-blue-700">
-                              <span className="font-medium">{question.source.fileName}</span>
+                              <span className="font-medium">
+                              {question.source.document_name || question.source.document_id}
+                            </span>
                               <span>•</span>
                               <span>Page {question.source.page}</span>
                             </div>

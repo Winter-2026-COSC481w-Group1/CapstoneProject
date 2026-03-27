@@ -7,9 +7,9 @@ export default function Dashboard() {
   const { currentUser, libraryFiles, assessments, activities } = useApp();
 
   const readyFiles = libraryFiles.filter(f => f.status === 'ready').length;
-  const completedAssessments = assessments.filter(a => a.status === 'completed' && a.lastAttempt);
+  const completedAssessments = assessments.filter(a => a.status === 'completed');
   const avgScore = completedAssessments.length > 0
-    ? Math.round(completedAssessments.reduce((acc, a) => acc + (a.lastScore || 0), 0) / completedAssessments.length)
+    ? Math.round(completedAssessments.reduce((acc, a) => acc + ((a.numCorrect / a.questionCount) * 100 || 0), 0) / completedAssessments.length)
     : 0;
 
   const today = new Date().toLocaleDateString('en-US', {

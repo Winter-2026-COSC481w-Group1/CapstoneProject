@@ -114,8 +114,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         numCorrect: ass.numCorrect,
       })).sort((a: Assessment, b: Assessment) => b.createdAt.getTime() - a.createdAt.getTime());
 
-      console.log(assessments)
-
       setAssessments(assessments);
 
       // Check if any assessments are either pending/processing
@@ -134,27 +132,36 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const { data: { session } } = await supabaseClient.auth.getSession();
       if (!session?.access_token) return null;
 
-      const questionsData = await get(`api/v1/assessments/${assessmentId}`, session.access_token);
-      const questions = questionsData.map((que: any) => ({
+      const assessmentData = await get(`api/v1/assessments/${assessmentId}`, session.access_token);
+      const questions = assessmentData.questions.map((que: any) => ({
         id: que.id,
         type: que.type,
         question: que.question,
         numOptions: que.options ? que.options.length : 0,
         options: que.options,
         correctAnswer: que.correctAnswer,
-        userAnswer: que.userAnswer,
         source: que.source,
       }));
+      const attempt = {
+        answers: assessmentData.attempt?.answers,
+        timeSubmitted: assessmentData.attempt?.time_submitted,
+      };
 
       let updatedAssessment: Assessment | null = null;
 
       setAssessments(prev => prev.map(ass => {
         if (ass.id === assessmentId) {
-          updatedAssessment = { ...ass, questions };
+          updatedAssessment = { ...ass, questions, attempt };
+          updatedAssessment.numAttempts = assessmentData.attempt?.numAttempts;
+          updatedAssessment.numCorrect = assessmentData.attempt?.numCorrect;
           return updatedAssessment;
         }
         return ass;
       }));
+
+      if (updatedAssessment) {
+        setCurrentAssessment(updatedAssessment);
+      }
 
       return updatedAssessment;
     } catch (err) {

@@ -21,11 +21,11 @@ export interface Question {
   numOptions: number
   options?: string[];
   correctAnswer: number | string;
-  userAnswer?: number | string;
   source?: {
     text: string;
     page: number;
-    fileName: string;
+    document_id: string;
+    document_name?: string;
   };
 }
 
@@ -41,7 +41,7 @@ export interface AssessmentAttemptRequest {
 
 export interface AssessmentAttempt {
   attempts?: number;
-  time_submitted?: string;
+  timeSubmitted?: string;
   answers: AttemptAnswer[];
 }
 
@@ -57,7 +57,7 @@ export interface Assessment {
   numAttempts: number;
   numCorrect: number;
   questions: Question[];
-  attempt: AssessmentAttempt;
+  attempt?: AssessmentAttempt;
 }
 
 export interface Activity {

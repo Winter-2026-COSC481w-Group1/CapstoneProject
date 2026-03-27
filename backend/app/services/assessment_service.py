@@ -540,6 +540,9 @@ class AssessmentService:
         if not response.data:
             raise ValueError("Failed to save assessment attempt")
         
+        # Update assessment status to completed
+        await self.update_assessment_status(assessment_id, "completed")
+        
         return response.data[0]
 
     async def update_assessment(
