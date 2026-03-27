@@ -63,7 +63,7 @@ async def process_document(
             f"Successfully embedded and upserted {total_indexed} vectors for doc {document_id}."
         )
 
-        # 5. Update document status to 'completed'
+        # 5. Update document status to 'ready'
         db_client.table("documents").update({"status": "ready"}).eq(
             "id", document_id
         ).execute()

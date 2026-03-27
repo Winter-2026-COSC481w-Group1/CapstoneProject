@@ -6,7 +6,8 @@ from .assessment_attempt import AssessmentAttempt
 class QuestionSource(BaseModel):
     text: str
     page: int
-    fileName: str
+    document_id: str
+    document_name: Optional[str] = None
 
 
 class QuestionDetail(BaseModel):
@@ -40,4 +41,4 @@ class AssessmentSchema(BaseModel):
 
 class AssessmentDetails(BaseModel):
     questions: List[QuestionDetail]
-    lastAttempt: Optional[AssessmentAttempt] = None
+    attempt: Optional[AssessmentAttempt] = None

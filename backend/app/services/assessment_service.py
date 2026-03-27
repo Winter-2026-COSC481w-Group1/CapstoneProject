@@ -56,6 +56,7 @@ class AssessmentService:
             all_ids.extend(data["document_ids"])
 
         unique_doc_ids = list(set(all_ids))
+        default_doc_id = data.get("document_id") or (data.get("document_ids") or [None])[0]
 
         doc_names_map = {}
         if unique_doc_ids:
@@ -75,7 +76,7 @@ class AssessmentService:
             .execute()
         )
         if not questions_response.data:
-            return AssessmentDetails(questions=[], lastAttempt=None)
+            return AssessmentDetails(questions=[], attempt=None)
 
         # fetch all options for all questions in the assessment
         question_ids = [q["id"] for q in questions_response.data]
@@ -119,19 +120,14 @@ class AssessmentService:
                 match = re.search(r"Page: (\d+) Text: (.*)", explanation)
                 if match:
                     page, text = match.groups()
-                    q_doc_id = q.get("document_id")
-
-                    if q_doc_id and q_doc_id in doc_names_map:
-                        current_file_name = doc_names_map[q_doc_id]
-                    elif doc_names_map:
-                        # Fallback to the first file in the list for this assessment
-                        current_file_name = list(doc_names_map.values())[0]
-                    else:
-                        current_file_name = "Unknown"
-
-                    source = QuestionSource(
-                        text=text.strip(), page=int(page), fileName=current_file_name
-                    )
+                    q_doc_id = q.get("document_id") or default_doc_id
+                    if q_doc_id:
+                        source = QuestionSource(
+                            text=text.strip(),
+                            page=int(page),
+                            document_id=q_doc_id,
+                            document_name=doc_names_map.get(q_doc_id, "Unknown"),
+                        )
 
             detailed_questions.append(
                 QuestionDetail(
@@ -161,7 +157,6 @@ class AssessmentService:
                 answers = []
                 for ans in attempt_data.get("answers"):
                     answers.append(Answer(**ans))
-                print(attempt_data)
                 last_attempt = AssessmentAttempt(
                     numAttempts=attempt_data.get("numAttempts"),
                     answers=answers,
@@ -172,7 +167,7 @@ class AssessmentService:
                 print(f"Error parsing attempt data: {e}")
                 last_attempt = None
 
-        return AssessmentDetails(questions=detailed_questions, lastAttempt=last_attempt)
+        return AssessmentDetails(questions=detailed_questions, attempt=last_attempt)
 
     # creates a pending record for the assessment generating in the db, and returns assessment id
     async def create_pending_record(
@@ -384,7 +379,7 @@ class AssessmentService:
 
                 await self._save_assessment_to_db(assessment_id, result)
 
-                await self.update_assessment_status(assessment_id, "completed")
+                await self.update_assessment_status(assessment_id, "ready")
 
                 return context
             except Exception as e:
@@ -507,14 +502,19 @@ class AssessmentService:
 
         # Update answers
         answers = []
-        for i in range(min(len(attempt_data["answers"]), len(correct_answers))):
+        for i in range(len(correct_answers)):
             ans = Answer(
-                value=attempt_data["answers"][i],
+                value=None,
                 isCorrect=False
             )
-            if attempt_data["answers"][i] == correct_answers[i]:
-                ans.isCorrect = True
-                numCorrect += 1
+            if i < len(attempt_data["answers"]):
+                ans = Answer(
+                    value=attempt_data["answers"][i],
+                    isCorrect=False
+                )
+                if attempt_data["answers"][i] == correct_answers[i]:
+                    ans.isCorrect = True
+                    numCorrect += 1
             answers.append(ans)
             
         # Prepare complete attempt data
@@ -552,7 +552,7 @@ class AssessmentService:
             ),  # Automatically sync the count
             "difficulty": assessment_data.difficulty,
             "query": assessment_data.topic,
-            "status": "completed",  # Or whatever status is appropriate
+            "status": "ready",
         }
 
         update_result = (
@@ -574,8 +574,8 @@ class AssessmentService:
             .execute()
         )
 
-        if not delete_result.data:
-            raise HTTPException(status_code=404, detail="No questions found")
+        #if not delete_result.data:
+            #raise HTTPException(status_code=404, detail="No questions found")
 
         await self._save_assessment_to_db(assessment_id, assessment_data)
 

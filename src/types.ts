@@ -50,13 +50,14 @@ export interface Assessment {
   title: string;
   topic: string;
   createdAt: Date;
-  status: 'completed' | 'processing' | 'pending' | 'failed';
+  status: 'ready' | 'completed' | 'processing' | 'pending' | 'failed';
   sourceFiles: string[];
   questionCount: number;
   difficulty: 'easy' | 'medium' | 'hard' | 'none';
+  numAttempts: number;
+  numCorrect: number;
   questions: Question[];
-  lastScore?: number;
-  lastAttempt: AssessmentAttempt;
+  attempt: AssessmentAttempt;
 }
 
 export interface Activity {
