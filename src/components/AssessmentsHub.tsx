@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Play, Download, Clock, CheckCircle, CircleX, FileText, EllipsisVertical } from 'lucide-react';
 import { useApp } from '../AppContext';
 import { supabaseClient } from '../supabase';
@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 const VITE_API_URL = import.meta.env.VITE_API_URL;
 
 export default function AssessmentsHub() {
-  const { assessments, setAssessments, setCurrentAssessment, fetchAssessmentDetails, fetchAssessments } = useApp();
+  const { assessments, setAssessments, setCurrentAssessment, fetchAssessmentDetails } = useApp();
   const [showDownloadMenu, setShowDownloadMenu] = useState<string | null>(null);
   const [showOptionsMenu, setShowOptionsMenu] = useState<string | null>(null);
   const [assessmentsFilter, setAssessmentsFilter] = useState<string | null>(null);
@@ -25,12 +25,6 @@ export default function AssessmentsHub() {
     incomplete: assessments.filter((assessment) => assessment.status === 'ready').length,
     completed: assessments.filter((assessment) => assessment.status === 'completed').length,
   };
-
-  useEffect(() => {
-    if (assessments.length === 0) {
-      fetchAssessments();
-    }
-  }, [assessments.length, fetchAssessments]);
 
   const handleStartExam = async (assessmentId: string) => {
     try {
