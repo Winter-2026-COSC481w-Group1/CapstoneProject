@@ -1,11 +1,13 @@
 from pydantic import BaseModel
 from typing import List, Optional
+from .assessment_attempt import AssessmentAttempt
 
 
 class QuestionSource(BaseModel):
     text: str
     page: int
-    fileName: str
+    document_id: str
+    document_name: Optional[str] = None
 
 
 class QuestionDetail(BaseModel):
@@ -14,7 +16,6 @@ class QuestionDetail(BaseModel):
     question: str
     options: Optional[List[str]] = None
     correctAnswer: int
-    userAnswer: Optional[str] = None
     source: Optional[QuestionSource] = None
 
 
@@ -36,3 +37,8 @@ class AssessmentSchema(BaseModel):
     difficulty: str  # 'easy' | 'medium' | 'hard'
     questions: List[QuestionSchema]
     topic: str  # either the original query or one entered when edited
+
+
+class AssessmentDetails(BaseModel):
+    questions: List[QuestionDetail]
+    attempt: Optional[AssessmentAttempt] = None

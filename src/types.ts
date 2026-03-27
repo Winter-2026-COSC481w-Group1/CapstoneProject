@@ -21,33 +21,45 @@ export interface Question {
   numOptions: number
   options?: string[];
   correctAnswer: number | string;
-  userAnswer?: number | string;
   source?: {
     text: string;
     page: number;
-    fileName: string;
+    document_id: string;
+    document_name?: string;
   };
 }
 
-export interface Attempts {
-  attempts: Question[][];
-  scores: number[];
-};
+export interface AttemptAnswer {
+  questionId: string;
+  answer: number | boolean | string;
+  shortAnswerIsCorrect?: boolean | null;
+}
 
+export interface AssessmentAttemptRequest {
+  answers: AttemptAnswer[];
+}
+
+export interface AssessmentAttempt {
+  numAttempts?: number;
+  numCorrect?: number;
+  timeSubmitted?: string;
+  time_submitted?: string;
+  answers: AttemptAnswer[];
+}
 
 export interface Assessment {
   id: string;
   title: string;
   topic: string;
   createdAt: Date;
-  status: 'completed' | 'processing' | 'pending' | 'failed';
+  status: 'ready' | 'completed' | 'processing' | 'pending' | 'failed';
   sourceFiles: string[];
   questionCount: number;
   difficulty: 'easy' | 'medium' | 'hard' | 'none';
+  numAttempts: number;
+  numCorrect: number;
   questions: Question[];
-  bestScore?: number;
-  lastScore?: number;
-  attempts: Attempts;
+  attempt?: AssessmentAttempt;
 }
 
 export interface Activity {
