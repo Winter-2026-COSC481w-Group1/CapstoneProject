@@ -11,7 +11,12 @@ if (!supabaseUrl || !supabaseKey) {
   throw new Error("Missing Supabase environment variables");
 }
 
-export const supabaseClient = createClient(supabaseUrl, supabaseKey);
+export const supabaseClient = createClient(supabaseUrl, supabaseKey, {
+  auth: {
+    flowType: "pkce",
+    detectSessionInUrl: true
+  }
+});
 
 // Convert from supabase User type to the User type in types.ts
 export function convertUser(user: User) {
