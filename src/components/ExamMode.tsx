@@ -22,22 +22,18 @@ export default function ExamMode() {
   const progress = ((currentQuestion + 1) / questions.length) * 100;
 
   const handleAnswer = (answer: number | string) => {
-    setAnswers({
-      ...answers,
-      [question.id]: answer
-    });
+    setAnswers((prevAnswers) => ({
+      ...prevAnswers,
+      [question.id]: answer,
+    }));
   };
 
   const handleNext = () => {
-    if (currentQuestion < questions.length - 1) {
-      setCurrentQuestion(currentQuestion + 1);
-    }
+    setCurrentQuestion((prev) => Math.min(prev + 1, questions.length - 1));
   };
 
   const handlePrevious = () => {
-    if (currentQuestion > 0) {
-      setCurrentQuestion(currentQuestion - 1);
-    }
+    setCurrentQuestion((prev) => Math.max(prev - 1, 0));
   };
 
   const handleSubmit = async () => {
@@ -50,30 +46,21 @@ export default function ExamMode() {
         return;
       }
 
-      const submitAnswers = questions.map((q) => {
+      const serializeAnswer = (q: typeof question) => {
         const userValue = answers[q.id];
-
         if (userValue !== undefined && userValue !== null) {
-          if (q.type === 'true-false') {
-            // For true/false, map selected index to boolean if options look like T/F
-            if (typeof userValue === 'number' && q.options?.length === 2) {
-              return userValue === 0 ? true : userValue === 1 ? false : userValue;
-            }
+          if (q.type === 'true-false' && typeof userValue === 'number' && q.options?.length === 2) {
+            return userValue === 0 ? true : userValue === 1 ? false : userValue;
           }
           return userValue;
         }
 
-        if (q.type === 'short-answer') {
-          return '';
-        }
-
-        if (q.type === 'true-false') {
-          return null;
-        }
-
-        // multiple-choice and default unanswered
+        if (q.type === 'short-answer') return '';
+        if (q.type === 'true-false') return null;
         return null;
-      });
+      };
+
+      const submitAnswers = questions.map(serializeAnswer);
 
       const attemptData = {
         answers: submitAnswers
@@ -95,7 +82,7 @@ export default function ExamMode() {
       // Still navigate to grading report even if backend submission fails
       const updatedQuestions = questions.map(q => ({
         ...q,
-        userAnswer: answers[q.id] ?? q.userAnswer ?? (q.type === 'short-answer' ? '' : -1)
+        userAnswer: answers[q.id] ?? (q.type === 'short-answer' ? '' : -1),
       }));
 
       const correctCount = updatedQuestions.filter(q => {

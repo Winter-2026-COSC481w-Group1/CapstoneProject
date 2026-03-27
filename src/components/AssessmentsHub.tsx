@@ -13,6 +13,19 @@ export default function AssessmentsHub() {
   const [assessmentsFilter, setAssessmentsFilter] = useState<string | null>(null);
   const navigate = useNavigate();
 
+  const filteredAssessments = assessments.filter((assessment) => {
+    if (assessmentsFilter === null) return true;
+    if (assessmentsFilter === 'incomplete') return assessment.status === 'ready';
+    return assessment.status === assessmentsFilter;
+  });
+
+  const assessmentCounts = {
+    all: assessments.length,
+    pending: assessments.filter((assessment) => assessment.status === 'pending').length,
+    incomplete: assessments.filter((assessment) => assessment.status === 'ready').length,
+    completed: assessments.filter((assessment) => assessment.status === 'completed').length,
+  };
+
   useEffect(() => {
     if (assessments.length === 0) {
       fetchAssessments();
@@ -33,7 +46,7 @@ export default function AssessmentsHub() {
   };
 
   const handleDownloadMenu = (assessmentId: string) => {
-    setShowDownloadMenu(showDownloadMenu === assessmentId ? null : assessmentId);
+    setShowDownloadMenu((prev) => (prev === assessmentId ? null : assessmentId));
   };
 
   // Delete assessment handler
@@ -83,36 +96,37 @@ export default function AssessmentsHub() {
         </div>
 
         <div className="flex items-center gap-4 mb-8">
-          <button className={"px-4 py-2 " + ((assessmentsFilter === null) ? "bg-emerald-600 text-white" : "text-gray-600 hover:bg-gray-300 bg-gray-200") + "  rounded-full font-medium"}
+          <button className={"px-4 py-2 " + ((assessmentsFilter === null) ? "bg-emerald-600 text-white" : "text-gray-600 hover:bg-gray-300 bg-gray-200") + " rounded-full font-medium"}
             onClick={() => setAssessmentsFilter(null)}
           >
-            All ({assessments.length})
+            All ({assessmentCounts.all})
           </button>
           <button className={"px-4 py-2 rounded-full font-medium " + ((assessmentsFilter === 'pending') ? "bg-emerald-600 text-white" : "text-gray-600 hover:bg-gray-300 bg-gray-200")}
             onClick={() => setAssessmentsFilter('pending')}
           >
-            Pending ({assessments.filter(a => a.status === 'pending').length})
+            Pending ({assessmentCounts.pending})
           </button>
           <button className={"px-4 py-2 rounded-full font-medium " + ((assessmentsFilter === 'incomplete') ? "bg-emerald-600 text-white" : "text-gray-600 hover:bg-gray-300 bg-gray-200")}
             onClick={() => setAssessmentsFilter('incomplete')}
           >
-            Incomplete ({assessments.filter(a => a.status === 'ready').length})
+            Incomplete ({assessmentCounts.incomplete})
           </button>
           <button className={"px-4 py-2 rounded-full font-medium " + ((assessmentsFilter === 'completed') ? "bg-emerald-600 text-white" : "text-gray-600 hover:bg-gray-300 bg-gray-200")}
             onClick={() => setAssessmentsFilter('completed')}
           >
-            Completed ({assessments.filter(a => a.status === 'completed').length})
+            Completed ({assessmentCounts.completed})
           </button>
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {assessments.filter(a => {
-            if (assessmentsFilter === null) return true;
-            if (assessmentsFilter === 'pending') return a.status === 'pending';
-            if (assessmentsFilter === 'incomplete') return a.status === 'ready';
-            if (assessmentsFilter === 'completed') return a.status === 'completed';
-            return false;
-          }).map((assessment) => (
+          {filteredAssessments.map((assessment) => {
+            const score = assessment.questionCount
+              ? Math.round((assessment.numCorrect / assessment.questionCount) * 100)
+              : 0;
+
+            const showScore = assessment.status === 'completed';
+
+            return (
             <div
               key={assessment.id}
               className="bg-white rounded-3xl p-6 shadow-lg border border-gray-200 hover:shadow-xl transition-all group flex-col flex gap-y-2 relative"
@@ -130,15 +144,7 @@ export default function AssessmentsHub() {
               <div className="flex flex-row items-center justify-between gap-x-2">
               <div className="absolute top-4 right-4">
               <button
-                    onClick={
-                      () => {
-                        if (showOptionsMenu !== assessment.id) {
-                          setShowOptionsMenu(assessment.id)
-                        } else {
-                          setShowOptionsMenu(null);
-                        }
-                      }
-                    }
+                    onClick={() => setShowOptionsMenu((prev) => (prev === assessment.id ? null : assessment.id))}
                 className=""
               >
                 <EllipsisVertical className="w-5 text-gray-600" />
@@ -180,12 +186,12 @@ export default function AssessmentsHub() {
                     </div>
                   )}
                 </div>
-                {assessment.status === "completed" && (
-                  <div className={`w-12 h-12 ${getScoreBgColor(Math.round((assessment.numCorrect / assessment.questionCount) * 100))} rounded-full flex items-center justify-center text-lg font-bold ${getScoreColor(Math.round((assessment.numCorrect / assessment.questionCount) * 100))}`}>
-                    {Math.round((assessment.numCorrect / assessment.questionCount) * 100)}%
-                  </div>
-                )}
               </div>
+              {showScore && (
+                <div className={`absolute right-4 top-16 w-12 h-12 ${getScoreBgColor(score)} rounded-full flex items-center justify-center text-lg font-bold ${getScoreColor(score)}`}>
+                  {score}%
+                </div>
+              )}
               </div>
 
               <div className="space-y-2">
@@ -223,7 +229,6 @@ export default function AssessmentsHub() {
                   if (assessment.status === "completed") {
                     try {
                       const updatedAssessment = await fetchAssessmentDetails(assessment.id);
-                      console.log(updatedAssessment)
                       if (updatedAssessment) {
                         setCurrentAssessment(updatedAssessment);
                         navigate('/dashboard/grading-report');
@@ -276,8 +281,8 @@ export default function AssessmentsHub() {
                 </div>
               </div>
             </div>
-          
-          ))}
+            );
+          })}
 
           {assessments.length === 0 && (
             <div className="col-span-full text-center py-12">

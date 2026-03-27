@@ -40,8 +40,10 @@ export interface AssessmentAttemptRequest {
 }
 
 export interface AssessmentAttempt {
-  attempts?: number;
+  numAttempts?: number;
+  numCorrect?: number;
   timeSubmitted?: string;
+  time_submitted?: string;
   answers: AttemptAnswer[];
 }
 

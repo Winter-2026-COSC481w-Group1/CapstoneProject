@@ -92,10 +92,6 @@ export default function GradingReport() {
     return userIndex === Number(question.correctAnswer);
   };
 
-  const numCorrectSource = questions.filter((q, idx) => isQuestionCorrect(q, idx)).length;
-  const numCorrect = typeof attemptData?.numCorrect === 'number' ? attemptData.numCorrect : numCorrectSource;
-  const attemptNumber = typeof attemptData?.numAttempts === 'number' ? attemptData.numAttempts : assessment.numAttempts;
-
   // Helper function to safely parse date
   const parseDate = (dateString: string | Date | undefined): Date | null => {
     if (!dateString) return null;
@@ -108,6 +104,11 @@ export default function GradingReport() {
       return null;
     }
   };
+
+  const numCorrectSource = questions.filter((q, idx) => isQuestionCorrect(q, idx)).length;
+  const numCorrect = attemptData?.numCorrect ?? numCorrectSource;
+  const attemptNumber = attemptData?.numAttempts ?? assessment.numAttempts;
+  const attemptDate = parseDate(assessment.attempt?.timeSubmitted);
 
   const score = questions.length > 0 ? Math.round((numCorrect / questions.length) * 100) : 0;
 
@@ -174,13 +175,13 @@ export default function GradingReport() {
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-gray-900">
-                  {assessment.status === "completed" && parseDate(assessment.attempt?.timeSubmitted) ? parseDate(assessment.attempt?.timeSubmitted)!.toLocaleDateString() : 'N/A'}
+                  {assessment.status === "completed" && attemptDate ? attemptDate.toLocaleDateString() : 'N/A'}
                 </div>
                 <div className="text-sm text-gray-600">Date</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-gray-900">
-                  {assessment.status === "completed" && parseDate(assessment.attempt?.timeSubmitted) ? parseDate(assessment.attempt?.timeSubmitted)!.toLocaleTimeString() : 'N/A'}
+                  {assessment.status === "completed" && attemptDate ? attemptDate.toLocaleTimeString() : 'N/A'}
                 </div>
                 <div className="text-sm text-gray-600">Time</div>
               </div>
