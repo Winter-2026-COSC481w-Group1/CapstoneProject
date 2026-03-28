@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Play, Download, Clock, CheckCircle, CircleX, FileText, EllipsisVertical } from 'lucide-react';
+import { Play, Download, Clock, CheckCircle, CircleX, FileText, EllipsisVertical, Loader2 } from 'lucide-react';
 import { useApp } from '../AppContext';
 import { supabaseClient } from '../supabase';
 import { useNavigate } from 'react-router-dom';
@@ -11,6 +11,7 @@ export default function AssessmentsHub() {
   const [showDownloadMenu, setShowDownloadMenu] = useState<string | null>(null);
   const [showOptionsMenu, setShowOptionsMenu] = useState<string | null>(null);
   const [assessmentsFilter, setAssessmentsFilter] = useState<string | null>(null);
+  const [loadingAction, setLoadingAction] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const filteredAssessments = assessments.filter((assessment) => {
@@ -28,6 +29,7 @@ export default function AssessmentsHub() {
 
   const handleStartExam = async (assessmentId: string) => {
     try {
+      setLoadingAction(`start-${assessmentId}`);
       const updatedAssessment = await fetchAssessmentDetails(assessmentId);
       if (updatedAssessment) {
         setCurrentAssessment(updatedAssessment);
@@ -36,6 +38,24 @@ export default function AssessmentsHub() {
     } catch (error) {
       console.error('Failed to start exam:', error);
       alert('Could not load assessment details. Please try again.');
+    } finally {
+      setLoadingAction(null);
+    }
+  };
+
+  const handleViewResults = async (assessmentId: string) => {
+    try {
+      setLoadingAction(`view-${assessmentId}`);
+      const updatedAssessment = await fetchAssessmentDetails(assessmentId);
+      if (updatedAssessment) {
+        setCurrentAssessment(updatedAssessment);
+        navigate('/dashboard/grading-report');
+      }
+    } catch (error) {
+      console.error('Failed to view results:', error);
+      alert('Could not load assessment results. Please try again.');
+    } finally {
+      setLoadingAction(null);
     }
   };
 
@@ -219,37 +239,38 @@ export default function AssessmentsHub() {
               )}
                   
                 <button
-                onClick={async () => {
-                  if (assessment.status === "completed") {
-                    try {
-                      const updatedAssessment = await fetchAssessmentDetails(assessment.id);
-                      if (updatedAssessment) {
-                        setCurrentAssessment(updatedAssessment);
-                        navigate('/dashboard/grading-report');
-                      }
-                    } catch (error) {
-                      console.error('Failed to view results:', error);
-                      alert('Could not load assessment results. Please try again.');
-                    }
+                onClick={() => {
+                  if (assessment.status === "completed" && !loadingAction) {
+                    handleViewResults(assessment.id);
                   }
                   }}
-                  className={"w-full flex items-center justify-center gap-2 " + ((assessment.status === "completed") ? "bg-blue-100 hover:bg-blue-200 text-blue-600" : "bg-gray-200 text-gray-600 cursor-default") + " py-3 rounded-xl font-semibold"}
+                  disabled={!!loadingAction}
+                  className={"w-full flex items-center justify-center gap-2 " + ((assessment.status === "completed") ? "bg-blue-100 hover:bg-blue-200 text-blue-600" : "bg-gray-200 text-gray-600 cursor-default") + " py-3 rounded-xl font-semibold " + (loadingAction?.startsWith(`view-${assessment.id}`) ? "opacity-75 cursor-not-allowed" : "")}
                 >
-                  <CheckCircle className="w-4 h-4" />
-                  View Results
+                  {loadingAction === `view-${assessment.id}` ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <CheckCircle className="w-4 h-4" />
+                  )}
+                  Results
                 </button>
                 
               <div className="flex gap-2">
                 <button
                   onClick={() => {
-                    if (assessment.status === "ready" || assessment.status === "completed") {
+                    if ((assessment.status === "ready" || assessment.status === "completed") && !loadingAction) {
                       handleStartExam(assessment.id);
                     }
                   }}
-                  className={"flex-1 flex items-center justify-center gap-2 " + ((assessment.status === "ready" || assessment.status === "completed") ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-gray-200 text-gray-600 cursor-default") + " py-3 rounded-xl font-semibold transition-colors"}
+                  disabled={!!loadingAction}
+                  className={"flex-1 flex items-center justify-center gap-2 " + ((assessment.status === "ready" || assessment.status === "completed") ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-gray-200 text-gray-600 cursor-default") + " py-3 rounded-xl font-semibold transition-colors " + (loadingAction?.startsWith(`start-${assessment.id}`) ? "opacity-75 cursor-not-allowed" : "")}
                 >
-                  <Play className="w-4 h-4" />
-                  Start Online
+                  {loadingAction === `start-${assessment.id}` ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Play className="w-4 h-4" />
+                  )}
+                  Start
                 </button>
                 <div className="relative">
                   <button

@@ -147,22 +147,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
         timeSubmitted: assessmentData.attempt?.time_submitted,
       };
 
-      let updatedAssessment: Assessment | null = null;
+      // Construct the object directly from API data so it works 
+      // even if the local 'assessments' list is still empty or stale.
+      const updatedAssessment: Assessment = {
+        id: assessmentData.id,
+        title: assessmentData.title,
+        topic: assessmentData.topic || '',
+        createdAt: new Date(assessmentData.createdAt),
+        status: assessmentData.status as any,
+        sourceFiles: assessmentData.sourceFiles || [],
+        questionCount: assessmentData.questionCount,
+        difficulty: assessmentData.difficulty as any,
+        numAttempts: assessmentData.attempt?.numAttempts || 0,
+        numCorrect: assessmentData.attempt?.numCorrect || 0,
+        questions,
+        attempt
+      };
 
-      setAssessments(prev => prev.map(ass => {
-        if (ass.id === assessmentId) {
-          updatedAssessment = { ...ass, questions, attempt };
-          updatedAssessment.numAttempts = assessmentData.attempt?.numAttempts;
-          updatedAssessment.numCorrect = assessmentData.attempt?.numCorrect;
-          return updatedAssessment;
+      setAssessments(prev => {
+        const exists = prev.find(a => a.id === assessmentId);
+        if (!exists) {
+          return [updatedAssessment, ...prev];
         }
-        return ass;
-      }));
+        return prev.map(ass => ass.id === assessmentId ? updatedAssessment : ass);
+      });
 
-      if (updatedAssessment) {
-        setCurrentAssessment(updatedAssessment);
-      }
-
+      setCurrentAssessment(updatedAssessment);
       return updatedAssessment;
     } catch (err) {
       console.error('error loading assessment details', err);
