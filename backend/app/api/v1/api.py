@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import documents, user, dev, assessments, notifications
+from app.api.v1.endpoints import documents, user, dev, assessments, notifications, activity
 
 api_router = APIRouter()
 
@@ -27,4 +27,10 @@ api_router.include_router(
     notifications.router,
     prefix="/notifications",
     tags=["Notifications"],
+)
+
+api_router.include_router(
+    activity.router,
+    prefix="/activity",
+    tags=["Activity"]
 )

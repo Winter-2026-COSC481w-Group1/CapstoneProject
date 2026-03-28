@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 from app.schemas.activity import Activity
 from typing import List
-
+from supabase import Client
 
 class ActivityService:
     def __init__(self, db_client: Client):

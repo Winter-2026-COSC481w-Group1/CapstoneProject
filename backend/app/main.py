@@ -63,6 +63,7 @@ async def lifespan(app: FastAPI):
     app.state.embedding_service = embedding_service  # Make embedding service available
     app.state.document_service = document_service
     app.state.assessment_service = assessment_service
+    app.state.activity_service = activity_service
     app.state.supabase_service_client = (
         supabase_service_client  # Store the service role client
     )
