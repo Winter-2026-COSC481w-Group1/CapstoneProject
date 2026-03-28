@@ -9,22 +9,24 @@ class ActivityService:
 
     async def get_recentActivity(self, user_id: str) -> List[Activity]:
         #get 5 most recent assessments created
-        assessment_activity = (
+        assessment_response = (
             self.db_client.table("assessments")
-                .select("id," "title", "created_at")
+                .select("id, title, created_at")
                 .eq("user_id", user_id)
                 .order("created_at", desc=True)
                 .limit(5).execute()
         )
+        assessment_activity = assessment_response.data
 
         #get 5 most recent document uploads
-        upload_activity = (
-            self.db_client.table("documents")
-                .select("id", "file_name", "created_at")
+        upload_response = (
+            self.db_client.table("user_library")
+                .select("document_id, uploaded_at, documents(file_name)")
                 .eq("user_id", user_id)
-                .order("created_at", desc = True)
-                .limit(5).execute
+                .order("uploaded_at", desc = True)
+                .limit(5).execute()
         )
+        upload_activity = upload_response.data
 
         #merge the results
         combined = []
@@ -44,10 +46,10 @@ class ActivityService:
         for u in upload_activity:
             combined.append(
                 Activity(
-                    id = u["id"],
+                    id = u["document_id"],
                     type = "upload",
-                    name = u["file_name"],
-                    timeStamp = u["created_at"]
+                    name = u.get("documents", {}).get("file_name", "Unkown Document"),
+                    timeStamp = u["uploaded_at"]
             )
         )
             
