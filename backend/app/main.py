@@ -7,6 +7,7 @@ from app.services.vector_db_service import VectorDBService
 from app.services.document_service import DocumentService
 from app.services.llm_service import LLMService
 from app.services.assessment_service import AssessmentService
+from app.services.activity_service import ActivityService
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -52,6 +53,8 @@ async def lifespan(app: FastAPI):
         llm_service=llm_service,
         db_client=supabase_service_client,
     )
+
+    activity_service = ActivityService(db_client=supabase_service_client)
 
     # store the service instances and Supabase clients in the application state.
     # this makes them accessible from anywhere in the app, including dependencies.
