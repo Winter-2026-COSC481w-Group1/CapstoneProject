@@ -5,8 +5,8 @@ import { get } from './api';
 
 interface AppContextType {
   currentUser: User | null;
-  setCurrentUser: (user: User | null) => void;
-  libraryFiles: LibraryFile[];
+  setCurrentUser: React.Dispatch<React.SetStateAction<User | null>>;
+  libraryFiles: LibraryFile[];  
   setLibraryFiles: (files: LibraryFile[] | ((prevFiles: LibraryFile[]) => LibraryFile[])) => void;
   fetchLibraryFiles: () => Promise<void>;
   assessments: Assessment[];

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { convertUser, supabaseClient } from './supabase';
 import { useApp } from './AppContext';
 import { Loader2 } from 'lucide-react';
+import { User } from './types';
 
 export default function Layout() {
   const { setCurrentUser } = useApp();
@@ -15,22 +16,24 @@ export default function Layout() {
       const { data: { session } } = result;
       if (session) {
         const user = session.user;
+       setCurrentUser((prevUser: User | null) => {
         const appUser = convertUser(user);
-        if (appUser) {
-          setCurrentUser(appUser);
-        } else {
-          navigate('/auth');
+        if (prevUser?.id !== appUser.id) {
+          return appUser;
         }
-      } else {
-        navigate('/auth');
-      }
-    }).catch(error => {
-      console.error('Auth error:', error);
+        return prevUser; 
+      });
+
+    } else {
       navigate('/auth');
-    }).finally(() => {
-      setIsLoading(false);
-    });
-  }, [setCurrentUser, navigate]);
+    }
+  }).catch(error => {
+    console.error('Auth error:', error);
+    navigate('/auth');
+  }).finally(() => {
+    setIsLoading(false);
+  });  
+}, [navigate, setCurrentUser]);
 
   if (isLoading) {
     return (
