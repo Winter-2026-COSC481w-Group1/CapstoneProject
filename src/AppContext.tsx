@@ -150,14 +150,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // Construct the object directly from API data so it works 
       // even if the local 'assessments' list is still empty or stale.
       const updatedAssessment: Assessment = {
-        id: assessmentData.id,
-        title: assessmentData.title,
+        id: assessmentData.id || assessmentId,
+        title: assessmentData.title || 'Untitled Assessment',
         topic: assessmentData.topic || '',
-        createdAt: new Date(assessmentData.createdAt),
-        status: assessmentData.status as any,
+        createdAt: assessmentData.createdAt ? new Date(assessmentData.createdAt) : new Date(),
+        status: (assessmentData.status as any) || 'ready',
         sourceFiles: assessmentData.sourceFiles || [],
-        questionCount: assessmentData.questionCount,
-        difficulty: assessmentData.difficulty as any,
+        questionCount: assessmentData.questionCount || questions.length,
+        difficulty: (assessmentData.difficulty as any) || 'none',
         numAttempts: assessmentData.attempt?.numAttempts || 0,
         numCorrect: assessmentData.attempt?.numCorrect || 0,
         questions,

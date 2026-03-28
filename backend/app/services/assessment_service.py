@@ -39,7 +39,7 @@ class AssessmentService:
         # ownership check
         assessment_response = (
             self.db_client.table("assessments")
-            .select("id, document_id, document_ids")
+            .select("*")
             .eq("id", assessment_id)
             .eq("user_id", user_id)
             .maybe_single()
@@ -75,8 +75,38 @@ class AssessmentService:
             .eq("assessment_id", assessment_id)
             .execute()
         )
+        
+        # fetch attempts data
+        last_attempt = None
+        if data.get("attempt"):
+            try:
+                attempt_data = data["attempt"]
+                answers = []
+                for ans in attempt_data.get("answers", []):
+                    answers.append(Answer(**ans))
+                last_attempt = AssessmentAttempt(
+                    numAttempts=attempt_data.get("numAttempts"),
+                    answers=answers,
+                    numCorrect=attempt_data.get("numCorrect"),
+                    time_submitted=attempt_data.get("time_submitted")
+                )
+            except Exception as e:
+                print(f"Error parsing attempt data: {e}")
+                last_attempt = None
+
         if not questions_response.data:
-            return AssessmentDetails(questions=[], attempt=None)
+            return AssessmentDetails(
+                id=data.get("id"),
+                title=data.get("title"),
+                topic=data.get("query") or "",
+                createdAt=data.get("created_at"),
+                status=data.get("status"),
+                sourceFiles=unique_doc_ids,
+                questionCount=data.get("num_questions") or 0,
+                difficulty=data.get("difficulty") or "none",
+                questions=[],
+                attempt=last_attempt
+            )
 
         # fetch all options for all questions in the assessment
         question_ids = [q["id"] for q in questions_response.data]
@@ -140,34 +170,18 @@ class AssessmentService:
                 )
             )
 
-        # fetch attempts data
-        attempts_response = (
-            self.db_client.table("assessments")
-            .select("attempt")
-            .eq("id", assessment_id)
-            .eq("user_id", user_id)
-            .maybe_single()
-            .execute()
+        return AssessmentDetails(
+            id=data.get("id"),
+            title=data.get("title"),
+            topic=data.get("query") or "",
+            createdAt=data.get("created_at"),
+            status=data.get("status"),
+            sourceFiles=unique_doc_ids,
+            questionCount=data.get("num_questions") or 0,
+            difficulty=data.get("difficulty") or "none",
+            questions=detailed_questions,
+            attempt=last_attempt
         )
-
-        last_attempt = None
-        if attempts_response.data:
-            try:
-                attempt_data = attempts_response.data["attempt"]
-                answers = []
-                for ans in attempt_data.get("answers"):
-                    answers.append(Answer(**ans))
-                last_attempt = AssessmentAttempt(
-                    numAttempts=attempt_data.get("numAttempts"),
-                    answers=answers,
-                    numCorrect=attempt_data.get("numCorrect"),
-                    time_submitted=attempt_data.get("time_submitted")
-                )
-            except Exception as e:
-                print(f"Error parsing attempt data: {e}")
-                last_attempt = None
-
-        return AssessmentDetails(questions=detailed_questions, attempt=last_attempt)
 
     # creates a pending record for the assessment generating in the db, and returns assessment id
     async def create_pending_record(
