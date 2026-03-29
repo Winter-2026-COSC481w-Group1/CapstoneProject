@@ -91,3 +91,24 @@ async def delete_document(
             status_code=500, detail="Internal Server Error during document deletion"
         ) from e
 
+
+@router.get("/{document_id}/preview")
+async def view_document(
+    document_id: str,
+    current_user: Annotated[dict, Depends(get_current_user)],
+    document_service: DocumentService = Depends(get_document_service),
+):
+    try:
+        user_id = current_user["user_id"]
+        result = await document_service.view_document(
+            document_id,
+            user_id,
+        )
+        return result
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        print(f"Error viewing document {e}")
+        raise HTTPException(
+            status_code=500, detail="Internal Server Error during document viewing"
+        ) from e
