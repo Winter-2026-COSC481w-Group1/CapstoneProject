@@ -252,25 +252,25 @@ export default function AssessmentsHub() {
                   ) : (
                     <CheckCircle className="w-4 h-4" />
                   )}
-                  View Results
+                  Results
                 </button>
                 
               <div className="flex gap-2">
                 <button
                   onClick={() => {
-                    if (assessment.status === "completed" && !loadingAction) {
+                    if ((assessment.status === "ready" || assessment.status === "completed") && !loadingAction) {
                       handleStartExam(assessment.id);
                     }
                   }}
                   disabled={!!loadingAction}
-                  className={"flex-1 flex items-center justify-center gap-2 " + ((assessment.status === "completed") ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-gray-200 text-gray-600 cursor-default") + " py-3 rounded-xl font-semibold transition-colors " + (loadingAction?.startsWith(`start-${assessment.id}`) ? "opacity-75 cursor-not-allowed" : "")}
+                  className={"flex-1 flex items-center justify-center gap-2 " + ((assessment.status === "ready" || assessment.status === "completed") ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-gray-200 text-gray-600 cursor-default") + " py-3 rounded-xl font-semibold transition-colors " + (loadingAction?.startsWith(`start-${assessment.id}`) ? "opacity-75 cursor-not-allowed" : "")}
                 >
                   {loadingAction === `start-${assessment.id}` ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
                     <Play className="w-4 h-4" />
                   )}
-                  Start Online
+                  Start
                 </button>
                 <div className="relative">
                   <button

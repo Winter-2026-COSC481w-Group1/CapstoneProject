@@ -192,8 +192,8 @@ export default function EditingStudio() {
                 <div className="text-sm text-gray-600 mb-2">Difficulty</div>
                 <select
                   defaultValue={
-                    currentAssessment.difficulty.charAt(0).toUpperCase() +
-                    currentAssessment.difficulty.slice(1)
+                    (currentAssessment.difficulty || 'none').charAt(0).toUpperCase() +
+                    (currentAssessment.difficulty || 'none').slice(1)
                   }
                   className="text-left bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-sm font-medium appearance-none"
                   onChange={(e) => {
