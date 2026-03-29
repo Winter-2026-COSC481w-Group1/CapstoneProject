@@ -71,8 +71,6 @@ export default function EditingStudio() {
         topic: currentAssessment.topic,
       };
 
-      console.log(data);
-
       await put(`api/v1/assessments/${currentAssessment.id}`, data, session.access_token);
 
       // Update local state
