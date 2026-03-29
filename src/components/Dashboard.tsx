@@ -121,7 +121,7 @@ export default function Dashboard() {
               </button>
             </div>
             <div className="space-y-4">
-              {activities.slice(0, 5).map((activity) => (
+              {activities?.slice(0, 5).map((activity) => (
                 <div key={activity.id} className="flex items-start gap-4 pb-4 border-b border-gray-100 last:border-0">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
                     activity.type === 'exam-created' ? 'bg-emerald-100' :
@@ -137,7 +137,14 @@ export default function Dashboard() {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900">{activity.description}</p>
+                    {activity.type === 'exam-created' ? (
+                      <p className="text-sm font-medium text-gray-900">Created {activity.name}</p>
+                    ) : activity.type === 'file-uploaded' ? (
+                      <p className="text-sm font-medium text-gray-900">Uploaded {activity.name}</p>
+                    ) : (
+                      <p className="text-sm font-medium text-gray-900">Completed {activity.name}</p>
+                    )}
+                    
                     <p className="text-xs text-gray-500 mt-1">
                       {activity.timestamp.toLocaleDateString('en-US', {
                         month: 'short',

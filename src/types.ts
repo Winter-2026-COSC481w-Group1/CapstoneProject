@@ -65,6 +65,6 @@ export interface Assessment {
 export interface Activity {
   id: string;
   type: 'exam-created' | 'file-uploaded' | 'exam-completed';
-  description: string;
+  name: string;
   timestamp: Date;
 }

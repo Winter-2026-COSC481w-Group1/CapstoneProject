@@ -17,45 +17,47 @@ interface AppContextType {
   setCurrentAssessment: (assessment: Assessment | null) => void;
   activities: Activity[];
   setActivities: (activities: Activity[]) => void;
+  fetchActivities: () => Promise<void>;
   showMobileMenu: boolean;
   setShowMobileMenu: (show: boolean) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-const mockActivities: Activity[] = [
-  {
-    id: '1',
-    type: 'exam-created',
-    description: 'Created Biology Chapter 5 - Cell Structure Quiz',
-    timestamp: new Date('2024-01-16T10:30:00')
-  },
-  {
-    id: '2',
-    type: 'file-uploaded',
-    description: 'Uploaded Introduction to Biology - Chapter 5.pdf',
-    timestamp: new Date('2024-01-15T14:20:00')
-  },
-  {
-    id: '3',
-    type: 'exam-completed',
-    description: 'Completed World History - Industrial Revolution (Score: 85%)',
-    timestamp: new Date('2024-01-10T16:45:00')
-  }
-];
+// const mockActivities: Activity[] = [
+//   {
+//     id: '1',
+//     type: 'exam-created',
+//     description: 'Created Biology Chapter 5 - Cell Structure Quiz',
+//     timestamp: new Date('2024-01-16T10:30:00')
+//   },
+//   {
+//     id: '2',
+//     type: 'file-uploaded',
+//     description: 'Uploaded Introduction to Biology - Chapter 5.pdf',
+//     timestamp: new Date('2024-01-15T14:20:00')
+//   },
+//   {
+//     id: '3',
+//     type: 'exam-completed',
+//     description: 'Completed World History - Industrial Revolution (Score: 85%)',
+//     timestamp: new Date('2024-01-10T16:45:00')
+//   }
+// ];
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [libraryFiles, setLibraryFiles] = useState<LibraryFile[]>([]);
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [currentAssessment, setCurrentAssessment] = useState<Assessment | null>(null);
-  const [activities, setActivities] = useState<Activity[]>(mockActivities);
+  const [activities, setActivities] = useState<Activity[]>([]);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   useEffect(() => {
     if (currentUser) {
       fetchLibraryFiles();
       fetchAssessments();
+      fetchActivities();
     }
   }, [currentUser]);
 
@@ -88,6 +90,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     } catch (err) {
       console.error('error loading documents', err);
+    }
+  };
+
+  const fetchActivities = async () => {
+    try {
+      const {data: { session } } = await supabaseClient.auth.getSession();
+      if(!session?.access_token) {
+        console.error('no session token available')
+        return;
+      }
+
+      //fetch the recent activity
+      const data = await get('api/v1/activity', session.access_token);
+      const activity: Activity[] = data.map((act: any) => ({
+        id: act.id,
+        type: act.type,
+        name: act.name,
+        timestamp: new Date(act.timeStamp)
+      }));
+
+      setActivities(activity)
+    } catch (err) {
+      console.error('Error loading assessments', err);
     }
   };
 
@@ -196,6 +221,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setCurrentAssessment,
         activities,
         setActivities,
+        fetchActivities,
         showMobileMenu,
         setShowMobileMenu
       }}
