@@ -5,8 +5,8 @@ import { get } from './api';
 
 interface AppContextType {
   currentUser: User | null;
-  setCurrentUser: (user: User | null) => void;
-  libraryFiles: LibraryFile[];
+  setCurrentUser: React.Dispatch<React.SetStateAction<User | null>>;
+  libraryFiles: LibraryFile[];  
   setLibraryFiles: (files: LibraryFile[] | ((prevFiles: LibraryFile[]) => LibraryFile[])) => void;
   fetchLibraryFiles: () => Promise<void>;
   assessments: Assessment[];
@@ -147,22 +147,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
         timeSubmitted: assessmentData.attempt?.time_submitted,
       };
 
-      let updatedAssessment: Assessment | null = null;
+      // Construct the object directly from API data so it works 
+      // even if the local 'assessments' list is still empty or stale.
+      const updatedAssessment: Assessment = {
+        id: assessmentData.id || assessmentId,
+        title: assessmentData.title || 'Untitled Assessment',
+        topic: assessmentData.topic || '',
+        createdAt: assessmentData.createdAt ? new Date(assessmentData.createdAt) : new Date(),
+        status: (assessmentData.status as any) || 'ready',
+        sourceFiles: assessmentData.sourceFiles || [],
+        questionCount: assessmentData.questionCount || questions.length,
+        difficulty: (assessmentData.difficulty as any) || 'none',
+        numAttempts: assessmentData.attempt?.numAttempts || 0,
+        numCorrect: assessmentData.attempt?.numCorrect || 0,
+        questions,
+        attempt
+      };
 
-      setAssessments(prev => prev.map(ass => {
-        if (ass.id === assessmentId) {
-          updatedAssessment = { ...ass, questions, attempt };
-          updatedAssessment.numAttempts = assessmentData.attempt?.numAttempts;
-          updatedAssessment.numCorrect = assessmentData.attempt?.numCorrect;
-          return updatedAssessment;
+      setAssessments(prev => {
+        const exists = prev.find(a => a.id === assessmentId);
+        if (!exists) {
+          return [updatedAssessment, ...prev];
         }
-        return ass;
-      }));
+        return prev.map(ass => ass.id === assessmentId ? updatedAssessment : ass);
+      });
 
-      if (updatedAssessment) {
-        setCurrentAssessment(updatedAssessment);
-      }
-
+      setCurrentAssessment(updatedAssessment);
       return updatedAssessment;
     } catch (err) {
       console.error('error loading assessment details', err);

@@ -40,5 +40,13 @@ class AssessmentSchema(BaseModel):
 
 
 class AssessmentDetails(BaseModel):
+    id: str
+    title: str
+    topic: str
+    createdAt: str
+    status: str
+    sourceFiles: List[str]
+    questionCount: int
+    difficulty: str
     questions: List[QuestionDetail]
     attempt: Optional[AssessmentAttempt] = None

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 
-const messages = [
+const defaultMessages = [
   'Reading your documents...',
   'Analyzing content structure...',
   'Extracting key concepts...',
@@ -11,7 +11,19 @@ const messages = [
   'Almost ready...'
 ];
 
-export default function LoadingRoom() {
+const defaultDescription = "Our AI is carefully analyzing your materials to create a comprehensive assessment.";
+
+interface LoadingRoomProps {
+  messages?: string[];
+  description?: string;
+  isOverlay?: boolean;
+}
+
+export default function LoadingRoom({ 
+  messages = defaultMessages, 
+  description = defaultDescription,
+  isOverlay = false
+}: LoadingRoomProps) {
   const [currentMessage, setCurrentMessage] = useState(0);
 
   useEffect(() => {
@@ -20,10 +32,10 @@ export default function LoadingRoom() {
     }, 2000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [messages]);
 
   return (
-    <div className="fixed inset-0 bg-stone-50 z-50 flex items-center justify-center">
+    <div className={`${isOverlay ? 'fixed inset-0 bg-stone-50/80 backdrop-blur-sm' : 'fixed inset-0 bg-stone-50'} z-50 flex items-center justify-center`}>
       <div className="text-center px-4">
         <div className="relative mb-12">
           <div className="absolute inset-0 flex items-center justify-center">
@@ -81,7 +93,7 @@ export default function LoadingRoom() {
         </h2>
 
         <p className="text-gray-600 mb-8 max-w-md mx-auto">
-          Our AI is carefully analyzing your materials to create a comprehensive assessment.
+          {description}
         </p>
 
         <div className="max-w-md mx-auto mb-8">
