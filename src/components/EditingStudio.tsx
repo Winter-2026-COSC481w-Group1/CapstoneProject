@@ -12,6 +12,7 @@ export default function EditingStudio() {
     libraryFiles,
     assessments,
     currentAssessment,
+    setAssessments,
     setCurrentAssessment,
   } = useApp();
 
@@ -70,13 +71,18 @@ export default function EditingStudio() {
         topic: currentAssessment.topic,
       };
 
+      console.log(data);
+
       await put(`api/v1/assessments/${currentAssessment.id}`, data, session.access_token);
 
       // Update local state
-      const assessmentIndex = assessments.findIndex((test) => test.id === currentAssessment.id);
-      if (assessmentIndex >= 0) {
-        assessments[assessmentIndex] = { ...currentAssessment };
-      }
+      const updatedAssessment = structuredClone(currentAssessment);
+      setCurrentAssessment(updatedAssessment);
+
+      const updatedAssessments = assessments.map((test) =>
+        test.id === updatedAssessment.id ? { ...updatedAssessment } : test,
+      );
+      setAssessments(updatedAssessments);
 
       setIsEdited(false);
       console.log("Assessment updated successfully");
@@ -406,7 +412,7 @@ export default function EditingStudio() {
                     <div className="space-y-3 mb-4">
                       <textarea
                         className="w-full text-gray-900 font-medium p-4 bg-emerald-50 border-2 border-emerald-200 rounded-lg"
-                        defaultValue={question.correctAnswer}
+                        defaultValue={String(question.options && question.options[0] || '')}
                         onChange={(e) => {
                           question.options![0] = e.target.value;
                           setIsEdited(true);

@@ -92,6 +92,34 @@ export default function GradingReport() {
     return userIndex === Number(question.correctAnswer);
   };
 
+  const getUserAnswerText = (question: Question, index: number): string => {
+    const rawValue = getAnswerValue(index);
+    if (rawValue === null || rawValue === undefined || rawValue === '') return '';
+
+    if (question.type === 'multiple-choice' || question.type === 'true-false') {
+      const answerIndex = getAnswerIndex(index);
+      if (answerIndex !== null && question.options?.[answerIndex] !== undefined) {
+        return String(question.options[answerIndex]);
+      }
+      if (typeof rawValue === 'boolean') {
+        return rawValue ? 'True' : 'False';
+      }
+      return String(rawValue);
+    }
+
+    return String(rawValue);
+  };
+
+  const getCorrectAnswerText = (question: Question): string => {
+    if (question.type === 'multiple-choice' || question.type === 'true-false') {
+      if (question.options && typeof question.correctAnswer === 'number') {
+        return question.options[question.correctAnswer] ?? String(question.correctAnswer);
+      }
+      return String(question.correctAnswer);
+    }
+    return String(question.options && question.options[0]);
+  };
+
   // Helper function to safely parse date
   const parseDate = (dateString: string | Date | undefined): Date | null => {
     if (!dateString) return null;
@@ -291,6 +319,15 @@ export default function GradingReport() {
                         })}
                       </div>
                     )}
+
+                    {question.type == 'short-answer' && <div className="mb-4 p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                      <p className="text-sm text-gray-700 mb-2">
+                        <span className="font-semibold">Your answer:</span> {getUserAnswerText(question, idx)}
+                      </p>
+                      <p className="text-sm text-gray-700">
+                        <span className="font-semibold">Correct answer:</span> {getCorrectAnswerText(question)}
+                      </p>
+                    </div>}
 
                     {question.source && (
                       <div className="mt-4 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-lg">
