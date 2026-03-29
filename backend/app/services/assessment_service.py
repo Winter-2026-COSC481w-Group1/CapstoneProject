@@ -498,7 +498,7 @@ class AssessmentService:
                 options_by_question_id[qid] = []
             options_by_question_id[qid].append(option)
 
-        # Retrieve correct answer (MCQ and T/F only)
+        # Retrieve correct answer
         correct_answers = []
         for q in questions_response.data:
             question_id = q["id"]
@@ -512,6 +512,8 @@ class AssessmentService:
                 correct_answers.append(correct_answer_index)
             elif q["question_type"] == "TF": # temp fix for now? should probably change DB structure for T/F
                 correct_answers.append(correct_answer_index == 0)
+            elif q["question_type"] == "SA":
+                correct_answers.append(options_data[0]["option_text"])
 
         # Update answers
         answers = []
@@ -525,7 +527,7 @@ class AssessmentService:
                     value=attempt_data["answers"][i],
                     isCorrect=False
                 )
-                if attempt_data["answers"][i] == correct_answers[i]: # MCQ
+                if attempt_data["answers"][i] == correct_answers[i]: # find better way to evaluate if SA is correct
                     ans.isCorrect = True
                     numCorrect += 1
             answers.append(ans)
