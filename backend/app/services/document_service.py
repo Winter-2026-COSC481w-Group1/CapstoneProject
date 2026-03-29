@@ -112,3 +112,42 @@ class DocumentService:
             },
             "message": "Document deleted.",
         }
+
+    async def view_document(self, document_id: str, user_id: str):
+        result = (
+            self.db.table("user_library")
+            .select("document_id, user_id, documents(file_name, file_path)")
+            .eq("document_id", document_id)
+            .eq("user_id", user_id)
+            .maybe_single()
+            .execute()
+        )
+
+        if not result.data:
+            raise HTTPException(
+                status_code=403,
+                detail="Unauthorized: Document not found in your library.",
+            )
+
+        file_path = result.data["documents"]["file_path"]
+        display_name = result.data["documents"]["file_name"]
+        is_pdf = file_path.lower().endswith(".pdf")
+
+        # If it's a PDF, we want 'inline' (preview).
+        # If it's PPTX, we want 'attachment' (download), since browsers can't natively show .pptx
+        if is_pdf:
+            # no 'download' option = browser tries to view it inline
+            signed_url_res = self.db.storage.from_("pdfs").create_signed_url(
+                file_path, expires_in=60
+            )
+        else:
+            # include 'download' option = browser forces a download
+            signed_url_res = self.db.storage.from_("pdfs").create_signed_url(
+                file_path, expires_in=60, options={"download": display_name}
+            )
+
+        return {
+            "url": signed_url_res["signedUrl"],
+            "name": display_name,
+            "is_pdf": is_pdf,
+        }

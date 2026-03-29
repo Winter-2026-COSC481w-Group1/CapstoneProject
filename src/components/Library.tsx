@@ -4,7 +4,7 @@ import { useApp } from '../AppContext';
 import { LibraryFile } from '../types';
 import { supabaseClient } from '../supabase';
 
-import { post } from '../api';
+import { post, get} from '../api';
 
 const VITE_API_URL = import.meta.env.VITE_API_URL;
 
@@ -108,6 +108,16 @@ export default function Library() {
       console.error('error deleting document', err);
     }
   };
+
+  const handlePreview = async (documentId: string) => {
+      const { data: {session} } = await supabaseClient.auth.getSession();
+      if (!session?.access_token) return null;
+      const response = await get(`api/v1/documents/${documentId}/preview`, session.access_token);
+      
+      // the url is our signed url from Supabase
+      // opening in a new tab allows the brower's native pdf viewer to take over
+      window.open(response.url, '_blank', 'noopener,noreferrer');
+      }
 
   return (
     <div className="min-h-screen bg-stone-50 pt-28 pb-12 px-4 sm:px-6 lg:px-8">
@@ -226,6 +236,7 @@ export default function Library() {
                   )}
 
                   <button
+                    onClick={() => handlePreview(file.id)}
                     className="p-2 hover:bg-gray-100 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
                     title="Preview"
                   >
