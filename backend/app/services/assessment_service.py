@@ -305,12 +305,14 @@ class AssessmentService:
         Maps AssessmentSchema to 'questions' and 'question_options' tables.
         """
         for q_data in assessment_data.questions:
-            # 1. Insert into 'questions' table
             # Handle both hyphenated and underscored formats from frontend/LLM
             q_type_map = {
                 "multiple_choice": "MCQ",
+                "multiple-choice": "MCQ",
                 "true_false": "TF",
+                "true-false": "TF",
                 "short_answer": "SA",
+                "short-answer": "SA",
             }
 
             question_insert = {
@@ -328,7 +330,6 @@ class AssessmentService:
             if q_result.data:
                 new_q_id = q_result.data[0]["id"]
 
-                # 2. If it's MCQ or has options, insert into 'question_options'
                 if q_data.options:
                     options_to_insert = []
                     for i, option in enumerate(q_data.options):
