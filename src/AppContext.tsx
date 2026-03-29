@@ -5,8 +5,8 @@ import { get } from './api';
 
 interface AppContextType {
   currentUser: User | null;
-  setCurrentUser: (user: User | null) => void;
-  libraryFiles: LibraryFile[];
+  setCurrentUser: React.Dispatch<React.SetStateAction<User | null>>;
+  libraryFiles: LibraryFile[];  
   setLibraryFiles: (files: LibraryFile[] | ((prevFiles: LibraryFile[]) => LibraryFile[])) => void;
   fetchLibraryFiles: () => Promise<void>;
   assessments: Assessment[];
@@ -131,20 +131,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
         title: ass.title,
         topic: ass.topic || '',
         createdAt: new Date(ass.createdAt),
-        status: ass.status as 'completed' | 'processing' | 'pending' | 'failed',
+        status: ass.status as 'ready' | 'completed' | 'processing' | 'pending' | 'failed',
         sourceFiles: ass.sourceFiles || [],
         questionCount: ass.questionCount,
         difficulty: ass.difficulty as 'easy' | 'medium' | 'hard' | 'none',
-        questions: [], // Initialize empty; fetch details when needed
-        bestScore: undefined,
-        lastScore: undefined,
-        attempts: { attempts: [], scores: [] },
+        numAttempts: ass.numAttempts,
+        numCorrect: ass.numCorrect,
       })).sort((a: Assessment, b: Assessment) => b.createdAt.getTime() - a.createdAt.getTime());
 
       setAssessments(assessments);
 
       // Check if any assessments are either pending/processing
-      if (assessments.some(ass => ass.status !== 'completed' && ass.status !== 'failed')) {
+      if (assessments.some(ass => ass.status === 'pending' || ass.status === 'processing')) {
         setTimeout(() => {
           fetchAssessments();
         }, 5000); // Polling more frequently (5s instead of 10s)
@@ -159,28 +157,47 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const { data: { session } } = await supabaseClient.auth.getSession();
       if (!session?.access_token) return null;
 
-      const questionsData = await get(`api/v1/assessments/${assessmentId}`, session.access_token);
-      const questions = questionsData.map((que: any) => ({
+      const assessmentData = await get(`api/v1/assessments/${assessmentId}`, session.access_token);
+      const questions = assessmentData.questions.map((que: any) => ({
         id: que.id,
         type: que.type,
         question: que.question,
         numOptions: que.options ? que.options.length : 0,
         options: que.options,
         correctAnswer: que.correctAnswer,
-        userAnswer: que.userAnswer,
         source: que.source,
       }));
+      const attempt = {
+        answers: assessmentData.attempt?.answers,
+        timeSubmitted: assessmentData.attempt?.time_submitted,
+      };
 
-      let updatedAssessment: Assessment | null = null;
+      // Construct the object directly from API data so it works 
+      // even if the local 'assessments' list is still empty or stale.
+      const updatedAssessment: Assessment = {
+        id: assessmentData.id || assessmentId,
+        title: assessmentData.title || 'Untitled Assessment',
+        topic: assessmentData.topic || '',
+        createdAt: assessmentData.createdAt ? new Date(assessmentData.createdAt) : new Date(),
+        status: (assessmentData.status as any) || 'ready',
+        sourceFiles: assessmentData.sourceFiles || [],
+        questionCount: assessmentData.questionCount || questions.length,
+        difficulty: (assessmentData.difficulty as any) || 'none',
+        numAttempts: assessmentData.attempt?.numAttempts || 0,
+        numCorrect: assessmentData.attempt?.numCorrect || 0,
+        questions,
+        attempt
+      };
 
-      setAssessments(prev => prev.map(ass => {
-        if (ass.id === assessmentId) {
-          updatedAssessment = { ...ass, questions };
-          return updatedAssessment;
+      setAssessments(prev => {
+        const exists = prev.find(a => a.id === assessmentId);
+        if (!exists) {
+          return [updatedAssessment, ...prev];
         }
-        return ass;
-      }));
+        return prev.map(ass => ass.id === assessmentId ? updatedAssessment : ass);
+      });
 
+      setCurrentAssessment(updatedAssessment);
       return updatedAssessment;
     } catch (err) {
       console.error('error loading assessment details', err);

@@ -12,6 +12,7 @@ export default function EditingStudio() {
     libraryFiles,
     assessments,
     currentAssessment,
+    setAssessments,
     setCurrentAssessment,
   } = useApp();
 
@@ -59,6 +60,7 @@ export default function EditingStudio() {
         correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : parseInt(q.correctAnswer as string),
         source_text: q.source?.text || '',
         page_number: q.source?.page || 0,
+        document_id: q.source?.document_id || '',
       }));
 
       const data = {
@@ -72,16 +74,18 @@ export default function EditingStudio() {
       await put(`api/v1/assessments/${currentAssessment.id}`, data, session.access_token);
 
       // Update local state
-      const assessmentIndex = assessments.findIndex((test) => test.id === currentAssessment.id);
-      if (assessmentIndex >= 0) {
-        assessments[assessmentIndex] = { ...currentAssessment };
-      }
+      const updatedAssessment = structuredClone(currentAssessment);
+      setCurrentAssessment(updatedAssessment);
+
+      const updatedAssessments = assessments.map((test) =>
+        test.id === updatedAssessment.id ? { ...updatedAssessment } : test,
+      );
+      setAssessments(updatedAssessments);
 
       setIsEdited(false);
       console.log("Assessment updated successfully");
     } catch (error) {
       console.error('Error updating assessment:', error);
-      // Optionally, show an error message to the user
     } finally {
       setIsSaving(false);
     }
@@ -125,18 +129,21 @@ export default function EditingStudio() {
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {currentAssessment.sourceFiles.map((file, idx) => (
-                      <div key={idx} className="flex items-start gap-2">
-                        <div className="w-5 h-5 bg-emerald-100 rounded flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <span className="text-xs font-bold text-emerald-600">
-                            {idx + 1}
-                          </span>
+                    {currentAssessment.sourceFiles.map((file, idx) => {
+                      const fileName = libraryFiles.find((lib) => lib.id === file)?.name || file;
+                      return (
+                        <div key={idx} className="flex items-start gap-2">
+                          <div className="w-5 h-5 bg-emerald-100 rounded flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <span className="text-xs font-bold text-emerald-600">
+                              {idx + 1}
+                            </span>
+                          </div>
+                          <div className="text-sm text-gray-900 flex-1 min-w-0">
+                            <div className="truncate">{fileName}</div>
+                          </div>
                         </div>
-                        <div className="text-sm text-gray-900 flex-1 min-w-0">
-                          <div className="truncate">{file}</div>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -189,8 +196,8 @@ export default function EditingStudio() {
                 <div className="text-sm text-gray-600 mb-2">Difficulty</div>
                 <select
                   defaultValue={
-                    currentAssessment.difficulty.charAt(0).toUpperCase() +
-                    currentAssessment.difficulty.slice(1)
+                    (currentAssessment.difficulty || 'none').charAt(0).toUpperCase() +
+                    (currentAssessment.difficulty || 'none').slice(1)
                   }
                   className="text-left bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-sm font-medium appearance-none"
                   onChange={(e) => {
@@ -296,11 +303,7 @@ export default function EditingStudio() {
                           changedAssessment.questionCount =
                             changedAssessment.questions.length;
                           const sourceFilesSet = new Set(
-                            changedAssessment.questions.map((question) => {
-                              if (question.source) {
-                                return question.source.fileName;
-                              } else return "None Selected"; // this is also an option a source can have that should be ignored
-                            }),
+                            changedAssessment.questions.map((question) => question.source?.document_id || "None Selected"),
                           );
                           sourceFilesSet.delete("None Selected");
                           changedAssessment.sourceFiles =
@@ -407,7 +410,7 @@ export default function EditingStudio() {
                     <div className="space-y-3 mb-4">
                       <textarea
                         className="w-full text-gray-900 font-medium p-4 bg-emerald-50 border-2 border-emerald-200 rounded-lg"
-                        defaultValue={question.correctAnswer}
+                        defaultValue={String(question.options && question.options[0] || '')}
                         onChange={(e) => {
                           question.options![0] = e.target.value;
                           setIsEdited(true);
@@ -432,11 +435,7 @@ export default function EditingStudio() {
                                   undefined;
                                 const sourceFilesSet = new Set(
                                   changedAssessment.questions.map(
-                                    (question) => {
-                                      if (question.source) {
-                                        return question.source.fileName;
-                                      } else return "None Selected";
-                                    },
+                                    (question) => question.source?.document_id || "None Selected",
                                   ),
                                 );
                                 sourceFilesSet.delete("None Selected");
@@ -460,20 +459,21 @@ export default function EditingStudio() {
                           <div className="flex items-center gap-2 text-xs text-blue-700">
                             <select
                               className="font-medium bg-white rounded-sm"
-                              defaultValue={question.source.fileName}
+                              value={question.source.document_id || ""}
                               onChange={(e) => {
                                 const changedAssessment =
                                   structuredClone(currentAssessment);
-                                changedAssessment.questions[
-                                  idx
-                                ].source!.fileName = e.target.value;
+                                const selectedId = e.target.value;
+                                const selectedFile = libraryFiles.find(
+                                  (file) => file.id === selectedId,
+                                );
+
+                                changedAssessment.questions[idx].source!.document_id = selectedId;
+                                changedAssessment.questions[idx].source!.document_name =
+                                  selectedFile?.name || "";
                                 const sourceFilesSet = new Set(
                                   changedAssessment.questions.map(
-                                    (question) => {
-                                      if (question.source) {
-                                        return question.source.fileName;
-                                      } else return "None Selected";
-                                    },
+                                    (question) => question.source?.document_id || "None Selected",
                                   ),
                                 );
                                 sourceFilesSet.delete("None Selected");
@@ -483,10 +483,12 @@ export default function EditingStudio() {
                                 setIsEdited(true);
                               }}
                             >
-                              <option key="0">None Selected</option>
-                              {libraryFiles.map((file, fileNum) => {
+                              <option key="0" value="">None Selected</option>
+                              {libraryFiles.map((file) => {
                                 return (
-                                  <option key={fileNum}>{file.name}</option>
+                                  <option key={file.id} value={file.id}>
+                                    {file.name}
+                                  </option>
                                 );
                               })}
                             </select>
@@ -528,7 +530,8 @@ export default function EditingStudio() {
                                 changedAssessment.questions[idx].source = {
                                   text: "",
                                   page: 0,
-                                  fileName: "None Selected",
+                                  document_id: "",
+                                  document_name: "None Selected",
                                 };
                                 setCurrentAssessment(changedAssessment);
                                 setIsEdited(true);

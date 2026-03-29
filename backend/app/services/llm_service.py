@@ -49,6 +49,7 @@ class LLMService:
                 - QUOTA: Aim for exactly {num_questions}. Only stop early if the relevant CONTEXT is completely exhausted.
                 - TRUE/FALSE RULE: For "true-false" types, the "options" list MUST be exactly ["True", "False"]. 
                 - The "correctAnswer" index must be 0 if the statement is True, and 1 if it is False.
+                - SHORT ANSWER RULE: For "short-answer" types, the "options" list MUST contain exactly one option with a string of the correct answer. The "correctAnswer" index must always be 0 in this case.
 
                 INSTRUCTIONS:
                 1. Generate a JSON object that matches the structure below EXACTLY.

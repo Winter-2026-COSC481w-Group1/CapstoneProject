@@ -9,7 +9,8 @@ export default function ExamStudio() {
   
   const { 
     setCurrentAssessment,
-    assessments
+    assessments,
+    fetchAssessmentDetails
   } = useApp();
   
   
@@ -79,9 +80,12 @@ export default function ExamStudio() {
                       
                     <div className="flex gap-2">
                       <button
-                        onClick={() => {
-                          setCurrentAssessment(structuredClone(assessment));
-                          setStudioProcess("Editing");
+                        onClick={async () => {
+                          const updatedAssessment = await fetchAssessmentDetails(assessment.id);
+                          if (updatedAssessment) {
+                            setCurrentAssessment(updatedAssessment);
+                            setStudioProcess("Editing");
+                          }
                         }}
                         className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-semibold transition-colors"
                       >

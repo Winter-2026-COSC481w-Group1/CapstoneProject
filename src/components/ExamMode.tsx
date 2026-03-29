@@ -2,12 +2,15 @@ import { useState } from 'react';
 import { ChevronLeft, ChevronRight, Save } from 'lucide-react';
 import { useApp } from '../AppContext';
 import { useNavigate } from 'react-router-dom';
+import { patch } from '../api';
+import { supabaseClient } from '../supabase';
 
 export default function ExamMode() {
   const navigate = useNavigate();
-  const { currentAssessment, assessments, setAssessments } = useApp();
+  const { currentAssessment, assessments, setAssessments, setCurrentAssessment, fetchAssessmentDetails } = useApp();
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number | string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!currentAssessment) {
     navigate('/dashboard/assessments');
@@ -19,55 +22,98 @@ export default function ExamMode() {
   const progress = ((currentQuestion + 1) / questions.length) * 100;
 
   const handleAnswer = (answer: number | string) => {
-    setAnswers({
-      ...answers,
-      [question.id]: answer
-    });
+    setAnswers((prevAnswers) => ({
+      ...prevAnswers,
+      [question.id]: answer,
+    }));
   };
 
   const handleNext = () => {
-    if (currentQuestion < questions.length - 1) {
-      setCurrentQuestion(currentQuestion + 1);
-    }
+    setCurrentQuestion((prev) => Math.min(prev + 1, questions.length - 1));
   };
 
   const handlePrevious = () => {
-    if (currentQuestion > 0) {
-      setCurrentQuestion(currentQuestion - 1);
-    }
+    setCurrentQuestion((prev) => Math.max(prev - 1, 0));
   };
 
-  const handleSubmit = () => {
-    const updatedQuestions = questions.map(q => ({
-      ...q,
-      userAnswer: answers[q.id] ?? q.userAnswer ?? (q.type === 'short-answer' ? '' : -1)
-    }));
-
-    const correctCount = updatedQuestions.filter(q => {
-      if (q.type === 'short-answer') {
-        return (
-          typeof q.userAnswer === 'string' &&
-          typeof q.correctAnswer === 'string' &&
-          q.userAnswer.toLowerCase().trim() === q.correctAnswer.toLowerCase().trim()
-        );
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    try {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (!session?.access_token) {
+        console.error('no session token available');
+        setIsSubmitting(false);
+        return;
       }
-      return q.userAnswer === q.correctAnswer;
-    }).length;
 
-    const score = Math.round((correctCount / questions.length) * 100);
+      const serializeAnswer = (q: typeof question) => {
+        const userValue = answers[q.id];
+        if (userValue !== undefined && userValue !== null) {
+          if (q.type === 'true-false' && typeof userValue === 'number' && q.options?.length === 2) {
+            return userValue === 0 ? true : userValue === 1 ? false : userValue;
+          }
+          return userValue;
+        }
 
-    const updatedAssessment = {
-      ...currentAssessment,
-      status: 'completed' as const,
-      score,
-      questions: updatedQuestions
-    };
+        if (q.type === 'short-answer') return '';
+        if (q.type === 'true-false') return null;
+        return null;
+      };
 
-    setAssessments(
-      assessments.map(a => a.id === currentAssessment.id ? updatedAssessment : a)
-    );
+      const submitAnswers = questions.map(serializeAnswer);
 
-    navigate('/dashboard/grading-report');
+      const attemptData = {
+        answers: submitAnswers
+      };
+
+      // Submit attempt to backend
+      await patch(`api/v1/assessments/${currentAssessment.id}/attempt`, attemptData, session.access_token);
+
+      // Fetch results
+      const updatedAssessment = await fetchAssessmentDetails(currentAssessment.id);
+      if (updatedAssessment) {
+        updatedAssessment.status = "completed";
+        setCurrentAssessment(updatedAssessment);
+      }
+
+      navigate('/dashboard/grading-report');
+    } catch (error) {
+      console.error('Error submitting assessment attempt:', error);
+      // Still navigate to grading report even if backend submission fails
+      const updatedQuestions = questions.map(q => ({
+        ...q,
+        userAnswer: answers[q.id] ?? (q.type === 'short-answer' ? '' : -1),
+      }));
+
+      const correctCount = updatedQuestions.filter(q => {
+        if (q.type === 'short-answer') {
+          return (
+            typeof q.userAnswer === 'string' &&
+            typeof q.correctAnswer === 'string' &&
+            q.userAnswer.toLowerCase().trim() === q.correctAnswer.toLowerCase().trim()
+          );
+        }
+        return q.userAnswer === q.correctAnswer;
+      }).length;
+
+      const score = Math.round((correctCount / questions.length) * 100);
+
+      const updatedAssessment = {
+        ...currentAssessment,
+        status: 'completed' as const,
+        lastScore: score,
+        questions: updatedQuestions
+      };
+
+      setAssessments(
+        assessments.map(a => a.id === currentAssessment.id ? updatedAssessment : a)
+      );
+      setCurrentAssessment(updatedAssessment);
+
+      navigate('/dashboard/grading-report');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const isLastQuestion = currentQuestion === questions.length - 1;
@@ -222,9 +268,10 @@ export default function ExamMode() {
           {isLastQuestion ? (
             <button
               onClick={handleSubmit}
-              className="flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold transition-colors"
+              disabled={isSubmitting}
+              className="flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Submit
+              {isSubmitting ? 'Submitting...' : 'Submit'}
               <ChevronRight className="w-5 h-5" />
             </button>
           ) : (
