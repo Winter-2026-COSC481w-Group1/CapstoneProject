@@ -137,7 +137,7 @@ export default function Dashboard() {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900">{activity.description}</p>
+                    <p className="text-sm font-medium text-gray-900">{activity.name}</p>
                     <p className="text-xs text-gray-500 mt-1">
                       {activity.timestamp.toLocaleDateString('en-US', {
                         month: 'short',

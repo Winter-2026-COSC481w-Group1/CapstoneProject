@@ -36,7 +36,7 @@ class ActivityService:
             combined.append(
                 Activity(
                     id=a["id"],
-                    type="assessment",
+                    type="exam-created",
                     name=a["title"],
                     timeStamp=a["created_at"]
                 )
@@ -47,7 +47,7 @@ class ActivityService:
             combined.append(
                 Activity(
                     id = u["document_id"],
-                    type = "upload",
+                    type = "file-uploaded",
                     name = u.get("documents", {}).get("file_name", "Unkown Document"),
                     timeStamp = u["uploaded_at"]
             )
