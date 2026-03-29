@@ -22,7 +22,7 @@ async def get_activity(
     except HTTPException as e:
         raise e
     except Exception as e: 
-        print(f"Error getting documents for user{e}")
+        print(f"Error getting activity for user{e}")
         raise HTTPException(
             status_code = 500, detail = "Internal server error during getting activity"
         ) from e
