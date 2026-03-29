@@ -50,14 +50,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [libraryFiles, setLibraryFiles] = useState<LibraryFile[]>([]);
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [currentAssessment, setCurrentAssessment] = useState<Assessment | null>(null);
-  const [activities, setActivities] = useState<Activity[] | null>(null);
+  const [activities, setActivities] = useState<Activity[]>([]);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   useEffect(() => {
     if (currentUser) {
       fetchLibraryFiles();
       fetchAssessments();
-      fetchActivity();
+      fetchActivities();
     }
   }, [currentUser]);
 
@@ -93,7 +93,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const fetchActivity = async () => {
+  const fetchActivities = async () => {
     try {
       const {data: { session } } = await supabaseClient.auth.getSession();
       if(!session?.access_token) {
@@ -107,7 +107,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         id: act.id,
         type: act.type,
         name: act.name,
-        timeStamp: act.timestamp
+        timestamp: new Date(act.timeStamp)
       }));
 
       setActivities(activity)
@@ -204,6 +204,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setCurrentAssessment,
         activities,
         setActivities,
+        fetchActivities,
         showMobileMenu,
         setShowMobileMenu
       }}

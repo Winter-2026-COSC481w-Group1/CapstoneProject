@@ -121,7 +121,7 @@ export default function Dashboard() {
               </button>
             </div>
             <div className="space-y-4">
-              {activities.slice(0, 5).map((activity) => (
+              {activities?.slice(0, 5).map((activity) => (
                 <div key={activity.id} className="flex items-start gap-4 pb-4 border-b border-gray-100 last:border-0">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
                     activity.type === 'exam-created' ? 'bg-emerald-100' :
