@@ -124,7 +124,7 @@ class UploadService:
             message = "Document already exists."
         else:
             document_id = str(uuid4())
-            storage_path = f"{document_id}{file_ext}/"
+            storage_path = f"{document_id}{file_ext}"
 
             insert_doc_data = {
                 "id": document_id,

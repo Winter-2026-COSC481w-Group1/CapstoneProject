@@ -50,13 +50,11 @@ class AssessmentService:
 
         data = assessment_response.data
         all_ids = []
-        if data.get("document_id"):
-            all_ids.append(data["document_id"])
         if data.get("document_ids"):
             all_ids.extend(data["document_ids"])
 
         unique_doc_ids = list(set(all_ids))
-        default_doc_id = data.get("document_id") or (data.get("document_ids") or [None])[0]
+        default_doc_id = (data.get("document_ids") or [None])[0]
 
         doc_names_map = {}
         if unique_doc_ids:
@@ -416,10 +414,8 @@ class AssessmentService:
         assessments = []
 
         for row in response.data:
-            # Handle source files (can be single document_id or list document_ids)
+            # Handle source files
             source_files = []
-            if row.get("document_id"):
-                source_files.append(row["document_id"])
             if row.get("document_ids"):
                 source_files.extend(row["document_ids"])
 
