@@ -102,7 +102,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
 
       //fetch the recent activity
-      const data = await get('api/v1/activity', session.access_token);
+      const data = await get('api/v1/recent-activity', session.access_token);
       const activity: Activity[] = data.map((act: any) => ({
         id: act.id,
         type: act.type,
