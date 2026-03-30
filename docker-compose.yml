@@ -15,6 +15,7 @@ services:
       PORT: ${PORT}
       MAX_PDF_PAGES: ${MAX_PDF_PAGES:-1100}
       MAX_DOCUMENT_TOKENS: ${MAX_DOCUMENT_TOKENS:-55000}
+      APP_ENV: ${APP_ENV}
 
 
 
