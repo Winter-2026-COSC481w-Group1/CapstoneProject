@@ -47,10 +47,13 @@ class LLMService:
                     1. Factual: Direct definitions or syntax.
                     2. Conceptual: Explaining "How" or "Why".
                     3. Applied: Scenario-based problems or use-cases.
+                - SELF-CONTAINMENT RULE: Every question must be answerable without referring to the "provided text," "source," or "context." 
+                - NO DEICTIC REFERENCES: Avoid phrases like "according to the text," "as mentioned in the source," or "based on the figure above." 
+                - FACT INCLUSION: If a question relies on a specific scenario from the text, include that scenario description within the question stem itself.
                 - QUOTA: Aim for exactly {num_questions} questions total. Only stop early if the relevant CONTEXT for all topics is completely exhausted.
                 - TRUE/FALSE RULE: For "true-false" types, "options" MUST be exactly ["True", "False"]. Index 0 is True, Index 1 is False.
                 - SHORT ANSWER RULE: For "short-answer", "options" MUST contain exactly one string (the correct answer). "correctAnswer" index must be 0.
-
+                
                 INSTRUCTIONS:
                 1. Generate a JSON object matching the REQUIRED STRUCTURE exactly.
                 2. Ensure the "questions" list contains exactly {num_questions} items, balanced across the requested topics.
@@ -58,7 +61,7 @@ class LLMService:
                 4. Question types allowed: {json.dumps(types)}.
                 5. METADATA ATTRIBUTION: Every question MUST include the document_id and page_number. Look at the context header: --- SOURCE [Number] (ID: [UUID] | PAGE: [Number]) ---. Extract the UUID string for document_id and the integer for page_number.
                 6. TOPIC TAGGING: Ensure each question is mapped to the correct topic from the provided list: "{query}".
-                
+
                 REQUIRED JSON STRUCTURE:
                 {schema_json}
                 """
