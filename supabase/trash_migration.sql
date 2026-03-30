@@ -68,6 +68,29 @@ SELECT cron.schedule(
 );
 
 -- ============================================================
+-- STORAGE CLEANUP JOB
+-- Calls the trash-cleanup Edge Function daily at 2:30 AM UTC
+-- to delete orphaned storage files (PDFs/PPTXs) from Supabase Storage.
+-- Run this AFTER deploying the Edge Function (see supabase/functions/trash-cleanup/).
+-- Replace YOUR_PROJECT_REF with your actual Supabase project ref (found in project URL).
+-- ============================================================
+
+-- Enable pg_net for HTTP calls (free on all Supabase plans)
+CREATE EXTENSION IF NOT EXISTS pg_net WITH SCHEMA extensions;
+
+SELECT cron.schedule(
+  'trash-storage-cleanup',
+  '30 2 * * *',   -- 30 minutes after the DB cleanup job
+  $$
+  SELECT net.http_post(
+    url := 'https://YOUR_PROJECT_REF.supabase.co/functions/v1/trash-cleanup',
+    headers := '{"Authorization": "Bearer YOUR_SUPABASE_ANON_KEY", "Content-Type": "application/json"}'::jsonb,
+    body := '{}'::jsonb
+  );
+  $$
+);
+
+-- ============================================================
 -- VERIFY (optional – run these to confirm everything was set up)
 -- ============================================================
 -- SELECT * FROM cron.job;
