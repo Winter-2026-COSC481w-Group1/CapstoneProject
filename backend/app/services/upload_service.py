@@ -3,6 +3,7 @@ import os
 import hashlib
 import io
 from uuid import uuid4
+from datetime import datetime, timezone
 
 from fastapi import HTTPException, UploadFile
 import fitz
@@ -140,6 +141,7 @@ class UploadService:
                 "page_count": page_count,
                 "token_count": token_count,
                 "status": "pending",
+                "created_at": datetime.now(timezone.utc).isoformat(),
             }
 
             # Idempotent upsert on the document record
