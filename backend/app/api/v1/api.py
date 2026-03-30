@@ -1,5 +1,12 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import documents, user, dev, assessments, notifications, activity
+from app.api.v1.endpoints import (
+    documents,
+    user,
+    dev,
+    assessments,
+    notifications,
+    activity,
+)
 
 api_router = APIRouter()
 
@@ -31,6 +38,6 @@ api_router.include_router(
 
 api_router.include_router(
     activity.router,
-    prefix="/activity",
-    tags=["Activity"]
+    prefix="/recent-activity",  # avoids the blocked "activity" keyword
+    tags=["Activity"],
 )
