@@ -23,10 +23,8 @@ export default function Navigation() {
       <nav className="fixed top-0 left-0 right-0 z-50 flex justify-center pt-6 px-4">
         <div className="backdrop-blur-xl bg-white/80 border border-white/40 shadow-lg rounded-full px-6 py-3 flex items-center gap-8 max-w-5xl w-full">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center">
-              <div className="w-4 h-4 border-2 border-white rounded-sm"></div>
-            </div>
-            <span className="font-bold text-gray-800 text-lg hidden sm:block">ScholarAI</span>
+            <img src="/examable.svg" alt="Examable" className="w-8 h-8" />
+            <span className="font-bold text-gray-800 text-lg hidden sm:block">Examable</span>
           </div>
 
           <div className="hidden md:flex items-center gap-2 flex-1 justify-center">
