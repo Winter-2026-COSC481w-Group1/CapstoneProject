@@ -3,6 +3,7 @@ from uuid import uuid4
 from datetime import datetime, timezone
 import re
 import asyncio
+import random
 
 from fastapi import HTTPException
 
@@ -337,13 +338,20 @@ class AssessmentService:
                 new_q_id = q_result.data[0]["id"]
 
                 if q_data.options:
+                    # Pair each option with its correctness flag
+                    options_data = [(opt, i == q_data.correctAnswer) for i, opt in enumerate(q_data.options)]
+                    
+                    # Randomize the display order for multiple choice to prevent LLM answer bias (Issue #132)
+                    if q_type_map.get(q_data.type, "MCQ") == "MCQ":
+                        random.shuffle(options_data)
+
                     options_to_insert = []
-                    for i, option in enumerate(q_data.options):
+                    for option_text, is_correct in options_data:
                         options_to_insert.append(
                             {
                                 "question_id": new_q_id,
-                                "option_text": option,
-                                "is_correct": i == q_data.correctAnswer,
+                                "option_text": option_text,
+                                "is_correct": is_correct,
                             }
                         )
 
