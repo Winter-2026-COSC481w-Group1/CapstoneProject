@@ -68,3 +68,27 @@ export interface Activity {
   name: string;
   timestamp: Date;
 }
+
+export interface TrashedDocument {
+  id: string;
+  name: string;
+  size: string;
+  uploadedAt: Date;
+  status: string;
+  pageCount: number;
+  deletedAt: Date;
+  daysRemaining: number;
+}
+
+export interface TrashedAssessment {
+  id: string;
+  title: string;
+  topic: string;
+  createdAt: Date;
+  status: string;
+  sourceFiles: string[];
+  questionCount: number;
+  difficulty: string;
+  deletedAt: Date;
+  daysRemaining: number;
+}

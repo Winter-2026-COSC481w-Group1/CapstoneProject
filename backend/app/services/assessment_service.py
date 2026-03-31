@@ -199,6 +199,7 @@ class AssessmentService:
             .select("document_id")
             .eq("user_id", user_id)
             .in_("document_id", request.document_ids)
+            .is_("deleted_at", "null")
             .execute()
         )
 
@@ -226,7 +227,7 @@ class AssessmentService:
                 "id": assessment_id,
                 "user_id": user_id,
                 "status": "pending",
-                "title": f"Assessment: {request.query}",
+                "title": request.title or f"Assessment: {request.query}",
                 "error_message": None,
             }
         )
@@ -437,6 +438,7 @@ class AssessmentService:
             self.db_client.table("assessments")
             .select("*")
             .eq("user_id", user_id)
+            .is_("deleted_at", "null")
             .execute()
         )
 
@@ -627,11 +629,16 @@ class AssessmentService:
         return {"message": "Assessment updated successfully"}
 
     async def delete_assessment(self, assessment_id: str, user_id: str):
+        """Soft-delete an assessment (move to trash)."""
+        from datetime import datetime, timezone
+        deleted_at = datetime.now(timezone.utc).isoformat()
+
         result = (
             self.db_client.table("assessments")
-            .delete()
+            .update({"deleted_at": deleted_at})
             .eq("user_id", user_id)
             .eq("id", assessment_id)
+            .is_("deleted_at", "null")
             .execute()
         )
 
@@ -639,6 +646,83 @@ class AssessmentService:
             raise HTTPException(status_code=404, detail="Assessment not found")
 
         return {
-            "message": "Assessment deleted successfully",
+            "message": "Assessment moved to trash.",
+            "assessment_id": assessment_id,
+        }
+
+    async def get_trash_assessments(self, user_id: str) -> list:
+        """Return assessments the user has soft-deleted (in the trash)."""
+        from datetime import datetime, timezone
+        response = (
+            self.db_client.table("assessments")
+            .select("*")
+            .eq("user_id", user_id)
+            .not_.is_("deleted_at", "null")
+            .execute()
+        )
+
+        assessments = []
+        for row in response.data:
+            deleted_at = row.get("deleted_at")
+            days_remaining = None
+            if deleted_at:
+                deleted_dt = datetime.fromisoformat(deleted_at.replace("Z", "+00:00"))
+                elapsed = (datetime.now(timezone.utc) - deleted_dt).days
+                days_remaining = max(0, 30 - elapsed)
+
+            source_files = list(set(row.get("document_ids") or []))
+            assessments.append(
+                {
+                    "id": row.get("id"),
+                    "title": row.get("title"),
+                    "topic": row.get("query") or "",
+                    "createdAt": row.get("created_at"),
+                    "status": row.get("status"),
+                    "sourceFiles": source_files,
+                    "questionCount": row.get("num_questions"),
+                    "difficulty": row.get("difficulty"),
+                    "deletedAt": deleted_at,
+                    "daysRemaining": days_remaining,
+                }
+            )
+
+        return assessments
+
+    async def restore_assessment(self, assessment_id: str, user_id: str):
+        """Restore a soft-deleted assessment by clearing deleted_at."""
+        result = (
+            self.db_client.table("assessments")
+            .update({"deleted_at": None})
+            .eq("user_id", user_id)
+            .eq("id", assessment_id)
+            .not_.is_("deleted_at", "null")
+            .execute()
+        )
+
+        if not result.data:
+            raise HTTPException(
+                status_code=404, detail="Assessment not found in trash"
+            )
+
+        return {"message": "Assessment restored.", "assessment_id": assessment_id}
+
+    async def permanent_delete_assessment(self, assessment_id: str, user_id: str):
+        """Permanently delete a trashed assessment (removes questions/options via CASCADE)."""
+        result = (
+            self.db_client.table("assessments")
+            .delete()
+            .eq("user_id", user_id)
+            .eq("id", assessment_id)
+            .not_.is_("deleted_at", "null")
+            .execute()
+        )
+
+        if not result.data:
+            raise HTTPException(
+                status_code=404, detail="Assessment not found in trash"
+            )
+
+        return {
+            "message": "Assessment permanently deleted.",
             "assessment_id": assessment_id,
         }
