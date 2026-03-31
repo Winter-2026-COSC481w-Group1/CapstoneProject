@@ -64,10 +64,8 @@ export default function AuthPage() {
 
         <div className="relative z-10 flex flex-col justify-between p-12 text-white">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
-              <div className="w-5 h-5 border-2 border-emerald-600 rounded-sm"></div>
-            </div>
-            <span className="font-bold text-2xl">ScholarAI</span>
+            <img src="/examable.svg" alt="Examable" className="w-10 h-10 rounded-lg" />
+            <span className="font-bold text-2xl">Examable</span>
           </div>
 
           <div className="max-w-md">
@@ -97,7 +95,7 @@ export default function AuthPage() {
             <p className="text-gray-600">
               {isSignUp
                 ? 'Start generating intelligent assessments today'
-                : 'Sign in to continue to ScholarAI'}
+                : 'Sign in to continue to Examable'}
             </p>
           </div>
 
