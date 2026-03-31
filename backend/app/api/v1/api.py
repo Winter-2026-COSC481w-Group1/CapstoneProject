@@ -6,6 +6,7 @@ from app.api.v1.endpoints import (
     assessments,
     notifications,
     activity,
+    trash,
 )
 
 api_router = APIRouter()
@@ -38,6 +39,12 @@ api_router.include_router(
 
 api_router.include_router(
     activity.router,
-    prefix="/recent-activity",  # avoids the blocked "activity" keyword
+    prefix="/recent-activity",
     tags=["Activity"],
+)
+
+api_router.include_router(
+    trash.router,
+    prefix="/trash",
+    tags=["Trash"],
 )

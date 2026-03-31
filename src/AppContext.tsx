@@ -1,12 +1,12 @@
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import { User, LibraryFile, Assessment, Activity } from './types';
+import { User, LibraryFile, Assessment, Activity, TrashedDocument, TrashedAssessment } from './types';
 import { supabaseClient } from './supabase';
 import { get } from './api';
 
 interface AppContextType {
   currentUser: User | null;
   setCurrentUser: React.Dispatch<React.SetStateAction<User | null>>;
-  libraryFiles: LibraryFile[];  
+  libraryFiles: LibraryFile[];
   setLibraryFiles: (files: LibraryFile[] | ((prevFiles: LibraryFile[]) => LibraryFile[])) => void;
   fetchLibraryFiles: () => Promise<void>;
   assessments: Assessment[];
@@ -20,6 +20,9 @@ interface AppContextType {
   fetchActivities: () => Promise<void>;
   showMobileMenu: boolean;
   setShowMobileMenu: (show: boolean) => void;
+  trashedDocuments: TrashedDocument[];
+  trashedAssessments: TrashedAssessment[];
+  fetchTrash: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -52,6 +55,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [currentAssessment, setCurrentAssessment] = useState<Assessment | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [trashedDocuments, setTrashedDocuments] = useState<TrashedDocument[]>([]);
+  const [trashedAssessments, setTrashedAssessments] = useState<TrashedAssessment[]>([]);
 
   useEffect(() => {
     if (currentUser) {
@@ -152,6 +157,43 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const fetchTrash = async () => {
+    try {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (!session?.access_token) return;
+      const data = await get('api/v1/trash', session.access_token);
+
+      const docs: TrashedDocument[] = (data.documents || []).map((d: any) => ({
+        id: d.id,
+        name: d.name,
+        size: d.size ? `${(d.size / (1024 * 1024)).toFixed(1)} MB` : '0 MB',
+        uploadedAt: new Date(d.uploadedAt),
+        status: d.status,
+        pageCount: d.pageCount ?? 0,
+        deletedAt: new Date(d.deletedAt),
+        daysRemaining: d.daysRemaining ?? 30,
+      }));
+
+      const assessments: TrashedAssessment[] = (data.assessments || []).map((a: any) => ({
+        id: a.id,
+        title: a.title,
+        topic: a.topic || '',
+        createdAt: new Date(a.createdAt),
+        status: a.status,
+        sourceFiles: a.sourceFiles || [],
+        questionCount: a.questionCount,
+        difficulty: a.difficulty,
+        deletedAt: new Date(a.deletedAt),
+        daysRemaining: a.daysRemaining ?? 30,
+      }));
+
+      setTrashedDocuments(docs);
+      setTrashedAssessments(assessments);
+    } catch (err) {
+      console.error('error loading trash', err);
+    }
+  };
+
   const fetchAssessmentDetails = async (assessmentId: string): Promise<Assessment | null> => {
     try {
       const { data: { session } } = await supabaseClient.auth.getSession();
@@ -223,7 +265,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setActivities,
         fetchActivities,
         showMobileMenu,
-        setShowMobileMenu
+        setShowMobileMenu,
+        trashedDocuments,
+        trashedAssessments,
+        fetchTrash,
       }}
     >
       {children}

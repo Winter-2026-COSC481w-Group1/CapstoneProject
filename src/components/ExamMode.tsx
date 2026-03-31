@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Save } from 'lucide-react';
 import { useApp } from '../AppContext';
 import { useNavigate } from 'react-router-dom';
@@ -8,9 +8,35 @@ import { supabaseClient } from '../supabase';
 export default function ExamMode() {
   const navigate = useNavigate();
   const { currentAssessment, assessments, setAssessments, setCurrentAssessment, fetchAssessmentDetails } = useApp();
-  const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, number | string>>({});
+  const [currentQuestion, setCurrentQuestion] = useState(() => {
+    if (!currentAssessment?.id) return 0;
+    try {
+      const saved = sessionStorage.getItem(`exam_progress_q_${currentAssessment.id}`);
+      return saved ? parseInt(saved, 10) : 0;
+    } catch { return 0; }
+  });
+
+  const [answers, setAnswers] = useState<Record<string, number | string>>(() => {
+    if (!currentAssessment?.id) return {};
+    try {
+      const saved = sessionStorage.getItem(`exam_progress_a_${currentAssessment.id}`);
+      return saved ? JSON.parse(saved) : {};
+    } catch { return {}; }
+  });
+
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (currentAssessment?.id) {
+      sessionStorage.setItem(`exam_progress_q_${currentAssessment.id}`, currentQuestion.toString());
+    }
+  }, [currentQuestion, currentAssessment?.id]);
+
+  useEffect(() => {
+    if (currentAssessment?.id) {
+      sessionStorage.setItem(`exam_progress_a_${currentAssessment.id}`, JSON.stringify(answers));
+    }
+  }, [answers, currentAssessment?.id]);
 
   if (!currentAssessment) {
     navigate('/dashboard/assessments');
@@ -76,6 +102,8 @@ export default function ExamMode() {
         setCurrentAssessment(updatedAssessment);
       }
 
+      sessionStorage.removeItem(`exam_progress_q_${currentAssessment.id}`);
+      sessionStorage.removeItem(`exam_progress_a_${currentAssessment.id}`);
       navigate('/dashboard/grading-report');
     } catch (error) {
       console.error('Error submitting assessment attempt:', error);
@@ -110,6 +138,8 @@ export default function ExamMode() {
       );
       setCurrentAssessment(updatedAssessment);
 
+      sessionStorage.removeItem(`exam_progress_q_${currentAssessment.id}`);
+      sessionStorage.removeItem(`exam_progress_a_${currentAssessment.id}`);
       navigate('/dashboard/grading-report');
     } finally {
       setIsSubmitting(false);
