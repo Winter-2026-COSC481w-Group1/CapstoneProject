@@ -83,10 +83,9 @@ export default function Library() {
     }
   };
 
-  // Delete document handler
+  // Move document to trash
   const handleDelete = async (id: string) => {
     try {
-      // obtain supabase session for auth token
       const { data: { session } } = await supabaseClient.auth.getSession();
       if (!session?.access_token) {
         console.error('no session token available for delete');
@@ -99,13 +98,12 @@ export default function Library() {
         },
       });
       if (res.ok) {
-        // remove from UI state only after backend confirms deletion
         setLibraryFiles(libraryFiles.filter(f => f.id !== id));
       } else {
-        console.error('failed deleting document', res.status);
+        console.error('failed moving document to trash', res.status);
       }
     } catch (err) {
-      console.error('error deleting document', err);
+      console.error('error moving document to trash', err);
     }
   };
 
@@ -246,7 +244,7 @@ export default function Library() {
                   <button
                     onClick={() => handleDelete(file.id)}
                     className="p-2 hover:bg-red-100 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                    title="Delete"
+                    title="Move to Trash"
                   >
                     <Trash2 className="w-5 h-5 text-red-600" />
                   </button>

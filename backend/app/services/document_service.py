@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from fastapi import HTTPException
 
 from supabase import Client
@@ -18,6 +20,7 @@ class DocumentService:
             self.db.table("user_library")
             .select("documents(*)")
             .eq("user_id", user_id)
+            .is_("deleted_at", "null")
             .execute()
         )
 
@@ -29,11 +32,11 @@ class DocumentService:
                 documents.append(
                     {
                         "id": doc.get("id"),
-                        "name": doc.get("file_name"),  # Rename for frontend
+                        "name": doc.get("file_name"),
                         "status": doc.get("status"),
-                        "size": doc.get("file_size"),  # Standardize key
+                        "size": doc.get("file_size"),
                         "pageCount": doc.get("page_count", 0),
-                        "uploadedAt": doc.get("created_at"),  # Rename for frontend
+                        "uploadedAt": doc.get("created_at"),
                     }
                 )
 
@@ -41,76 +44,147 @@ class DocumentService:
 
     async def delete_document(self, document_id: str, user_id: str):
         """
-        Delete a document for the current user. If no other users reference
-        the document, also remove the document row, vectors, and storage file.
-
-        Args:
-            document_id: The ID of the document to delete
-            user_id: The ID of the user deleting the document
+        Soft-delete a document for the current user by setting deleted_at on
+        the user_library row.  The file is NOT removed from storage until
+        permanently deleted (either manually or by the 30-day auto-delete job).
         """
-        # Remove the user -> document link
-        delete_link = (
+        deleted_at = datetime.now(timezone.utc).isoformat()
+
+        result = (
             self.db.table("user_library")
-            .delete()
+            .update({"deleted_at": deleted_at})
             .eq("user_id", user_id)
             .eq("document_id", document_id)
+            .is_("deleted_at", "null")
             .execute()
         )
 
-        # If nothing was deleted, the user didn't have that document
-        if not delete_link.data:
+        if not result.data:
             raise HTTPException(status_code=404, detail="Document not found for user")
 
-        # Check if other users still reference this document
+        return {
+            "document": {"document_id": document_id},
+            "message": "Document moved to trash.",
+        }
+
+    async def get_trash_documents(self, user_id: str) -> list:
+        """Return documents the user has soft-deleted (in the trash)."""
+        response = (
+            self.db.table("user_library")
+            .select("deleted_at, documents(*)")
+            .eq("user_id", user_id)
+            .not_.is_("deleted_at", "null")
+            .execute()
+        )
+
+        documents = []
+        for row in response.data:
+            doc = row.get("documents")
+            if doc:
+                deleted_at = row.get("deleted_at")
+                # Calculate days remaining before auto-deletion (30 days)
+                days_remaining = None
+                if deleted_at:
+                    deleted_dt = datetime.fromisoformat(deleted_at.replace("Z", "+00:00"))
+                    elapsed = (datetime.now(timezone.utc) - deleted_dt).days
+                    days_remaining = max(0, 30 - elapsed)
+
+                documents.append(
+                    {
+                        "id": doc.get("id"),
+                        "name": doc.get("file_name"),
+                        "status": doc.get("status"),
+                        "size": doc.get("file_size"),
+                        "pageCount": doc.get("page_count", 0),
+                        "uploadedAt": doc.get("created_at"),
+                        "deletedAt": deleted_at,
+                        "daysRemaining": days_remaining,
+                    }
+                )
+
+        return documents
+
+    async def restore_document(self, document_id: str, user_id: str):
+        """Restore a soft-deleted document by clearing deleted_at."""
+        result = (
+            self.db.table("user_library")
+            .update({"deleted_at": None})
+            .eq("user_id", user_id)
+            .eq("document_id", document_id)
+            .not_.is_("deleted_at", "null")
+            .execute()
+        )
+
+        if not result.data:
+            raise HTTPException(
+                status_code=404, detail="Document not found in trash"
+            )
+
+        return {"message": "Document restored.", "document_id": document_id}
+
+    async def permanent_delete_document(self, document_id: str, user_id: str):
+        """
+        Permanently delete a trashed document.  Removes the user_library row,
+        and if no other users reference the document, also removes vectors,
+        storage, and the document record.
+        """
+        # Confirm the document is in the user's trash
+        check = (
+            self.db.table("user_library")
+            .select("document_id")
+            .eq("user_id", user_id)
+            .eq("document_id", document_id)
+            .not_.is_("deleted_at", "null")
+            .maybe_single()
+            .execute()
+        )
+        if not check.data:
+            raise HTTPException(
+                status_code=404, detail="Document not found in trash"
+            )
+
+        # Remove this user's link (trashed row)
+        self.db.table("user_library").delete().eq("user_id", user_id).eq(
+            "document_id", document_id
+        ).execute()
+
+        # Check if any OTHER users still reference this document (active or trashed)
         remaining = (
             self.db.table("user_library")
-            .select("*")
+            .select("document_id")
             .eq("document_id", document_id)
             .execute()
         )
 
         fully_deleted = False
-        remaining_user_links = len(remaining.data) if remaining.data else 0
-
-        # If no remaining links, remove document row, vectors, and storage object
         if not remaining.data:
             fully_deleted = True
-            # Delete vector embeddings
             await self.vector_service.delete_document_vectors(document_id)
 
-            # Fetch document to get storage path
             doc_response = (
                 self.db.table("documents")
-                .select("*")
+                .select("file_path")
                 .eq("id", document_id)
                 .maybe_single()
                 .execute()
             )
-
-            file_path = None
             if doc_response and doc_response.data:
                 file_path = doc_response.data.get("file_path")
+                try:
+                    if file_path:
+                        self.db.storage.from_("pdfs").remove([file_path])
+                except Exception as e:
+                    print(f"Storage delete warning: {e}")
 
-            # Delete storage object (ignore failures)
-            try:
-                if file_path:
-                    self.db.storage.from_("pdfs").remove([file_path])
-            except Exception as e:
-                print(f"Storage delete warning: {e}")
-
-            # Delete the document row
             try:
                 self.db.table("documents").delete().eq("id", document_id).execute()
             except Exception as e:
                 print(f"DB delete warning: {e}")
 
         return {
-            "document": {
-                "document_id": document_id,
-                "fully_deleted": fully_deleted,
-                "remaining_user_links": remaining_user_links,
-            },
-            "message": "Document deleted.",
+            "message": "Document permanently deleted.",
+            "document_id": document_id,
+            "fully_deleted": fully_deleted,
         }
 
     async def view_document(self, document_id: str, user_id: str):
@@ -119,6 +193,7 @@ class DocumentService:
             .select("document_id, user_id, documents(file_name, file_path)")
             .eq("document_id", document_id)
             .eq("user_id", user_id)
+            .is_("deleted_at", "null")
             .maybe_single()
             .execute()
         )
@@ -133,15 +208,11 @@ class DocumentService:
         display_name = result.data["documents"]["file_name"]
         is_pdf = file_path.lower().endswith(".pdf")
 
-        # If it's a PDF, we want 'inline' (preview).
-        # If it's PPTX, we want 'attachment' (download), since browsers can't natively show .pptx
         if is_pdf:
-            # no 'download' option = browser tries to view it inline
             signed_url_res = self.db.storage.from_("pdfs").create_signed_url(
                 file_path, expires_in=60
             )
         else:
-            # include 'download' option = browser forces a download
             signed_url_res = self.db.storage.from_("pdfs").create_signed_url(
                 file_path, expires_in=60, options={"download": display_name}
             )
