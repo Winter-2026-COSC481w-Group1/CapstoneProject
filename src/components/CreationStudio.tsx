@@ -115,11 +115,10 @@ export default function CreationStudio() {
                   <button
                     key={file.id}
                     onClick={() => toggleFile(file.name)}
-                    className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${
-                      selectedFiles.includes(file.name)
+                    className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${selectedFiles.includes(file.name)
                         ? "border-emerald-500 bg-emerald-50"
                         : "border-gray-200 hover:border-emerald-300 bg-white"
-                    }`}
+                      }`}
                   >
                     {selectedFiles.includes(file.name) ? (
                       <CheckSquare className="w-6 h-6 text-emerald-600 flex-shrink-0" />
@@ -166,11 +165,10 @@ export default function CreationStudio() {
             <div className="grid sm:grid-cols-3 gap-4">
               <button
                 onClick={() => toggleType("multiple-choice")}
-                className={`p-6 rounded-2xl border-3 transition-all ${
-                  selectedTypes.includes("multiple-choice")
+                className={`p-6 rounded-2xl border-3 transition-all ${selectedTypes.includes("multiple-choice")
                     ? "border-emerald-500 bg-emerald-50"
                     : "border-gray-200 hover:border-emerald-300 bg-white"
-                }`}
+                  }`}
               >
                 <div className="text-4xl mb-3">📝</div>
                 <div className="font-semibold text-gray-900">
@@ -181,11 +179,10 @@ export default function CreationStudio() {
 
               <button
                 onClick={() => toggleType("true-false")}
-                className={`p-6 rounded-2xl border-3 transition-all ${
-                  selectedTypes.includes("true-false")
+                className={`p-6 rounded-2xl border-3 transition-all ${selectedTypes.includes("true-false")
                     ? "border-emerald-500 bg-emerald-50"
                     : "border-gray-200 hover:border-emerald-300 bg-white"
-                }`}
+                  }`}
               >
                 <div className="text-4xl mb-3">✓✗</div>
                 <div className="font-semibold text-gray-900">True/False</div>
@@ -194,11 +191,10 @@ export default function CreationStudio() {
 
               <button
                 onClick={() => toggleType("short-answer")}
-                className={`p-6 rounded-2xl border-3 transition-all ${
-                  selectedTypes.includes("short-answer")
+                className={`p-6 rounded-2xl border-3 transition-all ${selectedTypes.includes("short-answer")
                     ? "border-emerald-500 bg-emerald-50"
                     : "border-gray-200 hover:border-emerald-300 bg-white"
-                }`}
+                  }`}
               >
                 <div className="text-4xl mb-3">✍️</div>
                 <div className="font-semibold text-gray-900">Short Answer</div>
@@ -220,7 +216,7 @@ export default function CreationStudio() {
                 type="range"
                 min="5"
                 max="50"
-                step="5"
+                step="1"
                 value={questionCount}
                 onChange={(e) => setQuestionCount(Number(e.target.value))}
                 className="w-full h-3 bg-emerald-100 rounded-full appearance-none cursor-pointer slider"
@@ -247,31 +243,28 @@ export default function CreationStudio() {
             <div className="flex items-center gap-4 bg-gray-100 p-2 rounded-2xl">
               <button
                 onClick={() => setDifficulty("easy")}
-                className={`flex-1 py-3 rounded-xl font-semibold transition-all ${
-                  difficulty === "easy"
+                className={`flex-1 py-3 rounded-xl font-semibold transition-all ${difficulty === "easy"
                     ? "bg-white text-emerald-600 shadow-md"
                     : "text-gray-600 hover:text-gray-900"
-                }`}
+                  }`}
               >
                 Easy
               </button>
               <button
                 onClick={() => setDifficulty("medium")}
-                className={`flex-1 py-3 rounded-xl font-semibold transition-all ${
-                  difficulty === "medium"
+                className={`flex-1 py-3 rounded-xl font-semibold transition-all ${difficulty === "medium"
                     ? "bg-white text-emerald-600 shadow-md"
                     : "text-gray-600 hover:text-gray-900"
-                }`}
+                  }`}
               >
                 Medium
               </button>
               <button
                 onClick={() => setDifficulty("hard")}
-                className={`flex-1 py-3 rounded-xl font-semibold transition-all ${
-                  difficulty === "hard"
+                className={`flex-1 py-3 rounded-xl font-semibold transition-all ${difficulty === "hard"
                     ? "bg-white text-emerald-600 shadow-md"
                     : "text-gray-600 hover:text-gray-900"
-                }`}
+                  }`}
               >
                 Hard
               </button>
@@ -356,11 +349,10 @@ export default function CreationStudio() {
               <button
                 onClick={handleGenerate}
                 disabled={!canGenerate}
-                className={`w-full py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2 ${
-                  canGenerate
+                className={`w-full py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2 ${canGenerate
                     ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg hover:shadow-xl"
                     : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                }`}
+                  }`}
               >
                 <Zap className="w-5 h-5" />
                 Generate Assessment
