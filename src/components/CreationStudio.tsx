@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { CheckSquare, Square, Zap } from "lucide-react";
 import { useApp } from "../AppContext";
-import { Assessment } from "../types";
 import { supabaseClient } from "../supabase";
 import { post } from "../api";
 import { useNavigate } from "react-router-dom";
@@ -9,7 +8,7 @@ import { useNavigate } from "react-router-dom";
 export default function CreationStudio() {
   const navigate = useNavigate();
 
-  const { libraryFiles, assessments, setAssessments, fetchAssessments } =
+  const { libraryFiles, fetchAssessments } =
     useApp();
 
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
@@ -24,6 +23,7 @@ export default function CreationStudio() {
   const readyFiles = libraryFiles.filter((f) => f.status === "ready");
 
   const [topic, setTopic] = useState("");
+  const [assessmentTitle, setAssessmentTitle] = useState("");
 
   const toggleFile = (fileName: string) => {
     setSelectedFiles((prev) =>
@@ -51,6 +51,7 @@ export default function CreationStudio() {
     const requestBody = {
       document_ids: documentIds,
       query: topic, // topic/query
+      title: assessmentTitle,
       num_questions: questionCount,
       difficulty: difficulty,
       question_types: selectedTypes.map((t) => t.replace("-", "_")), // match 'multiple_choice' backend format
@@ -91,6 +92,18 @@ export default function CreationStudio() {
     <>
       <div className="grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
+          <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Assessment Title</h2>
+            <p className="text-gray-600 mb-6">Give your assessment a name</p>
+            <input
+              type="text"
+              value={assessmentTitle}
+              onChange={(e) => setAssessmentTitle(e.target.value)}
+              placeholder="e.g. Biology Midterm Review"
+              className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-emerald-500 outline-none transition-all"
+            />
+          </div>
+
           <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200">
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
               Source Materials
@@ -296,6 +309,13 @@ export default function CreationStudio() {
               </h3>
 
               <div className="space-y-4 mb-6">
+                <div className="pb-4 border-b border-gray-200">
+                  <div className="text-sm text-gray-600 mb-2">Assessment Title</div>
+                  <div className="text-sm font-semibold text-gray-900 truncate">
+                    {assessmentTitle || <span className="text-gray-400 italic">No custom title</span>}
+                  </div>
+                </div>
+
                 <div className="pb-4 border-b border-gray-200">
                   <div className="text-sm text-gray-600 mb-2">Source Files</div>
                   {selectedFiles.length === 0 ? (
