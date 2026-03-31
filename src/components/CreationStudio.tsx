@@ -115,11 +115,10 @@ export default function CreationStudio() {
                   <button
                     key={file.id}
                     onClick={() => toggleFile(file.name)}
-                    className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${
-                      selectedFiles.includes(file.name)
-                        ? "border-emerald-500 bg-emerald-50"
-                        : "border-gray-200 hover:border-emerald-300 bg-white"
-                    }`}
+                    className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${selectedFiles.includes(file.name)
+                      ? "border-emerald-500 bg-emerald-50"
+                      : "border-gray-200 hover:border-emerald-300 bg-white"
+                      }`}
                   >
                     {selectedFiles.includes(file.name) ? (
                       <CheckSquare className="w-6 h-6 text-emerald-600 flex-shrink-0" />
@@ -141,22 +140,38 @@ export default function CreationStudio() {
           </div>
 
           <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              Assessment Topic
-            </h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Assessment Topics</h2>
             <p className="text-gray-600 mb-6">
-              What specific topic or chapter should the questions focus on?
+              Enter chapters or subjects. Use a <strong>comma</strong> to separate multiple topics.
             </p>
 
             <input
               type="text"
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
-              placeholder="e.g., Cellular Respiration, The French Revolution, Quantum Mechanics..."
-              className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-gray-900"
+              placeholder="e.g. Photosynthesis, Mitosis, ATP"
+              className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-emerald-500 outline-none transition-all"
             />
-          </div>
 
+            {/* The "Card" Display */}
+            {topic.includes(',') && (
+              <div className="mt-4 flex flex-wrap gap-2 animate-in fade-in slide-in-from-top-1">
+                {topic
+                  .split(',')
+                  .map((t) => t.trim())
+                  .filter((t) => t !== "")
+                  .map((cleanTopic, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-50 border border-gray-200 text-gray-700 text-sm font-medium"
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      {cleanTopic}
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
           <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200">
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
               Question Types
@@ -166,11 +181,10 @@ export default function CreationStudio() {
             <div className="grid sm:grid-cols-3 gap-4">
               <button
                 onClick={() => toggleType("multiple-choice")}
-                className={`p-6 rounded-2xl border-3 transition-all ${
-                  selectedTypes.includes("multiple-choice")
-                    ? "border-emerald-500 bg-emerald-50"
-                    : "border-gray-200 hover:border-emerald-300 bg-white"
-                }`}
+                className={`p-6 rounded-2xl border-3 transition-all ${selectedTypes.includes("multiple-choice")
+                  ? "border-emerald-500 bg-emerald-50"
+                  : "border-gray-200 hover:border-emerald-300 bg-white"
+                  }`}
               >
                 <div className="text-4xl mb-3">📝</div>
                 <div className="font-semibold text-gray-900">
@@ -181,11 +195,10 @@ export default function CreationStudio() {
 
               <button
                 onClick={() => toggleType("true-false")}
-                className={`p-6 rounded-2xl border-3 transition-all ${
-                  selectedTypes.includes("true-false")
-                    ? "border-emerald-500 bg-emerald-50"
-                    : "border-gray-200 hover:border-emerald-300 bg-white"
-                }`}
+                className={`p-6 rounded-2xl border-3 transition-all ${selectedTypes.includes("true-false")
+                  ? "border-emerald-500 bg-emerald-50"
+                  : "border-gray-200 hover:border-emerald-300 bg-white"
+                  }`}
               >
                 <div className="text-4xl mb-3">✓✗</div>
                 <div className="font-semibold text-gray-900">True/False</div>
@@ -194,11 +207,10 @@ export default function CreationStudio() {
 
               <button
                 onClick={() => toggleType("short-answer")}
-                className={`p-6 rounded-2xl border-3 transition-all ${
-                  selectedTypes.includes("short-answer")
-                    ? "border-emerald-500 bg-emerald-50"
-                    : "border-gray-200 hover:border-emerald-300 bg-white"
-                }`}
+                className={`p-6 rounded-2xl border-3 transition-all ${selectedTypes.includes("short-answer")
+                  ? "border-emerald-500 bg-emerald-50"
+                  : "border-gray-200 hover:border-emerald-300 bg-white"
+                  }`}
               >
                 <div className="text-4xl mb-3">✍️</div>
                 <div className="font-semibold text-gray-900">Short Answer</div>
@@ -220,7 +232,7 @@ export default function CreationStudio() {
                 type="range"
                 min="5"
                 max="50"
-                step="5"
+                step="1"
                 value={questionCount}
                 onChange={(e) => setQuestionCount(Number(e.target.value))}
                 className="w-full h-3 bg-emerald-100 rounded-full appearance-none cursor-pointer slider"
@@ -247,31 +259,28 @@ export default function CreationStudio() {
             <div className="flex items-center gap-4 bg-gray-100 p-2 rounded-2xl">
               <button
                 onClick={() => setDifficulty("easy")}
-                className={`flex-1 py-3 rounded-xl font-semibold transition-all ${
-                  difficulty === "easy"
-                    ? "bg-white text-emerald-600 shadow-md"
-                    : "text-gray-600 hover:text-gray-900"
-                }`}
+                className={`flex-1 py-3 rounded-xl font-semibold transition-all ${difficulty === "easy"
+                  ? "bg-white text-emerald-600 shadow-md"
+                  : "text-gray-600 hover:text-gray-900"
+                  }`}
               >
                 Easy
               </button>
               <button
                 onClick={() => setDifficulty("medium")}
-                className={`flex-1 py-3 rounded-xl font-semibold transition-all ${
-                  difficulty === "medium"
-                    ? "bg-white text-emerald-600 shadow-md"
-                    : "text-gray-600 hover:text-gray-900"
-                }`}
+                className={`flex-1 py-3 rounded-xl font-semibold transition-all ${difficulty === "medium"
+                  ? "bg-white text-emerald-600 shadow-md"
+                  : "text-gray-600 hover:text-gray-900"
+                  }`}
               >
                 Medium
               </button>
               <button
                 onClick={() => setDifficulty("hard")}
-                className={`flex-1 py-3 rounded-xl font-semibold transition-all ${
-                  difficulty === "hard"
-                    ? "bg-white text-emerald-600 shadow-md"
-                    : "text-gray-600 hover:text-gray-900"
-                }`}
+                className={`flex-1 py-3 rounded-xl font-semibold transition-all ${difficulty === "hard"
+                  ? "bg-white text-emerald-600 shadow-md"
+                  : "text-gray-600 hover:text-gray-900"
+                  }`}
               >
                 Hard
               </button>
@@ -307,6 +316,31 @@ export default function CreationStudio() {
                           </div>
                         </div>
                       ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Insert this between "Source Files" and "Question Types" */}
+                <div className="pb-4 border-b border-gray-200">
+                  <div className="text-sm text-gray-600 mb-2">Target Topics</div>
+                  {topic.trim() === "" ? (
+                    <div className="text-sm text-gray-400 italic">
+                      No topics specified
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-1.5">
+                      {topic
+                        .split(",")
+                        .map((t) => t.trim())
+                        .filter((t) => t !== "")
+                        .map((cleanTopic, idx) => (
+                          <span
+                            key={idx}
+                            className="inline-flex items-center bg-blue-50 text-blue-700 px-2.5 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wide border border-blue-100"
+                          >
+                            {cleanTopic}
+                          </span>
+                        ))}
                     </div>
                   )}
                 </div>
@@ -356,11 +390,10 @@ export default function CreationStudio() {
               <button
                 onClick={handleGenerate}
                 disabled={!canGenerate}
-                className={`w-full py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2 ${
-                  canGenerate
-                    ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg hover:shadow-xl"
-                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                }`}
+                className={`w-full py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2 ${canGenerate
+                  ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg hover:shadow-xl"
+                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                  }`}
               >
                 <Zap className="w-5 h-5" />
                 Generate Assessment

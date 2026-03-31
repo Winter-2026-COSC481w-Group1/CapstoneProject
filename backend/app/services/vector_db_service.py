@@ -19,7 +19,6 @@ class VectorDBService:
         chunks: list[dict],
         embeddings: list[list[float]],
         file_hash: str,
-        user_id: str,
         document_id: str,
     ):
         """
@@ -38,7 +37,6 @@ class VectorDBService:
                     {
                         "document_id": document_id,
                         "file_hash": file_hash,
-                        "user_id": user_id,
                         "text": text,
                         "page_number": page_num,
                         "chunk_index": i,
