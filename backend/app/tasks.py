@@ -10,7 +10,6 @@ async def process_document(
     document_id: str,
     file_hash: str,
     file_path: str,
-    user_id: str,
     db_client: Client,
     vector_service: VectorDBService,
     embedding_service: EmbeddingService,
@@ -54,7 +53,6 @@ async def process_document(
                 chunks=batch,
                 embeddings=embeddings,
                 file_hash=file_hash,
-                user_id=user_id,
                 document_id=document_id,
             )
             total_indexed += len(batch_texts)

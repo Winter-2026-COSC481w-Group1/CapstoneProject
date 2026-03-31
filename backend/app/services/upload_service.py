@@ -3,6 +3,7 @@ import os
 import hashlib
 import io
 from uuid import uuid4
+from datetime import datetime, timezone
 
 from fastapi import HTTPException, UploadFile
 import fitz
@@ -108,6 +109,7 @@ class UploadService:
         sha256 = hashlib.sha256(contents).hexdigest()
         file_name = file.filename or f"upload{file_ext}"
 
+        # 1. Lookup: Check for an existing document by 'file_hash'
         existing = (
             self.db.table("documents")
             .select("*")
@@ -117,16 +119,20 @@ class UploadService:
         )
 
         document = None
+        should_trigger_task = False
         message = ""
-        if existing and existing.data:
+
+        # Case 1: Document exists and is NOT failed (ready, processing, indexing)
+        if existing and existing.data and existing.data.get("status") != "failed":
             document = existing.data
             document_id = document["id"]
             message = "Document already exists."
         else:
-            document_id = str(uuid4())
+            # Case 2: Document is new OR previously failed
+            document_id = existing.data["id"] if (existing and existing.data) else str(uuid4())
             storage_path = f"{document_id}{file_ext}"
 
-            insert_doc_data = {
+            doc_data = {
                 "id": document_id,
                 "file_hash": sha256,
                 "file_name": file_name,
@@ -135,24 +141,23 @@ class UploadService:
                 "page_count": page_count,
                 "token_count": token_count,
                 "status": "pending",
+                "created_at": datetime.now(timezone.utc).isoformat(),
             }
 
-            insert_doc = self.db.table("documents").insert(insert_doc_data).execute()
-
-            if not insert_doc.data:
-                raise HTTPException(
-                    status_code=500, detail="Failed to insert document row"
-                )
+            # Idempotent upsert on the document record
+            upsert_res = self.db.table("documents").upsert(doc_data, on_conflict="file_hash").execute()
+            if not upsert_res.data:
+                raise HTTPException(status_code=500, detail="Failed to upsert document row")
+            
+            document = upsert_res.data[0]
 
             try:
-                # Get correct MIME type for storage upload from our mapping
+                # Get correct MIME type for storage upload
                 content_type = file.content_type
                 if content_type not in SUPPORTED_FORMATS:
-                    # If we fell back to extension, find the corresponding MIME type
-                    content_type = next(
-                        k for k, v in SUPPORTED_FORMATS.items() if v == file_ext
-                    )
+                    content_type = next(k for k, v in SUPPORTED_FORMATS.items() if v == file_ext)
 
+                # Idempotent storage upload (x-upsert: true)
                 res = self.db.storage.from_(BUCKET).upload(
                     path=storage_path,
                     file=contents,
@@ -165,34 +170,35 @@ class UploadService:
                 if hasattr(res, "error") and res.error is not None:
                     raise Exception(f"Supabase Storage Error: {res.error}")
 
+                should_trigger_task = True
+                message = "Upload successful." if not existing else "Recovered failed document and re-started processing."
+
             except Exception as e:
-                self.db.table("documents").update({"status": "failed"}).eq(
-                    "id", document_id
-                ).execute()
-                raise HTTPException(
-                    status_code=500, detail=f"Storage upload failed: {e}"
-                )
+                # If storage fails, mark it as failed so it can be recovered later
+                self.db.table("documents").update({"status": "failed"}).eq("id", document_id).execute()
+                raise HTTPException(status_code=500, detail=f"Storage upload failed: {e}")
 
-            document = insert_doc.data[0]
-            message = "Upload successful."
-
-        # Link user -> document
+        # 4. User Linking: Always perform an upsert on the 'user_library' table
         self.db.table("user_library").upsert(
             {"user_id": user_id, "document_id": document_id},
             on_conflict="user_id,document_id",
         ).execute()
 
-        # Enqueue background task
-        if document.get("status") not in ["ready", "processing", "indexing"]:
+        # 5. Single Trigger: if 'should_trigger_task' is True, await the task exactly once
+        if should_trigger_task:
             await process_document(
-                document_id,
-                sha256,
-                document["file_path"],
-                user_id,
-                self.db,
-                self.vector_service,
-                self.embedding_service,
+                document_id=document_id,
+                file_hash=sha256,
+                file_path=document["file_path"],
+                db_client=self.db,
+                vector_service=self.vector_service,
+                embedding_service=self.embedding_service,
             )
+
+            # Re-fetch document to get the latest status (likely 'ready' or 'failed')
+            final_doc_res = self.db.table("documents").select("*").eq("id", document_id).maybe_single().execute()
+            if final_doc_res.data:
+                document = final_doc_res.data
 
         return {
             "document": {
