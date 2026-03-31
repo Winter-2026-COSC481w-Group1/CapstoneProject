@@ -232,7 +232,7 @@ export default function CreationStudio() {
                 type="range"
                 min="5"
                 max="50"
-                step="5"
+                step="1"
                 value={questionCount}
                 onChange={(e) => setQuestionCount(Number(e.target.value))}
                 className="w-full h-3 bg-emerald-100 rounded-full appearance-none cursor-pointer slider"
