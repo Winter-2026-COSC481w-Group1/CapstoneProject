@@ -226,7 +226,7 @@ class AssessmentService:
                 "id": assessment_id,
                 "user_id": user_id,
                 "status": "pending",
-                "title": f"Assessment: {request.query}",
+                "title": request.title or f"Assessment: {request.query}",
                 "error_message": None,
             }
         )
