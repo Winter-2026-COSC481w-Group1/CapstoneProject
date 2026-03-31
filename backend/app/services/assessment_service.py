@@ -4,6 +4,8 @@ from datetime import datetime, timezone
 import re
 import asyncio
 import random
+import logging
+import numpy as np
 
 from fastapi import HTTPException
 
@@ -23,6 +25,24 @@ from app.services.llm_service import LLMService
 
 
 from supabase import Client
+
+logger = logging.getLogger(__name__)
+
+# Similarity thresholds per difficulty level for short-answer grading
+SIMILARITY_THRESHOLDS = {
+    "easy": 0.75,
+    "medium": 0.85,
+    "hard": 0.92,
+}
+
+
+def cosine_similarity(vec_a: list[float], vec_b: list[float]) -> float:
+    """Compute cosine similarity between two vectors."""
+    a, b = np.array(vec_a), np.array(vec_b)
+    norm_a, norm_b = np.linalg.norm(a), np.linalg.norm(b)
+    if norm_a == 0 or norm_b == 0:
+        return 0.0
+    return float(np.dot(a, b) / (norm_a * norm_b))
 
 
 class AssessmentService:
@@ -548,18 +568,77 @@ class AssessmentService:
             elif q["question_type"] == "SA":
                 correct_answers.append(options_data[0]["option_text"])
 
-        # Update answers
+        # --- Fetch assessment difficulty for SA threshold ---
+        assessment_row = (
+            self.db_client.table("assessments")
+            .select("difficulty")
+            .eq("id", assessment_id)
+            .maybe_single()
+            .execute()
+        )
+        difficulty = (assessment_row.data or {}).get("difficulty", "medium").lower()
+        sa_threshold = SIMILARITY_THRESHOLDS.get(difficulty, 0.85)
+
+        # --- First pass: grade MCQ/TF immediately, collect SA pairs ---
         answers = []
+        sa_pairs = []  # (answer_index, user_text, correct_text)
+        question_types = []  # track type for each question
+
         for i in range(len(correct_answers)):
-            ans = Answer(value=None, isCorrect=False)
-            if i < len(attempt_data["answers"]):
-                ans = Answer(value=attempt_data["answers"][i], isCorrect=False)
-                if (
-                    attempt_data["answers"][i] == correct_answers[i]
-                ):  # find better way to evaluate if SA is correct
+            q_type = questions_response.data[i]["question_type"] if i < len(questions_response.data) else "MCQ"
+            question_types.append(q_type)
+
+            if i >= len(attempt_data["answers"]):
+                answers.append(Answer(value=None, isCorrect=False))
+                continue
+
+            user_value = attempt_data["answers"][i]
+
+            if q_type == "SA":
+                # Defer SA grading — we'll batch-embed below
+                ans = Answer(value=user_value, isCorrect=False)
+                answers.append(ans)
+                if isinstance(user_value, str) and user_value.strip():
+                    sa_pairs.append((i, user_value.strip(), str(correct_answers[i]).strip()))
+            else:
+                # MCQ / TF: exact match
+                ans = Answer(value=user_value, isCorrect=False)
+                if user_value == correct_answers[i]:
                     ans.isCorrect = True
                     numCorrect += 1
-            answers.append(ans)
+                answers.append(ans)
+
+        # --- Second pass: semantic grading for short-answer questions ---
+        if sa_pairs:
+            try:
+                user_texts = [p[1] for p in sa_pairs]
+                correct_texts = [p[2] for p in sa_pairs]
+                all_texts = user_texts + correct_texts
+
+                # Single batch API call for all SA texts
+                embeddings = await self.embedding_service.embed_chunks(all_texts)
+
+                n = len(sa_pairs)
+                for j, (idx, _, _) in enumerate(sa_pairs):
+                    user_vec = embeddings[j]
+                    correct_vec = embeddings[n + j]
+                    sim = cosine_similarity(user_vec, correct_vec)
+
+                    answers[idx].similarity = round(sim, 4)
+                    if sim >= sa_threshold:
+                        answers[idx].isCorrect = True
+                        numCorrect += 1
+
+                    logger.info(
+                        f"SA Q{idx}: similarity={sim:.4f}, threshold={sa_threshold}, correct={sim >= sa_threshold}"
+                    )
+            except Exception as e:
+                logger.error(f"Embedding-based SA grading failed, falling back to exact match: {e}")
+                # Fallback: exact string match for SA questions
+                for idx, user_text, correct_text in sa_pairs:
+                    if user_text.lower() == correct_text.lower():
+                        answers[idx].isCorrect = True
+                        numCorrect += 1
 
         # Prepare complete attempt data
         complete_attempt_data = AssessmentAttempt(
