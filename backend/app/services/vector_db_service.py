@@ -20,26 +20,28 @@ class VectorDBService:
         embeddings: list[list[float]],
         file_hash: str,
         document_id: str,
+        start_index: int = 0,
     ):
         """
         Formats and uploads chunks and their embeddings to Supabase pgvector.
-        Every chunk gets the file_hash and user_id in its metadata for filtering.
+        Every chunk gets the file_hash and document_id in its metadata for filtering.
         """
         records = []
         for i, chunk in enumerate(chunks):
+            global_index = start_index + i
             text = chunk.get("text", "")
             page_num = chunk.get("page_number", -1)
 
             records.append(
                 (
-                    f"{file_hash}_{i}",  # unique id for the chunk
+                    f"{file_hash}_{global_index}",  # unique id for the chunk
                     embeddings[i],
                     {
                         "document_id": document_id,
                         "file_hash": file_hash,
                         "text": text,
                         "page_number": page_num,
-                        "chunk_index": i,
+                        "chunk_index": global_index,
                     },
                 )
             )
