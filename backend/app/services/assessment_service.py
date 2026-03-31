@@ -1,11 +1,17 @@
-from typing import List, Dict, Any
+from typing import Dict, Any
 from uuid import uuid4
 from datetime import datetime, timezone
 import re
+import asyncio
 
 from fastapi import HTTPException
 
-from app.schemas.assessment import QuestionSource, QuestionDetail, AssessmentSchema, AssessmentDetails
+from app.schemas.assessment import (
+    QuestionSource,
+    QuestionDetail,
+    AssessmentSchema,
+    AssessmentDetails,
+)
 from app.schemas.assessment_attempt import Answer, AssessmentAttempt
 from app.schemas.assessment_request import AssessmentRequest
 
@@ -73,7 +79,7 @@ class AssessmentService:
             .eq("assessment_id", assessment_id)
             .execute()
         )
-        
+
         # fetch attempts data
         last_attempt = None
         if data.get("attempt"):
@@ -86,7 +92,7 @@ class AssessmentService:
                     numAttempts=attempt_data.get("numAttempts"),
                     answers=answers,
                     numCorrect=attempt_data.get("numCorrect"),
-                    time_submitted=attempt_data.get("time_submitted")
+                    time_submitted=attempt_data.get("time_submitted"),
                 )
             except Exception as e:
                 print(f"Error parsing attempt data: {e}")
@@ -103,7 +109,7 @@ class AssessmentService:
                 questionCount=data.get("num_questions") or 0,
                 difficulty=data.get("difficulty") or "none",
                 questions=[],
-                attempt=last_attempt
+                attempt=last_attempt,
             )
 
         # fetch all options for all questions in the assessment
@@ -178,7 +184,7 @@ class AssessmentService:
             questionCount=data.get("num_questions") or 0,
             difficulty=data.get("difficulty") or "none",
             questions=detailed_questions,
-            attempt=last_attempt
+            attempt=last_attempt,
         )
 
     # creates a pending record for the assessment generating in the db, and returns assessment id
@@ -366,35 +372,49 @@ class AssessmentService:
             if not document_ids:
                 raise ValueError("At least one document must be selected.")
 
-            # will query 3 chunks per question requested, minimum 10, upper limit 35
-            chunks_to_request = max(10, min(num_questions * 3, 35))
+            total_chunks_limit = 35
 
-            context = await self.get_context_for_assessment(
-                query=query,
-                document_ids=document_ids,
-                chunks=chunks_to_request,
-                user_id=user_id,
+            # split topics by comma
+            topics = [t.strip() for t in query.split(",") if t.strip()]
+            num_topics = len(topics)
+            chunks_needed = num_questions * 3
+            min_floor = num_topics * 5
+            total_chunks = min(total_chunks_limit, max(min_floor, chunks_needed))
+            chunks_per_topic = total_chunks // num_topics
+
+            tasks = [
+                self.get_context_for_assessment(
+                    topic, document_ids, chunks_per_topic, user_id
+                )
+                for topic in topics
+            ]
+
+            contexts = await asyncio.gather(*tasks)
+
+            for i, ctx in enumerate(contexts):
+                if (
+                    not ctx.strip()
+                ):  # won't raise an error, since this isn't a dealbreaker
+                    print(f"Warning: No context found for topic: {topics[i]}")
+
+            combined_context = "\n\n".join(
+                [
+                    f"=== TOPIC: {topics[i].upper()} ===\n{ctx}"
+                    for i, ctx in enumerate(contexts)
+                    if ctx.strip()
+                ]
             )
 
-            if not context:
-                raise ValueError(f"No relevant content found for: {query}")
-
-            # --- HAND OFF TO TEAMMATE (LLM) ---
-            # This is where your teammate's code will eventually go
-            # result = await self.llm_service.generate_questions(context, num_questions)
-
-            # mark as completed if the above is successful. so do a try catch?
-            # await self.update_assessment_status(assessment_id, "completed")
             try:
                 result = await self.llm_service.generate_assessment(
-                    query, context, num_questions, difficulty, question_types
+                    query, combined_context, num_questions, difficulty, question_types
                 )
 
                 await self._save_assessment_to_db(assessment_id, result)
 
                 await self.update_assessment_status(assessment_id, "ready")
 
-                return context
+                return combined_context
             except Exception as e:
                 print(f"Error from LLM service {e}")
                 await self.update_assessment_status(assessment_id, "failed", str(e))
@@ -441,7 +461,7 @@ class AssessmentService:
                     "questionCount": row.get("num_questions"),
                     "difficulty": row.get("difficulty"),  # Rename for frontend
                     "numAttempts": numAttempts,
-                    "numCorrect": numCorrect
+                    "numCorrect": numCorrect,
                 }
             )
 
@@ -511,7 +531,9 @@ class AssessmentService:
                     break
             if q["question_type"] == "MCQ":
                 correct_answers.append(correct_answer_index)
-            elif q["question_type"] == "TF": # temp fix for now? should probably change DB structure for T/F
+            elif (
+                q["question_type"] == "TF"
+            ):  # temp fix for now? should probably change DB structure for T/F
                 correct_answers.append(correct_answer_index == 0)
             elif q["question_type"] == "SA":
                 correct_answers.append(options_data[0]["option_text"])
@@ -519,26 +541,22 @@ class AssessmentService:
         # Update answers
         answers = []
         for i in range(len(correct_answers)):
-            ans = Answer(
-                value=None,
-                isCorrect=False
-            )
+            ans = Answer(value=None, isCorrect=False)
             if i < len(attempt_data["answers"]):
-                ans = Answer(
-                    value=attempt_data["answers"][i],
-                    isCorrect=False
-                )
-                if attempt_data["answers"][i] == correct_answers[i]: # find better way to evaluate if SA is correct
+                ans = Answer(value=attempt_data["answers"][i], isCorrect=False)
+                if (
+                    attempt_data["answers"][i] == correct_answers[i]
+                ):  # find better way to evaluate if SA is correct
                     ans.isCorrect = True
                     numCorrect += 1
             answers.append(ans)
-            
+
         # Prepare complete attempt data
         complete_attempt_data = AssessmentAttempt(
             numAttempts=current_attempts,
             answers=answers,
             numCorrect=numCorrect,
-            time_submitted=datetime.now(timezone.utc).isoformat()
+            time_submitted=datetime.now(timezone.utc).isoformat(),
         )
 
         update_payload = {
@@ -555,10 +573,10 @@ class AssessmentService:
 
         if not response.data:
             raise ValueError("Failed to save assessment attempt")
-        
+
         # Update assessment status to completed
         await self.update_assessment_status(assessment_id, "completed")
-        
+
         return response.data[0]
 
     async def update_assessment(
@@ -593,8 +611,8 @@ class AssessmentService:
             .execute()
         )
 
-        #if not delete_result.data:
-            #raise HTTPException(status_code=404, detail="No questions found")
+        # if not delete_result.data:
+        # raise HTTPException(status_code=404, detail="No questions found")
 
         await self._save_assessment_to_db(assessment_id, assessment_data)
 

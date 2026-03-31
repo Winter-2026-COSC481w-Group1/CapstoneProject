@@ -32,36 +32,35 @@ class LLMService:
             # Construct prompt with strict JSON formatting instructions
             prompt = f"""
                 You are an expert exam generator. 
-                Your goal is to generate questions specifically about the TOPIC: "{query}".
+                Your goal is to generate an assessment covering the following TOPICS: "{query}".
                 Based ONLY on the provided context, generate a complete JSON assessment.
 
                 CONTEXT:
                 {context}
 
                 STRATEGY:
-                - RELEVANCE FIRST: For every SOURCE in the CONTEXT, first determine if it is directly relevant to the TOPIC: "{query}". 
-                - SKIP RULE: If a SOURCE does not contain information about "{query}", skip it entirely. Do not "stretch" a fact to fit the topic.
-                - MULTI-ANGLE MINING: If a SOURCE is rich and relevant, extract multiple unique questions from it. Do not feel limited to one question per source.
-                - DIVERSITY (Bloom's Taxonomy): To avoid repetitive questions, vary the cognitive depth:
-                    1. Factual: Direct definitions or syntax (e.g., "What is X?").
-                    2. Conceptual: Explain "How" or "Why" (e.g., "What is the difference between X and Y?").
-                    3. Applied: Scenario-based (e.g., "If a developer needs to do Z, which class should they use?").
-                - QUOTA: Aim for exactly {num_questions}. Only stop early if the relevant CONTEXT is completely exhausted.
-                - TRUE/FALSE RULE: For "true-false" types, the "options" list MUST be exactly ["True", "False"]. 
-                - The "correctAnswer" index must be 0 if the statement is True, and 1 if it is False.
-                - SHORT ANSWER RULE: For "short-answer" types, the "options" list MUST contain exactly one option with a string of the correct answer. The "correctAnswer" index must always be 0 in this case.
-
+                - MULTI-TOPIC DISTRIBUTION: The user has provided topics: "{query}". You MUST distribute the {num_questions} questions as evenly as possible across these topics.
+                - CONTEXT SEGMENTATION: Use the headers "=== TOPIC: [NAME] ===" in the CONTEXT to identify which information belongs to which topic.
+                - RELEVANCE FIRST: For every question, ensure the fact used is directly relevant to one of the requested topics.
+                - SKIP RULE: If a SOURCE does not contain information about any of the requested topics, skip it. Do not hallucinate or "stretch" a fact.
+                - DIVERSITY (Bloom's Taxonomy): Vary the cognitive depth of the {num_questions} questions:
+                    1. Factual: Direct definitions or syntax.
+                    2. Conceptual: Explaining "How" or "Why".
+                    3. Applied: Scenario-based problems or use-cases.
+                - SELF-CONTAINMENT RULE: Every question must be answerable without referring to the "provided text," "source," or "context." 
+                - NO DEICTIC REFERENCES: Avoid phrases like "according to the text," "as mentioned in the source," or "based on the figure above." 
+                - FACT INCLUSION: If a question relies on a specific scenario from the text, include that scenario description within the question stem itself.
+                - QUOTA: Aim for exactly {num_questions} questions total. Only stop early if the relevant CONTEXT for all topics is completely exhausted.
+                - TRUE/FALSE RULE: For "true-false" types, "options" MUST be exactly ["True", "False"]. Index 0 is True, Index 1 is False.
+                - SHORT ANSWER RULE: For "short-answer", "options" MUST contain exactly one string (the correct answer). "correctAnswer" index must be 0.
+                
                 INSTRUCTIONS:
-                1. Generate a JSON object that matches the structure below EXACTLY.
-                2. You MUST include "difficulty" and "questions". Do not stop early.
-                3. For "questions", generate exactly {num_questions} items.
-                4. Use the difficulty level: "{difficulty}".
-                5. Use these question types: {json.dumps(types)}.
-                6. STRICT SOURCE ATTRIBUTION: Every question in the "questions" list MUST include the "document_id". 
-                Identify this ID in the context header formatted as: --- SOURCE [Number] (ID: [UUID] | PAGE: [Number]) ---. 
-                Extract the UUID string (e.g., 550e8400-e29b...) and copy it exactly into the "document_id" field.
-                7. PAGE ATTRIBUTION: For every question, identify the PAGE number inside that same header: (ID: [UUID] | PAGE: [Number]). 
-                Extract only the numeric value and put it into the "page_number" integer field in the JSON.
+                1. Generate a JSON object matching the REQUIRED STRUCTURE exactly.
+                2. Ensure the "questions" list contains exactly {num_questions} items, balanced across the requested topics.
+                3. Difficulty level: "{difficulty}".
+                4. Question types allowed: {json.dumps(types)}.
+                5. METADATA ATTRIBUTION: Every question MUST include the document_id and page_number. Look at the context header: --- SOURCE [Number] (ID: [UUID] | PAGE: [Number]) ---. Extract the UUID string for document_id and the integer for page_number.
+                6. TOPIC TAGGING: Ensure each question is mapped to the correct topic from the provided list: "{query}".
 
                 REQUIRED JSON STRUCTURE:
                 {schema_json}
