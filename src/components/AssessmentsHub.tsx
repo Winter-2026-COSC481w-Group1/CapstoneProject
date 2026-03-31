@@ -63,10 +63,9 @@ export default function AssessmentsHub() {
     setShowDownloadMenu((prev) => (prev === assessmentId ? null : assessmentId));
   };
 
-  // Delete assessment handler
+  // Move assessment to trash
   const handleDelete = async (id: string) => {
     try {
-      // obtain supabase session for auth token
       const { data: { session } } = await supabaseClient.auth.getSession();
       if (!session?.access_token) {
         console.error('no session token available for delete');
@@ -79,13 +78,12 @@ export default function AssessmentsHub() {
         },
       });
       if (res.ok) {
-        // remove from UI state only after backend confirms deletion
         setAssessments(assessments.filter(f => f.id !== id));
       } else {
-        console.error('failed deleting assessment', res.status);
+        console.error('failed moving assessment to trash', res.status);
       }
     } catch (err) {
-      console.error('error deleting assessment', err);
+      console.error('error moving assessment to trash', err);
     }
   };
 
