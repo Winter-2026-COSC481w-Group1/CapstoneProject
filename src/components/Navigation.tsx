@@ -14,7 +14,8 @@ export default function Navigation() {
     { id: '/dashboard/home', label: 'Home' },
     { id: '/dashboard/library', label: 'Library' },
     { id: '/dashboard/exam-studio', label: 'Exam Studio' },
-    { id: '/dashboard/assessments', label: 'Assessments' }
+    { id: '/dashboard/assessments', label: 'Assessments' },
+    { id: '/dashboard/trash', label: 'Trash' },
   ];
 
   return (

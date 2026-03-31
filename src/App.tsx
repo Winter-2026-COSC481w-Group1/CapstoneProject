@@ -8,6 +8,7 @@ import AssessmentsHub from './components/AssessmentsHub';
 import ExamMode from './components/ExamMode';
 import GradingReport from './components/GradingReport';
 import Profile from './components/Profile';
+import Trash from './components/Trash';
 import PassForgetPage from './components/PassForgetPage';
 import ResetPassPage from './components/ResetPassPage';
 import Layout from './Layout';
@@ -39,6 +40,7 @@ function App() {
           <Route path="exam-mode" element={<ExamMode />} />
           <Route path="grading-report" element={<GradingReport />} />
           <Route path="profile" element={<Profile />} />
+          <Route path="trash" element={<Trash />} />
         </Route>
         </Routes>
       </AppProvider>
