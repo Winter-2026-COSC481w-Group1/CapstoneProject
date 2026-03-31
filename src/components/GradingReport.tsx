@@ -18,8 +18,8 @@ export default function GradingReport() {
   const attemptData = assessment.attempt;
   const attemptAnswers = Array.isArray(attemptData?.answers) ? attemptData.answers : [];
 
-  const normalizeAttemptEntry = (entry: unknown): { value: number | boolean | string | null; isCorrect: boolean | null } => {
-    if (entry === undefined || entry === null) return { value: null, isCorrect: null };
+  const normalizeAttemptEntry = (entry: unknown): { value: number | boolean | string | null; isCorrect: boolean | null; similarity: number | null } => {
+    if (entry === undefined || entry === null) return { value: null, isCorrect: null, similarity: null };
 
     if (typeof entry === 'object' && entry !== null) {
       const obj = entry as Record<string, unknown>;
@@ -30,26 +30,28 @@ export default function GradingReport() {
           : typeof obj.is_correct === 'boolean'
           ? obj.is_correct
           : null;
+      const similarity = typeof obj.similarity === 'number' ? obj.similarity : null;
       if (value === undefined) {
-        // In some legacy cases, answers are sent as primitive objects with questionId/answer
-        return { value: null, isCorrect };
+        return { value: null, isCorrect, similarity };
       }
       return {
         value: value as number | boolean | string | null,
         isCorrect,
+        similarity,
       };
     }
 
     if (typeof entry === 'number' || typeof entry === 'boolean' || typeof entry === 'string') {
-      return { value: entry, isCorrect: null };
+      return { value: entry, isCorrect: null, similarity: null };
     }
 
-    return { value: null, isCorrect: null };
+    return { value: null, isCorrect: null, similarity: null };
   };
 
   const getNormalizedAnswer = (index: number) => normalizeAttemptEntry(attemptAnswers[index]);
   const getAnswerValue = (index: number) => getNormalizedAnswer(index).value;
   const getAnswerCorrectFlag = (index: number) => getNormalizedAnswer(index).isCorrect;
+  const getSimilarity = (index: number): number | null => getNormalizedAnswer(index).similarity;
 
   const getAnswerIndex = (index: number): number | null => {
     const value = getAnswerValue(index);
@@ -324,9 +326,21 @@ export default function GradingReport() {
                       <p className="text-sm text-gray-700 mb-2">
                         <span className="font-semibold">Your answer:</span> {getUserAnswerText(question, idx)}
                       </p>
-                      <p className="text-sm text-gray-700">
+                      <p className="text-sm text-gray-700 mb-2">
                         <span className="font-semibold">Correct answer:</span> {getCorrectAnswerText(question)}
                       </p>
+                      {getSimilarity(idx) !== null && (
+                        <div className="mt-3 flex items-center gap-2">
+                          <span className="text-sm font-medium text-gray-600">Similarity:</span>
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${
+                            isCorrect
+                              ? 'bg-emerald-100 text-emerald-700'
+                              : 'bg-red-100 text-red-700'
+                          }`}>
+                            {Math.round((getSimilarity(idx) as number) * 100)}%
+                          </span>
+                        </div>
+                      )}
                     </div>}
 
                     {question.source && (

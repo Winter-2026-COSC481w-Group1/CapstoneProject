@@ -250,14 +250,47 @@ export default function ExamMode() {
               </>
             )}
 
-            {question.type === 'short-answer' && (
-              <textarea
-                value={answers[question.id] || ''}
-                onChange={(e) => handleAnswer(e.target.value)}
-                placeholder="Type your answer here..."
-                className="w-full p-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent min-h-[150px] resize-none"
-              />
-            )}
+            {question.type === 'short-answer' && (() => {
+              const currentText = String(answers[question.id] || '');
+              const wordCount = currentText.trim() === '' ? 0 : currentText.trim().split(/\s+/).length;
+              const MAX_WORDS = 10;
+              const WARN_WORDS = 5;
+
+              return (
+                <div>
+                  <textarea
+                    value={currentText}
+                    onChange={(e) => {
+                      const text = e.target.value;
+                      const words = text.trim().split(/\s+/).filter(Boolean);
+                      if (words.length <= MAX_WORDS) {
+                        handleAnswer(text);
+                      } else {
+                        handleAnswer(words.slice(0, MAX_WORDS).join(' '));
+                      }
+                    }}
+                    placeholder="Type your answer here (max 10 words)..."
+                    className="w-full p-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent min-h-[100px] resize-none"
+                  />
+                  <div className={`flex justify-between items-center mt-2 text-sm ${
+                    wordCount >= MAX_WORDS
+                      ? 'text-red-600 font-semibold'
+                      : wordCount >= WARN_WORDS
+                      ? 'text-amber-600 font-medium'
+                      : 'text-gray-400'
+                  }`}>
+                    <span>
+                      {wordCount >= MAX_WORDS
+                        ? '⚠ Word limit reached'
+                        : wordCount >= WARN_WORDS
+                        ? '⚠ Keep it concise'
+                        : 'Keep your answer short and precise'}
+                    </span>
+                    <span>{wordCount} / {MAX_WORDS} words</span>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
       </div>
