@@ -54,6 +54,7 @@ async def process_document(
                 embeddings=embeddings,
                 file_hash=file_hash,
                 document_id=document_id,
+                start_index=i,
             )
             total_indexed += len(batch_texts)
 
