@@ -296,11 +296,11 @@ export default function ExamMode() {
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center gap-4">
           <button
             onClick={handlePrevious}
             disabled={currentQuestion === 0}
-            className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-colors ${
+            className={`flex-shrink-0 flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-colors ${
               currentQuestion === 0
                 ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -310,29 +310,31 @@ export default function ExamMode() {
             Previous
           </button>
 
-          <div className="flex gap-2">
-            {questions.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => setCurrentQuestion(idx)}
-                className={`w-8 h-8 rounded-lg font-semibold text-sm transition-all ${
-                  idx === currentQuestion
-                    ? 'bg-emerald-600 text-white'
-                    : answers[questions[idx].id] !== undefined
-                    ? 'bg-emerald-100 text-emerald-700'
-                    : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                }`}
-              >
-                {idx + 1}
-              </button>
-            ))}
+          <div className="flex-1 min-w-0 overflow-x-auto scrollbar-thin pb-4">
+            <div className="flex gap-2 w-max mx-auto">
+              {questions.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setCurrentQuestion(idx)}
+                  className={`w-8 h-8 rounded-lg font-semibold text-sm transition-all flex-shrink-0 ${
+                    idx === currentQuestion
+                      ? 'bg-emerald-600 text-white'
+                      : answers[questions[idx].id] !== undefined
+                      ? 'bg-emerald-100 text-emerald-700'
+                      : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                  }`}
+                >
+                  {idx + 1}
+                </button>
+              ))}
+            </div>
           </div>
 
           {isLastQuestion ? (
             <button
               onClick={handleSubmit}
               disabled={isSubmitting}
-              className="flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-shrink-0 flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? 'Submitting...' : 'Submit'}
               <ChevronRight className="w-5 h-5" />
@@ -340,7 +342,7 @@ export default function ExamMode() {
           ) : (
             <button
               onClick={handleNext}
-              className="flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold transition-colors"
+              className="flex-shrink-0 flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold transition-colors"
             >
               Next
               <ChevronRight className="w-5 h-5" />
