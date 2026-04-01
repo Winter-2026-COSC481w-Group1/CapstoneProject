@@ -120,7 +120,7 @@ export default function Library() {
       const response = await get(`api/v1/documents/${documentId}/preview`, session.access_token);
       
       // the url is our signed url from Supabase
-      // opening in a new tab allows the brower's native pdf viewer to take over
+      // opening in a new tab allows the browser's native pdf viewer to take over
       window.open(response.url, '_blank', 'noopener,noreferrer');
       } catch (err) {
         console.error('error previewing document', err);
