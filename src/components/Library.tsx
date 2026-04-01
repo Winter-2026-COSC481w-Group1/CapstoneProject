@@ -11,6 +11,8 @@ const VITE_API_URL = import.meta.env.VITE_API_URL;
 export default function Library() {
   const { libraryFiles, setLibraryFiles, fetchLibraryFiles } = useApp();
   const [isDragging, setIsDragging] = useState(false);
+  const [previewingDocumentId, setPreviewingDocumentId] = useState<string | null>(null);
+  const [deletingDocumentId, setDeletingDocumentId] = useState<string | null>(null);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -85,6 +87,7 @@ export default function Library() {
 
   // Move document to trash
   const handleDelete = async (id: string) => {
+    setDeletingDocumentId(id);
     try {
       const { data: { session } } = await supabaseClient.auth.getSession();
       if (!session?.access_token) {
@@ -98,16 +101,20 @@ export default function Library() {
         },
       });
       if (res.ok) {
-        setLibraryFiles(libraryFiles.filter(f => f.id !== id));
+        setLibraryFiles(prev => prev.filter(f => f.id !== id));
       } else {
         console.error('failed moving document to trash', res.status);
       }
     } catch (err) {
       console.error('error moving document to trash', err);
+    } finally {
+      setDeletingDocumentId(null);
     }
   };
 
   const handlePreview = async (documentId: string) => {
+      setPreviewingDocumentId(documentId);
+      try {
       const { data: {session} } = await supabaseClient.auth.getSession();
       if (!session?.access_token) return null;
       const response = await get(`api/v1/documents/${documentId}/preview`, session.access_token);
@@ -115,6 +122,11 @@ export default function Library() {
       // the url is our signed url from Supabase
       // opening in a new tab allows the brower's native pdf viewer to take over
       window.open(response.url, '_blank', 'noopener,noreferrer');
+      } catch (err) {
+        console.error('error previewing document', err);
+      } finally {
+        setPreviewingDocumentId(null);
+      }
       }
 
   return (
@@ -206,6 +218,12 @@ export default function Library() {
                 </div>
 
                 <div className="flex items-center gap-3">
+                  {(() => {
+                    const isPreviewLoading = previewingDocumentId === file.id;
+                    const isDeleteLoading = deletingDocumentId === file.id;
+
+                    return (
+                      <>
                   {file.status === 'ready' ? (
                     <div className="flex items-center gap-2 bg-emerald-100 px-4 py-2 rounded-full">
                       <CheckCircle className="w-4 h-4 text-emerald-600" />
@@ -235,19 +253,36 @@ export default function Library() {
 
                   <button
                     onClick={() => handlePreview(file.id)}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                    disabled={isPreviewLoading || isDeleteLoading}
+                    className={`p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+                      isPreviewLoading ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                    }`}
                     title="Preview"
                   >
-                    <Eye className="w-5 h-5 text-gray-600" />
+                    {isPreviewLoading ? (
+                      <Loader2 className="w-5 h-5 text-gray-600 animate-spin" />
+                    ) : (
+                      <Eye className="w-5 h-5 text-gray-600" />
+                    )}
                   </button>
 
                   <button
                     onClick={() => handleDelete(file.id)}
-                    className="p-2 hover:bg-red-100 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                    disabled={isDeleteLoading || isPreviewLoading}
+                    className={`p-2 hover:bg-red-100 rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+                      isDeleteLoading ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                    }`}
                     title="Move to Trash"
                   >
-                    <Trash2 className="w-5 h-5 text-red-600" />
+                    {isDeleteLoading ? (
+                      <Loader2 className="w-5 h-5 text-red-600 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-5 h-5 text-red-600" />
+                    )}
                   </button>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
