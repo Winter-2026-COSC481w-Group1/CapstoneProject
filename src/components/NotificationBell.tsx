@@ -22,6 +22,7 @@ export default function NotificationBell() {
   const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
   const [notificationError, setNotificationError] = useState<string | null>(null);
   const [markingNotificationId, setMarkingNotificationId] = useState<string | null>(null);
+  const [isMarkingAllRead, setIsMarkingAllRead] = useState(false);
   const notificationsMenuRef = useRef<HTMLDivElement | null>(null);
 
   const unreadCount = notifications.length;
@@ -91,6 +92,27 @@ export default function NotificationBell() {
     }
   };
 
+  const markAllNotificationsAsRead = async () => {
+    if (notifications.length === 0) return;
+
+    setIsMarkingAllRead(true);
+    setNotificationError(null);
+    try {
+      const {
+        data: { session },
+      } = await supabaseClient.auth.getSession();
+      if (!session?.access_token) return;
+
+      await patch('api/v1/notifications/read-all', {}, session.access_token);
+      setNotifications([]);
+    } catch (error) {
+      console.error('error marking all notifications as read', error);
+      setNotificationError('Failed to mark all notifications as read.');
+    } finally {
+      setIsMarkingAllRead(false);
+    }
+  };
+
   const toggleNotificationsMenu = () => {
     const nextShow = !showNotificationsMenu;
     setShowNotificationsMenu(nextShow);
@@ -147,7 +169,16 @@ export default function NotificationBell() {
       {showNotificationsMenu && (
         <div className="absolute top-full right-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-200 py-2 w-[320px] z-10">
           <div className="px-4 pb-2 mb-2 border-b border-gray-100">
-            <p className="text-sm font-semibold text-gray-800">Unread notifications</p>
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm font-semibold text-gray-800">Unread notifications</p>
+              <button
+                className="text-xs font-medium text-emerald-700 hover:text-emerald-800 disabled:opacity-60"
+                onClick={markAllNotificationsAsRead}
+                disabled={isMarkingAllRead || notifications.length === 0}
+              >
+                {isMarkingAllRead ? 'Updating...' : 'Mark all as read'}
+              </button>
+            </div>
             <p className="text-xs text-gray-500">Showing 10 most recent unread items</p>
           </div>
 
