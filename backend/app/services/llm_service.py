@@ -10,7 +10,7 @@ class LLMService:
         genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
         self.model = genai.GenerativeModel(
-            model_name="gemini-2.5-flash",
+            model_name="gemini-3.1-pro",
             # the model is pre-loaded to use json and our assessment scheme
             generation_config={
                 "response_mime_type": "application/json",
