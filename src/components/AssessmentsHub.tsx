@@ -12,6 +12,7 @@ export default function AssessmentsHub() {
   const [showOptionsMenu, setShowOptionsMenu] = useState<string | null>(null);
   const [assessmentsFilter, setAssessmentsFilter] = useState<string | null>(null);
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
+  const [deletingAssessmentId, setDeletingAssessmentId] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const filteredAssessments = assessments.filter((assessment) => {
@@ -65,6 +66,7 @@ export default function AssessmentsHub() {
 
   // Move assessment to trash
   const handleDelete = async (id: string) => {
+    setDeletingAssessmentId(id);
     try {
       const { data: { session } } = await supabaseClient.auth.getSession();
       if (!session?.access_token) {
@@ -78,12 +80,17 @@ export default function AssessmentsHub() {
         },
       });
       if (res.ok) {
-        setAssessments(assessments.filter(f => f.id !== id));
+        setAssessments((prevAssessments) =>
+          prevAssessments.filter((assessment) => assessment.id !== id)
+        );
+        setShowOptionsMenu(null);
       } else {
         console.error('failed moving assessment to trash', res.status);
       }
     } catch (err) {
       console.error('error moving assessment to trash', err);
+    } finally {
+      setDeletingAssessmentId(null);
     }
   };
 
@@ -171,9 +178,10 @@ export default function AssessmentsHub() {
                       </button>
                   <button
                     onClick={() => handleDelete(assessment.id)}
-                    className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-sm font-medium text-gray-700"
+                    disabled={deletingAssessmentId === assessment.id}
+                    className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-sm font-medium text-gray-700 disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    Delete
+                    {deletingAssessmentId === assessment.id ? 'Deleting...' : 'Delete'}
                     </button>
                   </div>)}
                 </div>

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Trash2, FileText, BookOpen, RotateCcw, X, AlertTriangle } from 'lucide-react';
+import { Trash2, FileText, BookOpen, RotateCcw, X, AlertTriangle, Loader2 } from 'lucide-react';
 import { useApp } from '../AppContext';
 import { supabaseClient } from '../supabase';
-import { del, post } from '../api';
+import { post } from '../api';
 
 const VITE_API_URL = import.meta.env.VITE_API_URL;
 
@@ -16,7 +16,7 @@ export default function Trash() {
   } = useApp();
 
   const [loading, setLoading] = useState(true);
-  const [actionId, setActionId] = useState<string | null>(null);
+  const [actionKey, setActionKey] = useState<string | null>(null);
 
   useEffect(() => {
     fetchTrash().finally(() => setLoading(false));
@@ -31,14 +31,14 @@ export default function Trash() {
   const handleRestoreDocument = async (id: string) => {
     const token = await getToken();
     if (!token) return;
-    setActionId(id);
+    setActionKey(`restore-document-${id}`);
     try {
       await post(`api/v1/trash/documents/${id}/restore`, {}, token);
       await Promise.all([fetchTrash(), fetchLibraryFiles()]);
     } catch (err) {
       console.error('Error restoring document:', err);
     } finally {
-      setActionId(null);
+      setActionKey(null);
     }
   };
 
@@ -46,7 +46,7 @@ export default function Trash() {
     if (!confirm('Permanently delete this file? This cannot be undone.')) return;
     const token = await getToken();
     if (!token) return;
-    setActionId(id);
+    setActionKey(`delete-document-${id}`);
     try {
       const res = await fetch(`${VITE_API_URL}/api/v1/trash/documents/${id}`, {
         method: 'DELETE',
@@ -57,7 +57,7 @@ export default function Trash() {
     } catch (err) {
       console.error('Error permanently deleting document:', err);
     } finally {
-      setActionId(null);
+      setActionKey(null);
     }
   };
 
@@ -65,14 +65,14 @@ export default function Trash() {
   const handleRestoreAssessment = async (id: string) => {
     const token = await getToken();
     if (!token) return;
-    setActionId(id);
+    setActionKey(`restore-assessment-${id}`);
     try {
       await post(`api/v1/trash/assessments/${id}/restore`, {}, token);
       await Promise.all([fetchTrash(), fetchAssessments()]);
     } catch (err) {
       console.error('Error restoring assessment:', err);
     } finally {
-      setActionId(null);
+      setActionKey(null);
     }
   };
 
@@ -80,7 +80,7 @@ export default function Trash() {
     if (!confirm('Permanently delete this assessment? This cannot be undone.')) return;
     const token = await getToken();
     if (!token) return;
-    setActionId(id);
+    setActionKey(`delete-assessment-${id}`);
     try {
       const res = await fetch(`${VITE_API_URL}/api/v1/trash/assessments/${id}`, {
         method: 'DELETE',
@@ -91,7 +91,7 @@ export default function Trash() {
     } catch (err) {
       console.error('Error permanently deleting assessment:', err);
     } finally {
-      setActionId(null);
+      setActionKey(null);
     }
   };
 
@@ -138,6 +138,13 @@ export default function Trash() {
                       key={doc.id}
                       className="bg-white rounded-2xl p-5 shadow border border-gray-200 flex items-center gap-4"
                     >
+                      {(() => {
+                        const isRestoring = actionKey === `restore-document-${doc.id}`;
+                        const isDeleting = actionKey === `delete-document-${doc.id}`;
+                        const isWorking = isRestoring || isDeleting;
+
+                        return (
+                          <>
                       <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0">
                         <FileText className="w-6 h-6 text-red-500" />
                       </div>
@@ -165,21 +172,32 @@ export default function Trash() {
 
                       <button
                         onClick={() => handleRestoreDocument(doc.id)}
-                        disabled={actionId === doc.id}
-                        className="p-2 hover:bg-emerald-100 rounded-lg transition-colors"
+                        disabled={isWorking}
+                        className="p-2 hover:bg-emerald-100 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                         title="Restore"
                       >
-                        <RotateCcw className="w-5 h-5 text-emerald-600" />
+                        {isRestoring ? (
+                          <Loader2 className="w-5 h-5 text-emerald-600 animate-spin" />
+                        ) : (
+                          <RotateCcw className="w-5 h-5 text-emerald-600" />
+                        )}
                       </button>
 
                       <button
                         onClick={() => handlePermanentDeleteDocument(doc.id)}
-                        disabled={actionId === doc.id}
-                        className="p-2 hover:bg-red-100 rounded-lg transition-colors"
+                        disabled={isWorking}
+                        className="p-2 hover:bg-red-100 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                         title="Delete forever"
                       >
-                        <X className="w-5 h-5 text-red-600" />
+                        {isDeleting ? (
+                          <Loader2 className="w-5 h-5 text-red-600 animate-spin" />
+                        ) : (
+                          <X className="w-5 h-5 text-red-600" />
+                        )}
                       </button>
+                          </>
+                        );
+                      })()}
                     </div>
                   ))}
                 </div>
@@ -199,6 +217,13 @@ export default function Trash() {
                       key={assessment.id}
                       className="bg-white rounded-2xl p-5 shadow border border-gray-200 flex items-center gap-4"
                     >
+                      {(() => {
+                        const isRestoring = actionKey === `restore-assessment-${assessment.id}`;
+                        const isDeleting = actionKey === `delete-assessment-${assessment.id}`;
+                        const isWorking = isRestoring || isDeleting;
+
+                        return (
+                          <>
                       <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
                         <BookOpen className="w-6 h-6 text-purple-500" />
                       </div>
@@ -225,21 +250,32 @@ export default function Trash() {
 
                       <button
                         onClick={() => handleRestoreAssessment(assessment.id)}
-                        disabled={actionId === assessment.id}
-                        className="p-2 hover:bg-emerald-100 rounded-lg transition-colors"
+                        disabled={isWorking}
+                        className="p-2 hover:bg-emerald-100 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                         title="Restore"
                       >
-                        <RotateCcw className="w-5 h-5 text-emerald-600" />
+                        {isRestoring ? (
+                          <Loader2 className="w-5 h-5 text-emerald-600 animate-spin" />
+                        ) : (
+                          <RotateCcw className="w-5 h-5 text-emerald-600" />
+                        )}
                       </button>
 
                       <button
                         onClick={() => handlePermanentDeleteAssessment(assessment.id)}
-                        disabled={actionId === assessment.id}
-                        className="p-2 hover:bg-red-100 rounded-lg transition-colors"
+                        disabled={isWorking}
+                        className="p-2 hover:bg-red-100 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                         title="Delete forever"
                       >
-                        <X className="w-5 h-5 text-red-600" />
+                        {isDeleting ? (
+                          <Loader2 className="w-5 h-5 text-red-600 animate-spin" />
+                        ) : (
+                          <X className="w-5 h-5 text-red-600" />
+                        )}
                       </button>
+                          </>
+                        );
+                      })()}
                     </div>
                   ))}
                 </div>
