@@ -1,11 +1,12 @@
 import CreationStudio from "./CreationStudio";
 import EditingStudio from "./EditingStudio";
 import { useState } from "react";
-import { Plus, FileText, Pencil, ArrowLeft } from "lucide-react";
+import { Plus, FileText, Pencil, ArrowLeft, Loader2 } from "lucide-react";
 import { useApp } from "../AppContext";
 
 export default function ExamStudio() {
   const [studioProcess, setStudioProcess] = useState<"Creating" | "Editing" | "Default">("Default");
+  const [loadingAssessmentId, setLoadingAssessmentId] = useState<string | null>(null);
   
   const { 
     setCurrentAssessment,
@@ -81,16 +82,26 @@ export default function ExamStudio() {
                     <div className="flex gap-2">
                       <button
                         onClick={async () => {
-                          const updatedAssessment = await fetchAssessmentDetails(assessment.id);
-                          if (updatedAssessment) {
-                            setCurrentAssessment(updatedAssessment);
-                            setStudioProcess("Editing");
+                          setLoadingAssessmentId(assessment.id);
+                          try {
+                            const updatedAssessment = await fetchAssessmentDetails(assessment.id);
+                            if (updatedAssessment) {
+                              setCurrentAssessment(updatedAssessment);
+                              setStudioProcess("Editing");
+                            }
+                          } finally {
+                            setLoadingAssessmentId(null);
                           }
                         }}
-                        className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-semibold transition-colors"
+                        disabled={loadingAssessmentId !== null}
+                        className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                       >
-                        <Pencil className="w-4 h-4" />
-                        Edit
+                        {loadingAssessmentId === assessment.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Pencil className="w-4 h-4" />
+                        )}
+                        {loadingAssessmentId === assessment.id ? 'Loading...' : 'Edit'}
                       </button>
                     </div>
                   </div>
