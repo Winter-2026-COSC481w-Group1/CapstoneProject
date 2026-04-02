@@ -42,16 +42,26 @@ export default function ExamStudio() {
       
         {studioProcess === "Default" && <div>
           <div className="sticky top-28 space-y-6">
-            <div className="bg-white rounded-3xl p-6 shadow-lg border border-gray-200">
-              <h3 className="text-xl font-bold text-gray-900 mb-6">
+            <div className="bg-white rounded-3xl p-6 shadow-lg border border-gray-200 space-x-3 space-x-reverse space-y-3">
+              <h3 className="text-xl font-bold text-gray-900 mb-3">
                 Create a new assessment
               </h3>
               <button
                 onClick={() => setStudioProcess('Creating')}
-                className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors"
+                className="inline-flex w-full max-w-96 items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors"
               >
                 <Plus className="w-4 h-4" />
-                Get Started
+                Generate From Files
+              </button>
+              <button
+                onClick={() => {
+                  setCurrentAssessment(null);
+                  setStudioProcess('Editing');
+                }}
+                className="inline-flex w-full max-w-96 items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                Create From Scratch
               </button>
             </div>
           

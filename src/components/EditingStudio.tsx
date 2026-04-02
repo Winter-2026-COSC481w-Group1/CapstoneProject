@@ -1,13 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CheckCircle, Circle, FileText, X, Plus } from "lucide-react";
 import { useApp } from "../AppContext";
 import { Assessment } from "../types";
-import { useNavigate } from 'react-router-dom';
 import { put } from '../api';
 import { supabaseClient } from '../supabase';
 
 export default function EditingStudio() {
-  const navigate = useNavigate();
   const {
     libraryFiles,
     assessments,
@@ -18,11 +16,6 @@ export default function EditingStudio() {
 
   const [isEdited, setIsEdited] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  
-  if (!currentAssessment) {
-    navigate('/dashboard/assessments');
-    return null;
-  }
 
   const handleDifficultyChange = function (difficulty: string) {
     // validate
@@ -43,7 +36,6 @@ export default function EditingStudio() {
   const handleSaving = async function () {
     if (!currentAssessment) return;
 
-    setIsSaving(true);
     try {
       const { data: { session } } = await supabaseClient.auth.getSession();
       if (!session?.access_token) {
@@ -90,6 +82,36 @@ export default function EditingStudio() {
       setIsSaving(false);
     }
   };
+  
+  useEffect(() => {
+    if (!currentAssessment) {
+      // create a blank assessment and save it automatically
+      const blankAssessment: Assessment = {
+        id: crypto.randomUUID(), // equivalent to the python method (uuid4) used
+        title: "Empty Assessment",
+        topic: "",
+        createdAt: new Date(),
+        status: 'pending',
+        sourceFiles: [],
+        questionCount: 0,
+        difficulty: 'none',
+        numAttempts: 0,
+        numCorrect: 0,
+        questions: [],
+      };
+      setCurrentAssessment(structuredClone(blankAssessment));
+      setAssessments([...assessments, blankAssessment]);
+      setIsSaving(true);
+    }
+  });
+  
+  useEffect(() => {
+    if (isSaving) handleSaving();
+  }, [isSaving]);
+  
+  if (!currentAssessment) {
+    return null;
+  }
 
   const handleCorrectOptionChange = function (
     questionNum: number,
@@ -213,7 +235,7 @@ export default function EditingStudio() {
             </div>
 
             <button
-              onClick={handleSaving}
+              onClick={() => { setIsSaving(true) }}
               disabled={!isEdited || isSaving}
               className={`w-full py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2 ${
                 isEdited && !isSaving
