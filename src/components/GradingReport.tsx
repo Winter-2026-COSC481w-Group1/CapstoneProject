@@ -1,4 +1,5 @@
-import { CheckCircle, XCircle, Download, ArrowLeft, FileText } from 'lucide-react';
+import { useEffect } from 'react';
+import { CheckCircle, XCircle, Download, ArrowLeft, FileText, Loader2 } from 'lucide-react';
 import { useApp } from '../AppContext';
 import { useNavigate } from 'react-router-dom';
 import { Question } from '../types';
@@ -8,15 +9,30 @@ export default function GradingReport() {
   const { currentAssessment, assessments } = useApp();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    if (!currentAssessment) {
+      navigate('/dashboard/assessments');
+    }
+  }, [currentAssessment, navigate]);
+
   if (!currentAssessment) {
-    navigate('/dashboard/assessments');
     return null;
   }
 
   const assessment = assessments.find(a => a.id === currentAssessment.id) || currentAssessment;
-  const questions = assessment.questions;
+  const questions = assessment.questions || [];
   const attemptData = assessment.attempt;
   const attemptAnswers = Array.isArray(attemptData?.answers) ? attemptData.answers : [];
+
+  if (!assessment.questions) {
+    return (
+      <div className="min-h-screen bg-stone-50 flex flex-col items-center justify-center p-4">
+        <Loader2 className="w-12 h-12 text-emerald-600 animate-spin mb-4" />
+        <h2 className="text-xl font-bold text-gray-900">Loading your results...</h2>
+        <p className="text-gray-600">This should only take a moment.</p>
+      </div>
+    );
+  }
 
   const normalizeAttemptEntry = (entry: unknown): { value: number | boolean | string | null; isCorrect: boolean | null; similarity: number | null } => {
     if (entry === undefined || entry === null) return { value: null, isCorrect: null, similarity: null };
