@@ -348,7 +348,7 @@ class AssessmentService:
                 "question_text": q_data.question,
                 "question_type": q_type_map.get(q_data.type, "MCQ"),
                 "explanation": f"Page: {q_data.page_number} Text: {q_data.source_text}",  # Using source_text as explanation/context
-                "document_id": q_data.document_id,
+                "document_id": q_data.document_id or None, # There may be no source
             }
 
             q_result = (
@@ -680,7 +680,7 @@ class AssessmentService:
             "query": assessment_data.topic,
             "status": "ready",
         }
-
+        
         update_result = (
             self.db_client.table("assessments")
             .update(metadata_update)
@@ -688,21 +688,32 @@ class AssessmentService:
             .eq("id", assessment_id)
             .execute()
         )
-
+        
+        # Check if assessment exists in database
         if not update_result.data:
-            raise HTTPException(status_code=404, detail="Assessment not found")
-
-        # delete existing questions
-        delete_result = (
+          # add in the uuid and user_id the client presented
+          metadata_update.update(
+              {
+                  "id": assessment_id,
+                  "user_id": user_id
+              }
+          )
+          
+          # add the blank assessment to the table
+          result = self.db_client.table("assessments").insert(metadata_update).execute()
+  
+          if not result.data:
+              raise ValueError("Failed to initialize assessment record in Supabase.")
+          
+        # delete existing questions (if any)
+        _ = (
             self.db_client.table("questions")
             .delete()
             .eq("assessment_id", assessment_id)
             .execute()
         )
 
-        # if not delete_result.data:
-        # raise HTTPException(status_code=404, detail="No questions found")
-
+        # write questions (if any)
         await self._save_assessment_to_db(assessment_id, assessment_data)
 
         return {"message": "Assessment updated successfully"}
