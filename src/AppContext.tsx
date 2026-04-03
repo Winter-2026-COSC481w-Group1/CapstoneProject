@@ -144,7 +144,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
         numCorrect: ass.numCorrect,
       })).sort((a: Assessment, b: Assessment) => b.createdAt.getTime() - a.createdAt.getTime());
 
-      setAssessments(assessments);
+      setAssessments(prev => {
+        return assessments.map(newAss => {
+          const existing = prev.find(a => a.id === newAss.id);
+          if (existing && (existing.questions || existing.attempt)) {
+            return {
+              ...newAss,
+              questions: existing.questions || newAss.questions,
+              attempt: existing.attempt || newAss.attempt,
+              // Use detailed versions if available
+              numAttempts: existing.attempt?.numAttempts ?? newAss.numAttempts,
+              numCorrect: existing.attempt?.numCorrect ?? newAss.numCorrect,
+            };
+          }
+          return newAss;
+        });
+      });
 
       // Check if any assessments are either pending/processing
       if (assessments.some(ass => ass.status === 'pending' || ass.status === 'processing')) {
