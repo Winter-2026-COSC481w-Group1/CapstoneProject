@@ -1,8 +1,26 @@
 import { BookOpen, Search, Zap, ArrowRight } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabaseClient } from '../supabase';
 
 export default function LandingPage() {
   const navigate = useNavigate();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [startText, setStartText] = useState("");
+  
+  useEffect(() => {
+    async function getUser() {
+      const { data: { user } } = await supabaseClient.auth.getUser();
+      if (user) {
+        setIsLoggedIn(true);
+        setStartText("Go to Dashboard");
+      } else {
+        setStartText("Login or Sign up");
+      }
+    }
+    
+    getUser();
+  });
   
   return (
     <div className="min-h-screen bg-stone-50">
@@ -25,11 +43,14 @@ export default function LandingPage() {
 
             <button
               onClick={() => {
-                navigate('/auth');
+                if (isLoggedIn)
+                  navigate('/dashboard/home');
+                else
+                  navigate('/auth');
               }}
               className="group inline-flex items-center gap-3 bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-4 rounded-full text-lg font-semibold transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
             >
-              Login or Sign up
+              <Typewriter text={startText} />
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
 
@@ -135,4 +156,27 @@ export default function LandingPage() {
       </div>
     </div>
   );
+}
+
+
+function Typewriter({ text = "", speed = 50 }) {
+  const [displayedText, setDisplayedText] = useState("");
+
+  useEffect(() => {
+    let i = 0;
+    setDisplayedText(""); // reset when text changes
+
+    const interval = setInterval(() => {
+      i++;
+      setDisplayedText(text.slice(0, i));
+
+      if (i >= text.length) {
+        clearInterval(interval);
+      }
+    }, speed);
+
+    return () => clearInterval(interval);
+  }, [text, speed]);
+
+  return <span>{displayedText}</span>;
 }
