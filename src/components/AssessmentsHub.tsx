@@ -166,7 +166,7 @@ export default function AssessmentsHub() {
                   disabled={deletingAssessmentId === assessment.id}
                   className="px-2 py-2 hover:text-red-700 rounded-md text-sm font-medium text-gray-700 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                <TrashIcon className="w-4" />
+                <TrashIcon className="w-5" />
               </button>
                 </div>
               </div>
