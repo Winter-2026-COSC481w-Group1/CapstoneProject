@@ -9,7 +9,6 @@ const VITE_API_URL = import.meta.env.VITE_API_URL;
 export default function AssessmentsHub() {
   const { assessments, setAssessments, setCurrentAssessment, fetchAssessmentDetails } = useApp();
   const [showDownloadMenu, setShowDownloadMenu] = useState<string | null>(null);
-  const [showOptionsMenu, setShowOptionsMenu] = useState<string | null>(null);
   const [assessmentsFilter, setAssessmentsFilter] = useState<string | null>(null);
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
   const [deletingAssessmentId, setDeletingAssessmentId] = useState<string | null>(null);
