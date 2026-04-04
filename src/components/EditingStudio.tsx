@@ -68,11 +68,17 @@ export default function EditingStudio() {
       // Update local state
       const updatedAssessment = structuredClone(currentAssessment);
       setCurrentAssessment(updatedAssessment);
-
-      const updatedAssessments = assessments.map((test) =>
-        test.id === updatedAssessment.id ? { ...updatedAssessment } : test,
-      );
-      setAssessments(updatedAssessments);
+      
+      // if this is a newly created assessment, make sure to add it to the assessments list
+      if (!assessments.filter(assessment => assessment.id === currentAssessment.id))
+        setAssessments([...assessments, updatedAssessment]);
+      else {
+        // otherwise update the assessment that is already in the assessments list
+        const updatedAssessments = assessments.map((test) =>
+          test.id === updatedAssessment.id ? { ...updatedAssessment } : test,
+        );
+        setAssessments(updatedAssessments);
+      }
 
       setIsEdited(false);
       console.log("Assessment updated successfully");
@@ -99,15 +105,10 @@ export default function EditingStudio() {
         numCorrect: 0,
         questions: [],
       };
-      setCurrentAssessment(structuredClone(blankAssessment));
-      setAssessments([...assessments, blankAssessment]);
-      setIsSaving(true);
+      setCurrentAssessment(blankAssessment);
+      setIsEdited(true);
     }
   });
-  
-  useEffect(() => {
-    if (isSaving) handleSaving();
-  }, [isSaving]);
   
   if (!currentAssessment) {
     return null;
@@ -235,7 +236,7 @@ export default function EditingStudio() {
             </div>
 
             <button
-              onClick={() => { setIsSaving(true) }}
+              onClick={() => { handleSaving(); }}
               disabled={!isEdited || isSaving}
               className={`w-full py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2 ${
                 isEdited && !isSaving
