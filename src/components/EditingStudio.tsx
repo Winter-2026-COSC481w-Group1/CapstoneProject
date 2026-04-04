@@ -70,7 +70,7 @@ export default function EditingStudio() {
       setCurrentAssessment(updatedAssessment);
       
       // if this is a newly created assessment, make sure to add it to the assessments list
-      if (!assessments.filter(assessment => assessment.id === currentAssessment.id))
+      if (assessments.filter(assessment => assessment.id === currentAssessment.id).length === 0)
         setAssessments([...assessments, updatedAssessment]);
       else {
         // otherwise update the assessment that is already in the assessments list
