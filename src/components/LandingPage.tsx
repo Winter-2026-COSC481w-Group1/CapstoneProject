@@ -146,7 +146,14 @@ export default function LandingPage() {
             Join thousands of educators creating better exams with AI.
           </p>
           <button
-            onClick={() => navigate('/auth')}
+            onClick={
+              () => {
+                if (isLoggedIn)
+                  navigate('/dashboard/home');
+                else
+                  navigate('/auth');
+              }
+            }
             className="inline-flex items-center gap-3 bg-white text-emerald-600 px-8 py-4 rounded-full text-lg font-semibold hover:bg-emerald-50 transition-colors shadow-lg"
           >
             Get Started Free
