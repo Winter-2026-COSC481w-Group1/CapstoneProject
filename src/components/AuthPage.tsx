@@ -78,21 +78,21 @@ export default function AuthPage() {
         </div>
       </div>
 
-      <div className="flex-1 flex items-center justify-center bg-white p-8">
+      <div className="flex-1 flex items-center justify-center bg-white p-8 dark:bg-slate-950">
         <div className="w-full max-w-md">
           <button
             onClick={() => navigate('/')}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-8 transition-colors"
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-8 transition-colors dark:text-slate-300 dark:hover:text-slate-100"
           >
             <ArrowLeft className="w-5 h-5" />
             Back to home
           </button>
 
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2 dark:text-slate-100">
               {isSignUp ? 'Create your account' : 'Welcome back'}
             </h1>
-            <p className="text-gray-600">
+            <p className="text-gray-600 dark:text-slate-300">
               {isSignUp
                 ? 'Start generating intelligent assessments today'
                 : 'Sign in to continue to Examable'}
@@ -101,7 +101,7 @@ export default function AuthPage() {
 
           <button
             onClick={handleGoogleSignIn}
-            className="w-full flex items-center justify-center gap-3 border-2 border-gray-200 rounded-xl px-6 py-3 font-medium text-gray-700 hover:bg-gray-50 transition-colors mb-6"
+            className="w-full flex items-center justify-center gap-3 border-2 border-gray-200 rounded-xl px-6 py-3 font-medium text-gray-700 hover:bg-gray-50 transition-colors mb-6 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path
@@ -126,16 +126,16 @@ export default function AuthPage() {
 
           <div className="relative mb-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200"></div>
+              <div className="w-full border-t border-gray-200 dark:border-slate-700"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-white text-gray-500">Or continue with email</span>
+              <span className="px-4 bg-white text-gray-500 dark:bg-slate-950 dark:text-slate-400">Or continue with email</span>
             </div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {isSignUp && <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-slate-300">
                 Full name
               </label>
               <div className="relative">
@@ -145,7 +145,7 @@ export default function AuthPage() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="John Doe"
-                  className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder:text-slate-500"
                   required
                 />
               </div>
@@ -153,7 +153,7 @@ export default function AuthPage() {
             }
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-slate-300">
                 Email address
               </label>
               <div className="relative">
@@ -163,14 +163,14 @@ export default function AuthPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@university.edu"
-                  className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder:text-slate-500"
                   required
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-slate-300">
                 Password
               </label>
               <div className="relative">
@@ -180,14 +180,14 @@ export default function AuthPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder:text-slate-500"
                   required
                 />
               </div>
             </div>
             
-            {err && <div className="bg-red-50 border-2 border-red-200 rounded-3xl p-2 text-center">
-              <p className="font-bold text-red-900">{err}</p>
+            {err && <div className="bg-red-50 border-2 border-red-200 rounded-3xl p-2 text-center dark:bg-red-500/10 dark:border-red-500/30">
+              <p className="font-bold text-red-900 dark:text-red-300">{err}</p>
             </div>
             }
 
@@ -195,7 +195,7 @@ export default function AuthPage() {
               <div className="flex items-center justify-end">
                 <button
                   type="button"
-                  className="text-sm text-emerald-600 hover:text-emerald-700 font-medium"
+                  className="text-sm text-emerald-600 hover:text-emerald-700 font-medium dark:text-emerald-400 dark:hover:text-emerald-300"
                   onClick={handleForgottenPassword}
                 >
                   Forgot password?
@@ -205,7 +205,7 @@ export default function AuthPage() {
 
             <button
               type="submit"
-              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-semibold transition-colors"
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-semibold transition-colors dark:bg-emerald-500 dark:hover:bg-emerald-400"
             >
               {isSignUp ? 'Create account' : 'Sign in'}
             </button>
@@ -217,7 +217,7 @@ export default function AuthPage() {
                 setIsSignUp(!isSignUp);
                 setErr(null);
               }}
-              className="text-gray-600 hover:text-gray-900"
+              className="text-gray-600 hover:text-gray-900 dark:text-slate-300 dark:hover:text-slate-100"
             >
               {isSignUp ? (
                 <>
