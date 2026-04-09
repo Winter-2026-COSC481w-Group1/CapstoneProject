@@ -131,11 +131,11 @@ export default function EditingStudio() {
     <div className="grid lg:grid-cols-3 gap-8">
       <div className="lg:col-span-1">
         <div className="sticky top-28">
-          <div className="bg-white rounded-3xl p-6 shadow-lg border border-gray-200">
-            <h3 className="text-xl font-bold text-gray-900 mb-6">
+          <div className="bg-white rounded-3xl p-6 shadow-lg border border-gray-200 dark:bg-slate-900 dark:border-slate-700 dark:shadow-black/20">
+            <h3 className="text-xl font-bold text-gray-900 mb-6 dark:text-slate-100">
               <textarea
                 defaultValue={currentAssessment.title}
-                className="w-full"
+                className="w-full bg-transparent text-gray-900 dark:text-slate-100 placeholder:text-gray-400 dark:placeholder:text-slate-500"
                 onChange={(e) => {
                   currentAssessment.title = e.target.value;
                   setIsEdited(true);
@@ -144,8 +144,8 @@ export default function EditingStudio() {
             </h3>
 
             <div className="space-y-4 mb-6">
-              <div className="pb-4 border-b border-gray-200">
-                <div className="text-sm text-gray-600 mb-2">
+                <div className="pb-4 border-b border-gray-200 dark:border-slate-700">
+                <div className="text-sm text-gray-600 mb-2 dark:text-slate-300">
                   Source Files
                 </div>
                 {currentAssessment.sourceFiles.length === 0 ? (
@@ -163,7 +163,7 @@ export default function EditingStudio() {
                               {idx + 1}
                             </span>
                           </div>
-                          <div className="text-sm text-gray-900 flex-1 min-w-0">
+                          <div className="text-sm text-gray-900 flex-1 min-w-0 dark:text-slate-100">
                             <div className="truncate">{fileName}</div>
                           </div>
                         </div>
@@ -173,8 +173,8 @@ export default function EditingStudio() {
                 )}
               </div>
 
-              <div className="pb-4 border-b border-gray-200">
-                <div className="text-sm text-gray-600 mb-2">
+              <div className="pb-4 border-b border-gray-200 dark:border-slate-700">
+                <div className="text-sm text-gray-600 mb-2 dark:text-slate-300">
                   Question Types
                 </div>
                 {new Set(
@@ -194,7 +194,7 @@ export default function EditingStudio() {
                     ).map((type) => (
                       <span
                         key={type}
-                        className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-medium"
+                        className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-medium dark:bg-emerald-500/10 dark:text-emerald-300"
                       >
                         {type
                           .split("-")
@@ -208,31 +208,31 @@ export default function EditingStudio() {
                 )}
               </div>
 
-              <div className="pb-4 border-b border-gray-200">
-                <div className="text-sm text-gray-600 mb-2">
+              <div className="pb-4 border-b border-gray-200 dark:border-slate-700">
+                <div className="text-sm text-gray-600 mb-2 dark:text-slate-300">
                   Question Count
                 </div>
-                <div className="text-2xl font-bold text-gray-900">
+                <div className="text-2xl font-bold text-gray-900 dark:text-slate-100">
                   {currentAssessment.questionCount}
                 </div>
               </div>
 
               <div>
-                <div className="text-sm text-gray-600 mb-2">Difficulty</div>
+                <div className="text-sm text-gray-600 mb-2 dark:text-slate-300">Difficulty</div>
                 <select
                   defaultValue={
                     (currentAssessment.difficulty || 'none').charAt(0).toUpperCase() +
                     (currentAssessment.difficulty || 'none').slice(1)
                   }
-                  className="text-left bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-sm font-medium appearance-none"
+                  className="text-left bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-sm font-medium appearance-none dark:bg-amber-500/10 dark:text-amber-300"
                   onChange={(e) => {
                     handleDifficultyChange(e.target.value.toLowerCase());
                   }}
                 >
-                  <option className="bg-white">None</option>
-                  <option className="bg-white">Easy</option>
-                  <option className="bg-white">Medium</option>
-                  <option className="bg-white">Hard</option>
+                  <option className="bg-white dark:bg-slate-900">None</option>
+                  <option className="bg-white dark:bg-slate-900">Easy</option>
+                  <option className="bg-white dark:bg-slate-900">Medium</option>
+                  <option className="bg-white dark:bg-slate-900">Hard</option>
                 </select>
               </div>
             </div>
@@ -243,14 +243,14 @@ export default function EditingStudio() {
               className={`w-full py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2 ${
                 isEdited && !isSaving && currentAssessment.questions.length != 0
                   ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg hover:shadow-xl"
-                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                  : "bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-slate-800 dark:text-slate-500"
               }`}
             >
               {isSaving ? "Saving..." : "Save Edits"}
             </button>
 
             {!isEdited && (
-              <p className="text-sm text-gray-500 text-center mt-3">
+              <p className="text-sm text-gray-500 text-center mt-3 dark:text-slate-400">
                 Edit something to save
               </p>
             )}
@@ -264,12 +264,12 @@ export default function EditingStudio() {
           return (
             <div
               key={question.id}
-              className="bg-white rounded-3xl p-6 shadow-lg border-2 border-emerald-500"
+              className="bg-white rounded-3xl p-6 shadow-lg border-2 border-emerald-500 dark:bg-slate-900 dark:border-emerald-400 dark:shadow-black/20"
             >
               <div className="flex items-start gap-4 mb-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-sm w-full font-semibold text-gray-500">
+                    <span className="text-sm w-full font-semibold text-gray-500 dark:text-slate-400">
                       Question {idx + 1}
                     </span>
                     <select
@@ -282,7 +282,7 @@ export default function EditingStudio() {
                               ? "Short Answer"
                               : "Short Answer"
                       }
-                      className="text-sm font-semibold text-gray-600 rounded-lg appearance-none p-1 border-2 border-gray-200"
+                      className="text-sm font-semibold text-gray-600 rounded-lg appearance-none p-1 border-2 border-gray-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
                       onChange={(e) => {
                         const changedAssessment =
                           structuredClone(currentAssessment);
@@ -317,7 +317,7 @@ export default function EditingStudio() {
                       <option>True/False</option>
                       <option>Short Answer</option>
                     </select>
-                    <span className="text-sm font-semibold text-gray-500">
+                    <span className="text-sm font-semibold text-gray-500 dark:text-slate-400">
                       <X
                         className="w-6 h-6 hover:text-red-600 hover:scale-110 transition-transform duration-300"
                         onClick={() => {
@@ -339,9 +339,9 @@ export default function EditingStudio() {
                       />
                     </span>
                   </div>
-                  <h3 className="w-full text-lg font-bold text-gray-900 mb-4">
+                  <h3 className="w-full text-lg font-bold text-gray-900 mb-4 dark:text-slate-100">
                     <textarea
-                      className="w-full border-2 border-gray-200 rounded-xl p-1"
+                      className="w-full border-2 border-gray-200 rounded-xl p-1 bg-white text-gray-900 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder:text-slate-500"
                       defaultValue={question.question}
                       onChange={(event) => {
                         // a question's value changed
@@ -365,7 +365,7 @@ export default function EditingStudio() {
                               key={optIdx}
                             >
                               <input
-                                className="flex items-center w-full p-3 rounded-xl border-2 border-gray-200 bg-gray-50"
+                                className="flex items-center w-full p-3 rounded-xl border-2 border-gray-200 bg-gray-50 text-gray-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
                                 defaultValue={option}
                                 type="text"
                                 onChange={(event) => {
@@ -408,7 +408,7 @@ export default function EditingStudio() {
                             className="flex items-center gap-2 w-full"
                             key={optIdx}
                           >
-                            <div className="flex items-center w-full p-3 rounded-xl border-2 border-gray-200 bg-gray-50">
+                            <div className="flex items-center w-full p-3 rounded-xl border-2 border-gray-200 bg-gray-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
                               {option}
                             </div>
                             <span className="float-end">
@@ -434,7 +434,7 @@ export default function EditingStudio() {
                   {question.type === "short-answer" && (
                     <div className="space-y-3 mb-4">
                       <textarea
-                        className="w-full text-gray-900 font-medium p-4 bg-emerald-50 border-2 border-emerald-200 rounded-lg"
+                        className="w-full text-gray-900 font-medium p-4 bg-emerald-50 border-2 border-emerald-200 rounded-lg dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-slate-100"
                         defaultValue={String(question.options && question.options[0] || '')}
                         onChange={(e) => {
                           question.options![0] = e.target.value;
@@ -445,11 +445,11 @@ export default function EditingStudio() {
                   )}
 
                   {question.source && (
-                    <div className="mt-4 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-lg">
+                    <div className="mt-4 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-lg dark:bg-blue-500/10 dark:border-blue-400">
                       <div className="flex items-start gap-3">
-                        <FileText className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                        <FileText className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5 dark:text-blue-300" />
                         <div className="flex-1">
-                          <div className="w-full inline-flex text-sm font-semibold text-blue-900 mb-2">
+                          <div className="w-full inline-flex text-sm font-semibold text-blue-900 mb-2 dark:text-blue-200">
                             <span className="w-full">Source Citation</span>
                             <X
                               className="w-6 h-6 hover:scale-110 transition-transform duration-300"
@@ -471,10 +471,10 @@ export default function EditingStudio() {
                               }}
                             ></X>
                           </div>
-                          <p className="text-sm text-gray-700 italic mb-2 w-full">
+                          <p className="text-sm text-gray-700 italic mb-2 w-full dark:text-slate-300">
                             <textarea
                               defaultValue={question.source.text}
-                              className="w-full rounded-md p-1"
+                              className="w-full rounded-md p-1 dark:bg-slate-900 dark:text-slate-100"
                               onChange={(e) => {
                                 question.source!.text = e.target.value;
                                 setIsEdited(true);
@@ -483,7 +483,7 @@ export default function EditingStudio() {
                           </p>
                           <div className="flex items-center gap-2 text-xs text-blue-700">
                             <select
-                              className="font-medium bg-white rounded-sm"
+                              className="font-medium bg-white rounded-sm dark:bg-slate-900 dark:text-slate-100"
                               value={question.source.document_id || ""}
                               onChange={(e) => {
                                 const changedAssessment =
@@ -520,10 +520,10 @@ export default function EditingStudio() {
                             <div>•</div>
                             <div>
                               Page&nbsp;
-                              <input
+                                <input
                                 type="number"
                                 defaultValue={question.source.page}
-                                className="rounded-sm"
+                                className="rounded-sm dark:bg-slate-900 dark:text-slate-100"
                                 onChange={(e) => {
                                   question.source!.page = Number(
                                     e.target.value,
@@ -539,11 +539,11 @@ export default function EditingStudio() {
                   )}
 
                   {!question.source && (
-                    <div className="mt-4 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-lg">
+                    <div className="mt-4 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-lg dark:bg-blue-500/10 dark:border-blue-400">
                       <div className="flex items-start gap-3">
-                        <FileText className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                        <FileText className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5 dark:text-blue-300" />
                         <div className="flex-1">
-                          <div className="w-full inline-flex text-sm font-semibold text-blue-900">
+                          <div className="w-full inline-flex text-sm font-semibold text-blue-900 dark:text-blue-200">
                             <span className="w-full">
                               No Source Citation
                             </span>

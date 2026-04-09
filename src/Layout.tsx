@@ -37,8 +37,8 @@ export default function Layout() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-stone-50">
-        <Loader2 className="w-12 h-12 text-emerald-600 animate-spin" />
+      <div className="min-h-screen flex items-center justify-center bg-stone-50 dark:bg-slate-950">
+        <Loader2 className="w-12 h-12 text-emerald-600 animate-spin dark:text-emerald-400" />
       </div>
     );
   }
@@ -46,7 +46,7 @@ export default function Layout() {
   return (
     <>
       <Navigation />
-      <div className="pt-2">
+      <div className="pt-2 min-h-screen bg-stone-50 text-gray-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300">
         <Outlet />
       </div>
     </>

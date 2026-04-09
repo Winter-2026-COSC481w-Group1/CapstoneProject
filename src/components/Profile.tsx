@@ -28,53 +28,53 @@ export default function Profile() {
   };
 
   return (
-    <div className="min-h-screen bg-stone-50 pt-28 pb-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-stone-50 pt-28 pb-12 px-4 sm:px-6 lg:px-8 text-gray-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300">
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Profile Settings</h1>
-          <p className="text-gray-600">Manage your account and preferences</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2 dark:text-slate-100">Profile Settings</h1>
+          <p className="text-gray-600 dark:text-slate-300">Manage your account and preferences</p>
         </div>
 
         <div className="space-y-6">
-          <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200">
+          <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200 dark:bg-slate-900 dark:border-slate-700 dark:shadow-black/20">
             <div className="flex items-center gap-4 mb-6">
               <div className="w-20 h-20 bg-emerald-600 rounded-full flex items-center justify-center text-white text-3xl font-bold">
                 {currentUser!.avatar}
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">{currentUser!.name}</h2>
-                <p className="text-gray-600">{currentUser!.email}</p>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-slate-100">{currentUser!.name}</h2>
+                <p className="text-gray-600 dark:text-slate-300">{currentUser!.email}</p>
               </div>
             </div>
 
-            <div className="border-t border-gray-200 pt-6">
+            <div className="border-t border-gray-200 pt-6 dark:border-slate-700">
               <div className="grid sm:grid-cols-2 gap-4">
-                <div className="flex items-start gap-3 p-4 bg-emerald-50 rounded-xl">
+                <div className="flex items-start gap-3 p-4 bg-emerald-50 rounded-xl dark:bg-emerald-500/10">
                   <User className="w-5 h-5 text-emerald-600 mt-0.5" />
                   <div>
-                    <div className="text-sm text-gray-600">Account Type</div>
-                    <div className="font-semibold text-gray-900">Premium</div>
+                    <div className="text-sm text-gray-600 dark:text-slate-300">Account Type</div>
+                    <div className="font-semibold text-gray-900 dark:text-slate-100">Premium</div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200">
-            <h3 className="text-xl font-bold text-gray-900 mb-6">Usage Statistics</h3>
+          <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200 dark:bg-slate-900 dark:border-slate-700 dark:shadow-black/20">
+            <h3 className="text-xl font-bold text-gray-900 mb-6 dark:text-slate-100">Usage Statistics</h3>
 
             <div className="space-y-6">
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <HardDrive className="w-5 h-5 text-gray-600" />
-                    <span className="text-sm font-medium text-gray-700">Storage Used</span>
+                    <HardDrive className="w-5 h-5 text-gray-600 dark:text-slate-300" />
+                    <span className="text-sm font-medium text-gray-700 dark:text-slate-300">Storage Used</span>
                   </div>
-                  <span className="text-sm font-semibold text-gray-900">
+                  <span className="text-sm font-semibold text-gray-900 dark:text-slate-100">
                     {totalStorage.toFixed(1)} MB / 500 MB
                   </span>
                 </div>
-                <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
+                <div className="h-3 bg-gray-200 rounded-full overflow-hidden dark:bg-slate-700">
                   <div
                     className="h-full bg-emerald-600 rounded-full transition-all"
                     style={{ width: `${(totalStorage / 500) * 100}%` }}
@@ -83,90 +83,90 @@ export default function Profile() {
               </div>
 
               <div className="grid sm:grid-cols-3 gap-4">
-                <div className="p-4 bg-emerald-50 rounded-xl">
-                  <div className="text-sm text-gray-600 mb-1">Files Uploaded</div>
-                  <div className="text-3xl font-bold text-gray-900">{libraryFiles.length}</div>
+                <div className="p-4 bg-emerald-50 rounded-xl dark:bg-emerald-500/10">
+                  <div className="text-sm text-gray-600 mb-1 dark:text-slate-300">Files Uploaded</div>
+                  <div className="text-3xl font-bold text-gray-900 dark:text-slate-100">{libraryFiles.length}</div>
                 </div>
 
-                <div className="p-4 bg-blue-50 rounded-xl">
-                  <div className="text-sm text-gray-600 mb-1">Assessments Created</div>
-                  <div className="text-3xl font-bold text-gray-900">{assessments.length}</div>
+                <div className="p-4 bg-blue-50 rounded-xl dark:bg-blue-500/10">
+                  <div className="text-sm text-gray-600 mb-1 dark:text-slate-300">Assessments Created</div>
+                  <div className="text-3xl font-bold text-gray-900 dark:text-slate-100">{assessments.length}</div>
                 </div>
 
-                <div className="p-4 bg-amber-50 rounded-xl">
-                  <div className="text-sm text-gray-600 mb-1">Questions Generated</div>
-                  <div className="text-3xl font-bold text-gray-900">{totalQuestions}</div>
+                <div className="p-4 bg-amber-50 rounded-xl dark:bg-amber-500/10">
+                  <div className="text-sm text-gray-600 mb-1 dark:text-slate-300">Questions Generated</div>
+                  <div className="text-3xl font-bold text-gray-900 dark:text-slate-100">{totalQuestions}</div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200">
-            <h3 className="text-xl font-bold text-gray-900 mb-6">Account Actions</h3>
+          <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200 dark:bg-slate-900 dark:border-slate-700 dark:shadow-black/20">
+            <h3 className="text-xl font-bold text-gray-900 mb-6 dark:text-slate-100">Account Actions</h3>
 
             <div className="space-y-4">
-              <button className="w-full flex items-center justify-between p-4 border-2 border-gray-200 rounded-xl hover:border-emerald-500 hover:bg-emerald-50 transition-all group">
+              <button className="w-full flex items-center justify-between p-4 border-2 border-gray-200 rounded-xl hover:border-emerald-500 hover:bg-emerald-50 transition-all group dark:border-slate-700 dark:hover:border-emerald-500 dark:hover:bg-emerald-500/10">
                 <div className="flex items-center gap-3">
-                  <User className="w-5 h-5 text-gray-600 group-hover:text-emerald-600" />
+                  <User className="w-5 h-5 text-gray-600 group-hover:text-emerald-600 dark:text-slate-300 dark:group-hover:text-emerald-300" />
                   <div className="text-left">
-                    <div className="font-semibold text-gray-900">Edit Profile</div>
-                    <div className="text-sm text-gray-600">Update your personal information</div>
+                    <div className="font-semibold text-gray-900 dark:text-slate-100">Edit Profile</div>
+                    <div className="text-sm text-gray-600 dark:text-slate-300">Update your personal information</div>
                   </div>
                 </div>
               </button>
 
-              <button className="w-full flex items-center justify-between p-4 border-2 border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all group">
+              <button className="w-full flex items-center justify-between p-4 border-2 border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all group dark:border-slate-700 dark:hover:border-blue-500 dark:hover:bg-blue-500/10">
                 <div className="flex items-center gap-3">
-                  <FileText className="w-5 h-5 text-gray-600 group-hover:text-blue-600" />
+                  <FileText className="w-5 h-5 text-gray-600 group-hover:text-blue-600 dark:text-slate-300 dark:group-hover:text-blue-300" />
                   <div className="text-left">
-                    <div className="font-semibold text-gray-900">Export Data</div>
-                    <div className="text-sm text-gray-600">Download all your assessments and results</div>
+                    <div className="font-semibold text-gray-900 dark:text-slate-100">Export Data</div>
+                    <div className="text-sm text-gray-600 dark:text-slate-300">Download all your assessments and results</div>
                   </div>
                 </div>
               </button>
             </div>
           </div>
 
-          <div className="bg-red-50 border-2 border-red-200 rounded-3xl p-8">
-            <h3 className="text-xl font-bold text-red-900 mb-6">Danger Zone</h3>
+          <div className="bg-red-50 border-2 border-red-200 rounded-3xl p-8 dark:bg-red-500/10 dark:border-red-500/30">
+            <h3 className="text-xl font-bold text-red-900 mb-6 dark:text-red-300">Danger Zone</h3>
 
             <div className="space-y-3">
               <button
                 onClick={handlePurgeLibrary}
-                className="w-full flex items-center justify-between p-4 bg-white border-2 border-red-300 rounded-xl hover:border-red-500 hover:bg-red-50 transition-all group"
+                className="w-full flex items-center justify-between p-4 bg-white border-2 border-red-300 rounded-xl hover:border-red-500 hover:bg-red-50 transition-all group dark:bg-slate-950 dark:border-red-500/30 dark:hover:bg-red-500/10"
               >
                 <div className="flex items-center gap-3">
-                  <Trash2 className="w-5 h-5 text-red-600" />
+                  <Trash2 className="w-5 h-5 text-red-600 dark:text-red-300" />
                   <div className="text-left">
-                    <div className="font-semibold text-red-900">Purge Library</div>
-                    <div className="text-sm text-red-700">Delete all files and assessments</div>
+                    <div className="font-semibold text-red-900 dark:text-red-300">Purge Library</div>
+                    <div className="text-sm text-red-700 dark:text-red-200">Delete all files and assessments</div>
                   </div>
                 </div>
               </button>
 
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center justify-between p-4 bg-white border-2 border-red-300 rounded-xl hover:border-red-500 hover:bg-red-50 transition-all group"
+                className="w-full flex items-center justify-between p-4 bg-white border-2 border-red-300 rounded-xl hover:border-red-500 hover:bg-red-50 transition-all group dark:bg-slate-950 dark:border-red-500/30 dark:hover:bg-red-500/10"
               >
                 <div className="flex items-center gap-3">
-                  <LogOut className="w-5 h-5 text-red-600" />
+                  <LogOut className="w-5 h-5 text-red-600 dark:text-red-300" />
                   <div className="text-left">
-                    <div className="font-semibold text-red-900">Log Out</div>
-                    <div className="text-sm text-red-700">Sign out of your account</div>
+                    <div className="font-semibold text-red-900 dark:text-red-300">Log Out</div>
+                    <div className="text-sm text-red-700 dark:text-red-200">Sign out of your account</div>
                   </div>
                 </div>
               </button>
               
               <button
                   onClick={() => { navigate('/resetPass'); }}
-                className="w-full flex items-center justify-between p-4 bg-white border-2 border-red-300 rounded-xl hover:border-red-500 hover:bg-red-50 transition-all group"
+                className="w-full flex items-center justify-between p-4 bg-white border-2 border-red-300 rounded-xl hover:border-red-500 hover:bg-red-50 transition-all group dark:bg-slate-950 dark:border-red-500/30 dark:hover:bg-red-500/10"
               >
                 
               <div className="flex items-center gap-3">
-                <LogOut className="w-5 h-5 text-red-600" />
+                <LogOut className="w-5 h-5 text-red-600 dark:text-red-300" />
                 <div className="text-left">
-                  <div className="font-semibold text-red-900">Reset Password</div>
-                  <div className="text-sm text-red-700">Change your password</div>
+                  <div className="font-semibold text-red-900 dark:text-red-300">Reset Password</div>
+                  <div className="text-sm text-red-700 dark:text-red-200">Change your password</div>
                 </div>
               </div>
             </button>

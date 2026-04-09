@@ -23,11 +23,11 @@ export default function LandingPage() {
   });
   
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen bg-stone-50 text-gray-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300">
       <div className="relative overflow-hidden">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-20">
           <div className="text-center">
-            <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 px-4 py-2 rounded-full text-sm font-medium mb-8">
+            <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 px-4 py-2 rounded-full text-sm font-medium mb-8 dark:bg-emerald-500/20 dark:text-emerald-300">
               <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
               100% Free for Students
             </div>
@@ -48,7 +48,7 @@ export default function LandingPage() {
                 else
                   navigate('/auth');
               }}
-              className="group inline-flex items-center gap-3 bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-4 rounded-full text-lg font-semibold transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
+              className="group inline-flex items-center gap-3 bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-4 rounded-full text-lg font-semibold transition-all shadow-lg hover:shadow-xl transform hover:scale-105 dark:bg-emerald-500 dark:hover:bg-emerald-400"
             >
               <Typewriter text={startText} />
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
