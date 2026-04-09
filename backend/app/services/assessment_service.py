@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Dict, Any, List
 from uuid import uuid4
 from datetime import datetime, timezone
 import re
@@ -274,7 +274,7 @@ class AssessmentService:
         ).execute()
 
     async def get_context_for_assessment(
-        self, query: str, document_ids: list[str], chunks: int, user_id: str
+        self, query: str, document_ids: list[str], chunks: int, user_id: str, sections: list[str] = None
     ) -> str:
         """
         SPECIALIST: Just handles the RAG retrieval and formatting.
@@ -290,6 +290,9 @@ class AssessmentService:
                 {"document_id": {"$in": document_ids}},
             ]
         }
+
+        if sections:
+            filters["$and"].append({"section": {"$in": sections}})
 
         retrieved_chunks = await self.vector_service.query(
             embedding,
@@ -322,6 +325,34 @@ class AssessmentService:
                 # Adding 'Source' headers helps LLM cite its answers???
                 formatted_context.append(
                     f"--- SOURCE {i + 1} (ID: {doc_id} | PAGE: {page_num}) ---\n{text.strip()}"
+                )
+
+        return "\n\n".join(formatted_context)
+
+    async def get_sequential_context(self, document_ids: list[str], section_title: str, limit: int = 50) -> str:
+        """
+        Fetches chunks for a specific section and joins them sequentially.
+        Bypasses vector search for deterministic section coverage.
+        """
+        filters = {
+            "$and": [
+                {"document_id": {"$in": document_ids}},
+                {"section": {"$eq": section_title}},
+            ]
+        }
+
+        results = await self.vector_service.fetch_chunks_by_metadata(filters, limit=limit)
+
+        formatted_context = []
+        for i, item in enumerate(results):
+            metadata = item[2]
+            text = metadata.get("text", "")
+            doc_id = metadata.get("document_id", "unknown")
+            page_num = metadata.get("page_number")
+
+            if text:
+                formatted_context.append(
+                    f"--- SECTION CONTENT (ID: {doc_id} | PAGE: {page_num} | PART: {i + 1}) ---\n{text.strip()}"
                 )
 
         return "\n\n".join(formatted_context)
@@ -390,6 +421,7 @@ class AssessmentService:
         num_questions: int,
         question_types: list[str],
         difficulty: str,
+        sections: list[str] = None,
     ):
         """
         MANAGER: Orchestrates the task of generating an assessment
@@ -405,18 +437,35 @@ class AssessmentService:
 
             # split topics by comma
             topics = [t.strip() for t in query.split(",") if t.strip()]
-            num_topics = len(topics)
-            chunks_needed = num_questions * 3
-            min_floor = num_topics * 5
-            total_chunks = min(total_chunks_limit, max(min_floor, chunks_needed))
-            chunks_per_topic = total_chunks // num_topics
+            
+            if not topics and sections:
+                # User picked sections but no specific topics -> use section titles as topic labels.
+                # Fetch chunks from each section sequentially (no vector search).
+                topics = sections
+                num_topics = len(topics)
+                chunks_per_section = max(5, total_chunks_limit // num_topics)
+                
+                tasks = [
+                    self.get_sequential_context(document_ids, topic, limit=chunks_per_section)
+                    for topic in topics
+                ]
+            else:
+                # Normal flow: user provided topics or fallback to General Knowledge if both query/sections are empty
+                if not topics:
+                    topics = ["General Knowledge"]
+                
+                num_topics = len(topics)
+                chunks_needed = num_questions * 3
+                min_floor = num_topics * 5
+                total_chunks = min(total_chunks_limit, max(min_floor, chunks_needed))
+                chunks_per_topic = total_chunks // num_topics
 
-            tasks = [
-                self.get_context_for_assessment(
-                    topic, document_ids, chunks_per_topic, user_id
-                )
-                for topic in topics
-            ]
+                tasks = [
+                    self.get_context_for_assessment(
+                        topic, document_ids, chunks_per_topic, user_id, sections
+                    )
+                    for topic in topics
+                ]
 
             contexts = await asyncio.gather(*tasks)
 

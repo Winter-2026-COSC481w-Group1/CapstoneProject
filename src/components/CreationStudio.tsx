@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { CheckSquare, Square, Zap } from "lucide-react";
+import { CheckSquare, Square, Zap, ChevronRight, BookOpen } from "lucide-react";
 import { useApp } from "../AppContext";
 import { supabaseClient } from "../supabase";
 import { post } from "../api";
 import { useNavigate } from "react-router-dom";
+import LoadingRoom from "./LoadingRoom";
 
 export default function CreationStudio() {
   const navigate = useNavigate();
@@ -12,6 +13,7 @@ export default function CreationStudio() {
     useApp();
 
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
+  const [selectedSections, setSelectedSections] = useState<string[]>([]);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([
     "multiple-choice",
   ]);
@@ -24,20 +26,41 @@ export default function CreationStudio() {
 
   const [topic, setTopic] = useState("");
   const [assessmentTitle, setAssessmentTitle] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const toggleFile = (fileName: string) => {
-    setSelectedFiles((prev) =>
-      prev.includes(fileName)
-        ? prev.filter((f) => f !== fileName)
-        : [...prev, fileName],
+    setSelectedFiles((prev) => {
+      const isSelected = prev.includes(fileName);
+      if (isSelected) {
+        // When unselecting a file, also remove its sections
+        const file = libraryFiles.find(f => f.name === fileName);
+        if (file?.sections) {
+          const sectionTitles = file.sections.map(s => s.title);
+          setSelectedSections(curr => curr.filter(s => !sectionTitles.includes(s)));
+        }
+        return prev.filter((f) => f !== fileName);
+      } else {
+        return [...prev, fileName];
+      }
+    });
+  };
+
+  const toggleSection = (sectionTitle: string) => {
+    setSelectedSections((prev) =>
+      prev.includes(sectionTitle)
+        ? prev.filter((s) => s !== sectionTitle)
+        : [...prev, sectionTitle],
     );
   };
 
-  const toggleType = (type: string) => {
+  function toggleType(type: string) {
+    console.log("DEBUG: toggleType called with", type);
     setSelectedTypes((prev) =>
-      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type],
+      prev.includes(type)
+        ? prev.filter((t) => t !== type)
+        : [...prev, type],
     );
-  };
+  }
 
   const handleGenerate = async () => {
     // find file opject
@@ -50,6 +73,7 @@ export default function CreationStudio() {
 
     const requestBody = {
       document_ids: documentIds,
+      sections: selectedSections.length > 0 ? selectedSections : null,
       query: topic, // topic/query
       title: assessmentTitle,
       num_questions: questionCount,
@@ -58,14 +82,14 @@ export default function CreationStudio() {
     };
 
     try {
-      navigate("/dashboard/loading");
-
+      setIsGenerating(true);
       //get session token
       const {
         data: { session },
       } = await supabaseClient.auth.getSession();
       if (!session?.access_token) {
-        console.error("no session token available"); //do something else here?
+        console.error("no session token available");
+        setIsGenerating(false);
         return;
       }
 
@@ -75,9 +99,8 @@ export default function CreationStudio() {
         session.access_token,
       );
 
+      // Refresh list then navigate to Hub
       await fetchAssessments();
-
-      // Navigate to assessments hub where you can poll for status
       navigate("/dashboard/assessments");
     } catch (error) {
       console.error("Generation error:", error);
@@ -88,8 +111,14 @@ export default function CreationStudio() {
 
   const canGenerate = selectedFiles.length > 0 && selectedTypes.length > 0;
 
+  // Get sections for all selected files
+  const availableSections = libraryFiles
+    .filter(f => selectedFiles.includes(f.name))
+    .flatMap(f => (f.sections || []).map(s => ({ ...s, fileName: f.name })));
+
   return (
     <>
+      {isGenerating && <LoadingRoom isOverlay />}
       <div className="grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200">
@@ -143,7 +172,7 @@ export default function CreationStudio() {
                         {file.name}
                       </div>
                       <div className="text-sm text-gray-500">
-                        {file.pageCount} pages
+                        {file.pageCount} pages • {file.sections?.length || 0} sections
                       </div>
                     </div>
                   </button>
@@ -151,6 +180,56 @@ export default function CreationStudio() {
               </div>
             )}
           </div>
+
+          {selectedFiles.length > 0 && availableSections.length > 0 && (
+            <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200 animate-in fade-in slide-in-from-top-4 duration-500">
+              <div className="flex items-center gap-3 mb-2">
+                <BookOpen className="w-6 h-6 text-emerald-600" />
+                <h2 className="text-2xl font-bold text-gray-900">Chapters / Sections</h2>
+              </div>
+              <p className="text-gray-600 mb-6">Refine your assessment by selecting specific chapters (optional)</p>
+
+              <div className="grid sm:grid-cols-2 gap-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+                {availableSections.map((section, idx) => (
+                  <button
+                    key={`${section.fileName}-${section.title}-${idx}`}
+                    onClick={() => toggleSection(section.title)}
+                    className={`flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all ${selectedSections.includes(section.title)
+                      ? "border-emerald-500 bg-emerald-50"
+                      : "border-gray-100 hover:border-emerald-200 bg-gray-50/50"
+                      }`}
+                  >
+                    {selectedSections.includes(section.title) ? (
+                      <CheckSquare className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                    ) : (
+                      <Square className="w-5 h-5 text-gray-300 flex-shrink-0" />
+                    )}
+                    <div className="min-w-0">
+                      <div className="text-sm font-bold text-gray-900 truncate">
+                        {section.title}
+                      </div>
+                      <div className="text-[10px] text-gray-500 flex items-center gap-1 uppercase tracking-wider font-semibold">
+                        <span className="truncate max-w-[100px]">{section.fileName}</span>
+                        <ChevronRight className="w-2 h-2" />
+                        <span>Page {section.page_number}</span>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+              
+              {selectedSections.length > 0 && (
+                <div className="mt-4 flex justify-end">
+                  <button 
+                    onClick={() => setSelectedSections([])}
+                    className="text-xs font-bold text-emerald-600 hover:text-emerald-700"
+                  >
+                    Clear Section Filters
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200">
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Assessment Topics</h2>
@@ -340,7 +419,22 @@ export default function CreationStudio() {
                   )}
                 </div>
 
-                {/* Insert this between "Source Files" and "Question Types" */}
+                {selectedSections.length > 0 && (
+                  <div className="pb-4 border-b border-gray-200 animate-in slide-in-from-left-2 duration-300">
+                    <div className="text-sm text-gray-600 mb-2 font-semibold flex items-center gap-1.5">
+                      <BookOpen className="w-3.5 h-3.5" />
+                      Filtered Chapters ({selectedSections.length})
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {selectedSections.map((sec, idx) => (
+                        <span key={idx} className="bg-stone-100 text-stone-700 px-2 py-0.5 rounded-md text-[10px] font-bold border border-stone-200 max-w-full truncate">
+                          {sec}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className="pb-4 border-b border-gray-200">
                   <div className="text-sm text-gray-600 mb-2">Target Topics</div>
                   {topic.trim() === "" ? (
@@ -378,7 +472,8 @@ export default function CreationStudio() {
                       {selectedTypes.map((type) => (
                         <span
                           key={type}
-                          className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-medium"
+                          onClick={() => toggleType(type)}
+                          className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-medium cursor-pointer hover:bg-emerald-200 transition-colors"
                         >
                           {type
                             .split("-")

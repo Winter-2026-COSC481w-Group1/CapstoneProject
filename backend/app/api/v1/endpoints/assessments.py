@@ -1,5 +1,5 @@
 from typing import Annotated, List
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from app.auth import get_current_user
 from app.schemas.assessment_request import AssessmentRequest
 from app.schemas.assessment import AssessmentSchema, AssessmentDetails
@@ -23,7 +23,6 @@ async def generate_assessment(
     # create the record in Supabase immediately
     assessment_id = await assessment_service.create_pending_record(request, user_id)
 
-    # await the heavy task directly (Google Cloud Run request-based billing)
     await assessment_service.generate_assessment(
         assessment_id=assessment_id,
         document_ids=request.document_ids,
@@ -32,6 +31,7 @@ async def generate_assessment(
         num_questions=request.num_questions,
         question_types=request.question_types,
         difficulty=request.difficulty,
+        sections=request.sections, # Pass the filtered sections
     )
 
     # return the ID

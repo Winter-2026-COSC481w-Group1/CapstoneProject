@@ -181,17 +181,7 @@ export default function AssessmentsHub() {
               
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  {assessment.status === 'pending' && (
-                    <div className="inline-flex items-center gap-2 bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-medium mb-3">
-                      <Clock className="w-3 h-3" />
-                      Pending
-                    </div>
-                  ) || assessment.status === 'processing' && (
-                    <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-medium mb-3">
-                      <Clock className="w-3 h-3" />
-                      Processing
-                    </div>
-                  ) || assessment.status === 'failed' && (
+                  {assessment.status === 'failed' && (
                     <div className="inline-flex items-center gap-2 bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-medium mb-3">
                       <CircleX className="w-3 h-3" />
                       Failed
@@ -232,15 +222,12 @@ export default function AssessmentsHub() {
                 </div>
               </div>
 
-              {assessment.status === "pending" && (
-                  <div className="flex flex-grow"></div>
-              )}
-                  
+
                 <button
-                onClick={() => {
-                  if (assessment.status === "completed" && !loadingAction) {
-                    handleViewResults(assessment.id);
-                  }
+                  onClick={() => {
+                    if (assessment.status === "completed" && !loadingAction) {
+                      handleViewResults(assessment.id);
+                    }
                   }}
                   disabled={!!loadingAction}
                   className={"w-full flex items-center justify-center gap-2 " + ((assessment.status === "completed") ? "bg-blue-100 hover:bg-blue-200 text-blue-600" : "bg-gray-200 text-gray-600 cursor-default") + " py-3 rounded-xl font-semibold " + (loadingAction?.startsWith(`view-${assessment.id}`) ? "opacity-75 cursor-not-allowed" : "")}

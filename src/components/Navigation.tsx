@@ -10,6 +10,8 @@ export default function Navigation() {
 
   if (!currentUser) return null;
 
+
+
   const navLinks = [
     { id: '/dashboard/home', label: 'Home' },
     { id: '/dashboard/library', label: 'Library' },
@@ -44,6 +46,8 @@ export default function Navigation() {
           </div>
 
           <div className="flex items-center gap-3 ml-auto">
+
+
             <button className="relative p-2 hover:bg-gray-100 rounded-full transition-colors" onClick={() => { setShowBugReportMenu(!showBugReportMenu) }}>
               <CircleQuestionMark className="w-5 h-5 text-gray-600" />
               {showBugReportMenu && (
@@ -85,6 +89,7 @@ export default function Navigation() {
       {showMobileMenu && (
         <div className="fixed top-24 left-0 right-0 z-40 flex justify-center px-4 md:hidden">
           <div className="backdrop-blur-xl bg-white/90 border border-white/40 shadow-lg rounded-3xl p-4 w-full max-w-md">
+
             {navLinks.map((link) => (
               <Link
                 key={link.id}
