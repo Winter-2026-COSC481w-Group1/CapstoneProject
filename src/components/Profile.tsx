@@ -1,4 +1,4 @@
-import { User, HardDrive, FileText, LogOut, Trash2 } from 'lucide-react';
+import { HardDrive, LogOut, KeyRound, UserRoundX } from 'lucide-react';
 import { useApp } from '../AppContext';
 import { supabaseClient } from '../supabase';
 import { useNavigate } from 'react-router-dom';
@@ -9,7 +9,13 @@ export default function Profile() {
   
   if (!currentUser) return null;
 
-  const totalQuestions = assessments.reduce((sum, a) => sum + a.questionCount, 0);
+  const totalQuestions = assessments.reduce((sum, a) => {
+    if (a.status == "failed") {
+      return sum;
+    } else {
+      return sum + a.questionCount;
+    }
+  }, 0);
   const totalStorage = libraryFiles.reduce((sum, f) => {
     const sizeInMB = parseFloat(f.size.split(' ')[0]);
     return sum + sizeInMB;
@@ -20,11 +26,10 @@ export default function Profile() {
     console.log(error); // not using this value currently...
     navigate('/');
   };
-
-  const handlePurgeLibrary = () => {
-    if (confirm('Are you sure you want to delete all files from your library? This action cannot be undone.')) {
-      alert('Library purged (mock action)');
-    }
+  
+  const handleAccountDeletion = async () => {
+    console.log("account deletion");
+    // todo implement full user deletion
   };
 
   return (
@@ -37,25 +42,13 @@ export default function Profile() {
 
         <div className="space-y-6">
           <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200">
-            <div className="flex items-center gap-4 mb-6">
+            <div className="flex items-center gap-4">
               <div className="w-20 h-20 bg-emerald-600 rounded-full flex items-center justify-center text-white text-3xl font-bold">
                 {currentUser!.avatar}
               </div>
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">{currentUser!.name}</h2>
                 <p className="text-gray-600">{currentUser!.email}</p>
-              </div>
-            </div>
-
-            <div className="border-t border-gray-200 pt-6">
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div className="flex items-start gap-3 p-4 bg-emerald-50 rounded-xl">
-                  <User className="w-5 h-5 text-emerald-600 mt-0.5" />
-                  <div>
-                    <div className="text-sm text-gray-600">Account Type</div>
-                    <div className="font-semibold text-gray-900">Premium</div>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -101,49 +94,10 @@ export default function Profile() {
             </div>
           </div>
 
-          <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200">
-            <h3 className="text-xl font-bold text-gray-900 mb-6">Account Actions</h3>
-
-            <div className="space-y-4">
-              <button className="w-full flex items-center justify-between p-4 border-2 border-gray-200 rounded-xl hover:border-emerald-500 hover:bg-emerald-50 transition-all group">
-                <div className="flex items-center gap-3">
-                  <User className="w-5 h-5 text-gray-600 group-hover:text-emerald-600" />
-                  <div className="text-left">
-                    <div className="font-semibold text-gray-900">Edit Profile</div>
-                    <div className="text-sm text-gray-600">Update your personal information</div>
-                  </div>
-                </div>
-              </button>
-
-              <button className="w-full flex items-center justify-between p-4 border-2 border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all group">
-                <div className="flex items-center gap-3">
-                  <FileText className="w-5 h-5 text-gray-600 group-hover:text-blue-600" />
-                  <div className="text-left">
-                    <div className="font-semibold text-gray-900">Export Data</div>
-                    <div className="text-sm text-gray-600">Download all your assessments and results</div>
-                  </div>
-                </div>
-              </button>
-            </div>
-          </div>
-
           <div className="bg-red-50 border-2 border-red-200 rounded-3xl p-8">
             <h3 className="text-xl font-bold text-red-900 mb-6">Danger Zone</h3>
 
             <div className="space-y-3">
-              <button
-                onClick={handlePurgeLibrary}
-                className="w-full flex items-center justify-between p-4 bg-white border-2 border-red-300 rounded-xl hover:border-red-500 hover:bg-red-50 transition-all group"
-              >
-                <div className="flex items-center gap-3">
-                  <Trash2 className="w-5 h-5 text-red-600" />
-                  <div className="text-left">
-                    <div className="font-semibold text-red-900">Purge Library</div>
-                    <div className="text-sm text-red-700">Delete all files and assessments</div>
-                  </div>
-                </div>
-              </button>
-
               <button
                 onClick={handleLogout}
                 className="w-full flex items-center justify-between p-4 bg-white border-2 border-red-300 rounded-xl hover:border-red-500 hover:bg-red-50 transition-all group"
@@ -163,13 +117,26 @@ export default function Profile() {
               >
                 
               <div className="flex items-center gap-3">
-                <LogOut className="w-5 h-5 text-red-600" />
+                <KeyRound className="w-5 h-5 text-red-600" />
                 <div className="text-left">
                   <div className="font-semibold text-red-900">Reset Password</div>
                   <div className="text-sm text-red-700">Change your password</div>
                 </div>
               </div>
-            </button>
+              </button>
+              
+              <button
+                onClick={handleAccountDeletion}
+                className="w-full flex items-center justify-between p-4 bg-white border-2 border-red-300 rounded-xl hover:border-red-500 hover:bg-red-50 transition-all group"
+              >
+                <div className="flex items-center gap-3">
+                  <UserRoundX className="w-5 h-5 text-red-600" />
+                  <div className="text-left">
+                    <div className="font-semibold text-red-900">Delete Account</div>
+                    <div className="text-sm text-red-700">Permanently delete all your data</div>
+                  </div>
+                </div>
+              </button>
             </div>
           </div>
         </div>

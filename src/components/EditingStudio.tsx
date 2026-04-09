@@ -83,7 +83,6 @@ export default function EditingStudio() {
       }
 
       setIsEdited(false);
-      console.log("Assessment updated successfully");
     } catch (error) {
       console.error('Error updating assessment:', error);
     } finally {
