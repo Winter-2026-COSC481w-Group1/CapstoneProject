@@ -61,11 +61,11 @@ export default function ResetPassPage() {
         </div>
       </div>
 
-      <div className="flex-1 flex items-center justify-center bg-white p-8">
+      <div className="flex-1 flex items-center justify-center bg-white p-8 dark:bg-slate-950">
         <div className="w-full max-w-md">
           <button
             onClick={() => navigate('/dashboard/home')}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-8 transition-colors"
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-8 transition-colors dark:text-slate-300 dark:hover:text-slate-100"
           >
             <ArrowLeft className="w-5 h-5" />
             Go to home
@@ -73,7 +73,7 @@ export default function ResetPassPage() {
           
           {!resetSuccess && <form onSubmit={handlePasswordReset} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-slate-300">
               New Password
             </label>
             <div className="relative">
@@ -83,14 +83,14 @@ export default function ResetPassPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder:text-slate-500"
                 required
               />
             </div>
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-slate-300">
               Confirm Password
             </label>
             <div className="relative">
@@ -100,20 +100,20 @@ export default function ResetPassPage() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder:text-slate-500"
                 required
               />
             </div>
           </div>
             
-            {err && <div className="bg-red-50 border-2 border-red-200 rounded-3xl p-2 text-center">
-              <p className="font-bold text-red-900">{err}</p>
+            {err && <div className="bg-red-50 border-2 border-red-200 rounded-3xl p-2 text-center dark:bg-red-500/10 dark:border-red-500/30">
+              <p className="font-bold text-red-900 dark:text-red-300">{err}</p>
             </div>
             }
 
             <button
               type="submit"
-              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-semibold transition-colors"
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-semibold transition-colors dark:bg-emerald-500 dark:hover:bg-emerald-400"
             >
               Reset Password
             </button>

@@ -3,8 +3,16 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    @apply transition-colors duration-300;
+  }
+
   body {
-    @apply antialiased;
+    @apply antialiased bg-stone-50 text-gray-900 transition-colors duration-300;
+  }
+
+  .dark body {
+    @apply bg-slate-950 text-slate-100;
   }
 }
 
@@ -21,6 +29,11 @@
     scrollbar-width: thin;
     scrollbar-color: #d1d5db transparent;
   }
+
+  .dark .scrollbar-thin {
+    scrollbar-color: #475569 transparent;
+  }
+
   .scrollbar-thin::-webkit-scrollbar {
     height: 4px;
   }
@@ -30,5 +43,9 @@
   .scrollbar-thin::-webkit-scrollbar-thumb {
     background-color: #d1d5db;
     border-radius: 2px;
+  }
+
+  .dark .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: #475569;
   }
 }
