@@ -1,13 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CheckCircle, Circle, FileText, X, Plus } from "lucide-react";
 import { useApp } from "../AppContext";
 import { Assessment } from "../types";
-import { useNavigate } from 'react-router-dom';
 import { put } from '../api';
 import { supabaseClient } from '../supabase';
 
 export default function EditingStudio() {
-  const navigate = useNavigate();
   const {
     libraryFiles,
     assessments,
@@ -18,11 +16,6 @@ export default function EditingStudio() {
 
   const [isEdited, setIsEdited] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  
-  if (!currentAssessment) {
-    navigate('/dashboard/assessments');
-    return null;
-  }
 
   const handleDifficultyChange = function (difficulty: string) {
     // validate
@@ -41,9 +34,10 @@ export default function EditingStudio() {
   };
 
   const handleSaving = async function () {
-    if (!currentAssessment) return;
-
+    if (!currentAssessment || isSaving || currentAssessment.questions.length == 0) return;
+    
     setIsSaving(true);
+
     try {
       const { data: { session } } = await supabaseClient.auth.getSession();
       if (!session?.access_token) {
@@ -76,11 +70,17 @@ export default function EditingStudio() {
       // Update local state
       const updatedAssessment = structuredClone(currentAssessment);
       setCurrentAssessment(updatedAssessment);
-
-      const updatedAssessments = assessments.map((test) =>
-        test.id === updatedAssessment.id ? { ...updatedAssessment } : test,
-      );
-      setAssessments(updatedAssessments);
+      
+      // if this is a newly created assessment, make sure to add it to the assessments list
+      if (assessments.filter(assessment => assessment.id === currentAssessment.id).length === 0)
+        setAssessments([...assessments, updatedAssessment]);
+      else {
+        // otherwise update the assessment that is already in the assessments list
+        const updatedAssessments = assessments.map((test) =>
+          test.id === updatedAssessment.id ? { ...updatedAssessment } : test,
+        );
+        setAssessments(updatedAssessments);
+      }
 
       setIsEdited(false);
       console.log("Assessment updated successfully");
@@ -90,6 +90,31 @@ export default function EditingStudio() {
       setIsSaving(false);
     }
   };
+  
+  useEffect(() => {
+    if (!currentAssessment) {
+      // create a blank assessment and save it automatically
+      const blankAssessment: Assessment = {
+        id: crypto.randomUUID(), // equivalent to the python method (uuid4) used
+        title: "Empty Assessment",
+        topic: "",
+        createdAt: new Date(),
+        status: 'pending',
+        sourceFiles: [],
+        questionCount: 0,
+        difficulty: 'none',
+        numAttempts: 0,
+        numCorrect: 0,
+        questions: [],
+      };
+      setCurrentAssessment(blankAssessment);
+      setIsEdited(true);
+    }
+  });
+  
+  if (!currentAssessment) {
+    return null;
+  }
 
   const handleCorrectOptionChange = function (
     questionNum: number,
@@ -213,10 +238,10 @@ export default function EditingStudio() {
             </div>
 
             <button
-              onClick={handleSaving}
+              onClick={() => { handleSaving(); }}
               disabled={!isEdited || isSaving}
               className={`w-full py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2 ${
-                isEdited && !isSaving
+                isEdited && !isSaving && currentAssessment.questions.length != 0
                   ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg hover:shadow-xl"
                   : "bg-gray-200 text-gray-400 cursor-not-allowed"
               }`}
