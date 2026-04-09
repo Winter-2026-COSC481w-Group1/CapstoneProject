@@ -1,11 +1,15 @@
-import { HardDrive, LogOut, KeyRound, UserRoundX } from 'lucide-react';
+import { HardDrive, LogOut, KeyRound, UserRoundX, Pencil } from 'lucide-react';
 import { useApp } from '../AppContext';
 import { supabaseClient } from '../supabase';
 import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 
 export default function Profile() {
   const navigate = useNavigate();
   const { currentUser, libraryFiles, assessments } = useApp();
+  
+  const [editingName, setEditingName] = useState(false);
+  const [newName, setNewName] = useState('');
   
   if (!currentUser) return null;
 
@@ -31,6 +35,16 @@ export default function Profile() {
     console.log("account deletion");
     // todo implement full user deletion
   };
+  
+  const handleNameChange = async () => { 
+    const { error } = await supabaseClient.auth.updateUser({
+      data: { full_name: newName }
+    });
+    if (!error) {
+      currentUser.name = newName;
+      setEditingName(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-stone-50 pt-28 pb-12 px-4 sm:px-6 lg:px-8">
@@ -47,8 +61,28 @@ export default function Profile() {
                 {currentUser!.avatar}
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">{currentUser!.name}</h2>
+                <div className="inline-flex">
+                  <h2 className={!editingName ? "text-2xl font-bold text-gray-900" : "hidden"}>{currentUser!.name}</h2>
+                  <input
+                    className={editingName ? "text-2xl font-bold text-gray-900 border-gray-900 border-2 rounded-md p-1" : "hidden"}
+                    onChange={(e) => { 
+                      setNewName(e.currentTarget.value);
+                    }}
+                  ></input>
+                  <Pencil
+                    className={!editingName ? "w-4 h-4 inline ml-2 m-auto hover:scale-110" : "hidden"}
+                    onClick={() => { setEditingName(true) }}
+                  />
+                  <button
+                    className={editingName ? "ml-2 inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors" : "hidden"}
+                    onClick={() => {
+                      handleNameChange();
+                    }}
+                  >Save</button>
+                </div>
+                <p className={editingName ? "text-red-600" : "hidden"}>Warning: using Google sign-in overwrites your name</p>
                 <p className="text-gray-600">{currentUser!.email}</p>
+                
               </div>
             </div>
           </div>
