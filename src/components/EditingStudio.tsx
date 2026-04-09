@@ -34,7 +34,9 @@ export default function EditingStudio() {
   };
 
   const handleSaving = async function () {
-    if (!currentAssessment) return;
+    if (!currentAssessment || isSaving || currentAssessment.questions.length == 0) return;
+    
+    setIsSaving(true);
 
     try {
       const { data: { session } } = await supabaseClient.auth.getSession();
@@ -239,7 +241,7 @@ export default function EditingStudio() {
               onClick={() => { handleSaving(); }}
               disabled={!isEdited || isSaving}
               className={`w-full py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2 ${
-                isEdited && !isSaving
+                isEdited && !isSaving && currentAssessment.questions.length != 0
                   ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg hover:shadow-xl"
                   : "bg-gray-200 text-gray-400 cursor-not-allowed"
               }`}
