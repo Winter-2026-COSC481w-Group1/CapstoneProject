@@ -223,9 +223,8 @@ export default function AssessmentsHub() {
                 </div>
               </div>
 
-              {assessment.status === "pending" && (
-                  <div className="flex flex-grow"></div>
-              )}
+              
+                <div className="flex flex-grow"></div>
                   
                 <button
                 onClick={() => {
