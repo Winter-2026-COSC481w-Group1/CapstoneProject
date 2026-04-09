@@ -155,10 +155,10 @@ export default function NotificationBell() {
   return (
     <div className="relative" ref={notificationsMenuRef}>
       <button
-        className="relative p-2 hover:bg-gray-100 rounded-full transition-colors"
+        className="relative p-2 hover:bg-gray-100 rounded-full transition-colors dark:hover:bg-slate-800"
         onClick={toggleNotificationsMenu}
       >
-        <Bell className="w-5 h-5 text-gray-600" />
+        <Bell className="w-5 h-5 text-gray-600 dark:text-slate-300" />
         {unreadCount > 0 && (
           <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-emerald-500 rounded-full text-[11px] leading-[18px] text-white font-semibold text-center">
             {unreadCount > 9 ? '9+' : unreadCount}
@@ -167,31 +167,31 @@ export default function NotificationBell() {
       </button>
 
       {showNotificationsMenu && (
-        <div className="absolute top-full right-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-200 py-2 w-[320px] z-10">
-          <div className="px-4 pb-2 mb-2 border-b border-gray-100">
+        <div className="absolute top-full right-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-200 py-2 w-[320px] z-10 dark:bg-slate-900 dark:border-slate-700 dark:shadow-black/20">
+          <div className="px-4 pb-2 mb-2 border-b border-gray-100 dark:border-slate-800">
             <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-semibold text-gray-800">Unread notifications</p>
+              <p className="text-sm font-semibold text-gray-800 dark:text-slate-100">Unread notifications</p>
               <button
-                className="text-xs font-medium text-emerald-700 hover:text-emerald-800 disabled:opacity-60"
+                className="text-xs font-medium text-emerald-700 hover:text-emerald-800 disabled:opacity-60 dark:text-emerald-300 dark:hover:text-emerald-200"
                 onClick={markAllNotificationsAsRead}
                 disabled={isMarkingAllRead || notifications.length === 0}
               >
                 {isMarkingAllRead ? 'Updating...' : 'Mark all as read'}
               </button>
             </div>
-            <p className="text-xs text-gray-500">Showing 10 most recent unread items</p>
+            <p className="text-xs text-gray-500 dark:text-slate-400">Showing 10 most recent unread items</p>
           </div>
 
           {isLoadingNotifications && (
-            <p className="px-4 py-3 text-sm text-gray-500">Loading notifications...</p>
+            <p className="px-4 py-3 text-sm text-gray-500 dark:text-slate-400">Loading notifications...</p>
           )}
 
           {!isLoadingNotifications && notificationError && (
-            <p className="px-4 py-3 text-sm text-red-600">{notificationError}</p>
+            <p className="px-4 py-3 text-sm text-red-600 dark:text-red-300">{notificationError}</p>
           )}
 
           {!isLoadingNotifications && !notificationError && notifications.length === 0 && (
-            <p className="px-4 py-3 text-sm text-gray-500">No unread notifications.</p>
+            <p className="px-4 py-3 text-sm text-gray-500 dark:text-slate-400">No unread notifications.</p>
           )}
 
           {!isLoadingNotifications && !notificationError && notifications.length > 0 && (
@@ -199,20 +199,20 @@ export default function NotificationBell() {
               {notifications.map((notification) => (
                 <div
                   key={notification.id}
-                  className="px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                  className="px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 dark:hover:bg-slate-800 dark:border-slate-800"
                 >
-                  <p className="text-sm font-medium text-gray-800">
+                  <p className="text-sm font-medium text-gray-800 dark:text-slate-100">
                     {notification.title || 'Notification'}
                   </p>
-                  <p className="text-xs text-gray-600 mt-1">
+                  <p className="text-xs text-gray-600 mt-1 dark:text-slate-300">
                     {notification.message || notification.body || 'You have a new update.'}
                   </p>
                   <div className="mt-2 flex items-center justify-between">
-                    <span className="text-[11px] text-gray-500">
+                    <span className="text-[11px] text-gray-500 dark:text-slate-400">
                       {getRelativeTime(notification.created_at)}
                     </span>
                     <button
-                      className="text-xs font-medium text-emerald-700 hover:text-emerald-800 disabled:opacity-60"
+                      className="text-xs font-medium text-emerald-700 hover:text-emerald-800 disabled:opacity-60 dark:text-emerald-300 dark:hover:text-emerald-200"
                       onClick={() => markNotificationAsRead(notification.id)}
                       disabled={markingNotificationId === notification.id}
                     >

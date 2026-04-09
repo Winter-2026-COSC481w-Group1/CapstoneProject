@@ -35,11 +35,11 @@ export default function LoadingRoom({
   }, [messages]);
 
   return (
-    <div className={`${isOverlay ? 'fixed inset-0 bg-stone-50/80 backdrop-blur-sm' : 'fixed inset-0 bg-stone-50'} z-50 flex items-center justify-center`}>
+    <div className={`${isOverlay ? 'fixed inset-0 bg-stone-50/80 backdrop-blur-sm dark:bg-slate-950/80' : 'fixed inset-0 bg-stone-50 dark:bg-slate-950'} z-50 flex items-center justify-center`}>
       <div className="text-center px-4">
         <div className="relative mb-12">
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-32 h-32 bg-emerald-200 rounded-full blur-3xl animate-pulse"></div>
+            <div className="w-32 h-32 bg-emerald-200 rounded-full blur-3xl animate-pulse dark:bg-emerald-500/20"></div>
           </div>
           <div className="relative">
             <div className="w-32 h-32 mx-auto">
@@ -60,25 +60,25 @@ export default function LoadingRoom({
                   cx="50"
                   cy="50"
                   r="15"
-                  className="fill-white"
+                  className="fill-white dark:fill-slate-900"
                 />
                 <circle
                   cx="35"
                   cy="45"
                   r="8"
-                  className="fill-emerald-200"
+                  className="fill-emerald-200 dark:fill-emerald-500/30"
                 />
                 <circle
                   cx="65"
                   cy="45"
                   r="8"
-                  className="fill-emerald-200"
+                  className="fill-emerald-200 dark:fill-emerald-500/30"
                 />
                 <circle
                   cx="50"
                   cy="65"
                   r="6"
-                  className="fill-emerald-300"
+                  className="fill-emerald-300 dark:fill-emerald-400"
                 />
               </svg>
             </div>
@@ -88,21 +88,21 @@ export default function LoadingRoom({
           </div>
         </div>
 
-        <h2 className="text-3xl font-bold text-gray-900 mb-4 min-h-[2.5rem] transition-all duration-500">
+        <h2 className="text-3xl font-bold text-gray-900 mb-4 min-h-[2.5rem] transition-all duration-500 dark:text-slate-100">
           {messages[currentMessage]}
         </h2>
 
-        <p className="text-gray-600 mb-8 max-w-md mx-auto">
+        <p className="text-gray-600 mb-8 max-w-md mx-auto dark:text-slate-300">
           {description}
         </p>
 
         <div className="max-w-md mx-auto mb-8">
-          <div className="h-2 bg-emerald-100 rounded-full overflow-hidden">
+          <div className="h-2 bg-emerald-100 rounded-full overflow-hidden dark:bg-emerald-500/10">
             <div className="h-full bg-emerald-600 rounded-full animate-progress"></div>
           </div>
         </div>
 
-        <div className="inline-flex items-center gap-2 bg-amber-100 text-amber-700 px-4 py-2 rounded-full text-sm">
+        <div className="inline-flex items-center gap-2 bg-amber-100 text-amber-700 px-4 py-2 rounded-full text-sm dark:bg-amber-500/10 dark:text-amber-300">
           <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div>
           Please do not refresh or close this page
         </div>
