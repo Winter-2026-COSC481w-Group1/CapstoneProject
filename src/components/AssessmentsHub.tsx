@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Play, Download, Clock, CheckCircle, CircleX, FileText, EllipsisVertical, Loader2 } from 'lucide-react';
+import { Play, Download, Clock, CheckCircle, CircleX, FileText, TrashIcon, Loader2 } from 'lucide-react';
 import { useApp } from '../AppContext';
 import { supabaseClient } from '../supabase';
 import { useNavigate } from 'react-router-dom';
@@ -9,7 +9,6 @@ const VITE_API_URL = import.meta.env.VITE_API_URL;
 export default function AssessmentsHub() {
   const { assessments, setAssessments, setCurrentAssessment, fetchAssessmentDetails } = useApp();
   const [showDownloadMenu, setShowDownloadMenu] = useState<string | null>(null);
-  const [showOptionsMenu, setShowOptionsMenu] = useState<string | null>(null);
   const [assessmentsFilter, setAssessmentsFilter] = useState<string | null>(null);
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
   const [deletingAssessmentId, setDeletingAssessmentId] = useState<string | null>(null);
@@ -83,7 +82,6 @@ export default function AssessmentsHub() {
         setAssessments((prevAssessments) =>
           prevAssessments.filter((assessment) => assessment.id !== id)
         );
-        setShowOptionsMenu(null);
       } else {
         console.error('failed moving assessment to trash', res.status);
       }
@@ -162,28 +160,13 @@ export default function AssessmentsHub() {
               )}
               <div className="flex flex-row items-center justify-between gap-x-2">
               <div className="absolute top-4 right-4">
-              <button
-                    onClick={() => setShowOptionsMenu((prev) => (prev === assessment.id ? null : assessment.id))}
-                className=""
-              >
-                <EllipsisVertical className="w-5 text-gray-600" />
+                <button
+                  onClick={() => handleDelete(assessment.id)}
+                  disabled={deletingAssessmentId === assessment.id}
+                  className="px-2 py-2 hover:text-red-700 rounded-md text-sm font-medium text-gray-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                <TrashIcon className="w-5" />
               </button>
-              {showOptionsMenu === assessment.id && (
-                <div className="absolute right-0 top-5 mt-2 bg-white rounded-xl shadow-xl border border-gray-200 py-2 min-w-[180px] z-10">
-                  <button className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-sm font-medium text-gray-700">
-                    Edit
-                      </button>
-                      <button className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-sm font-medium text-gray-700">
-                        Copy
-                      </button>
-                  <button
-                    onClick={() => handleDelete(assessment.id)}
-                    disabled={deletingAssessmentId === assessment.id}
-                    className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-sm font-medium text-gray-700 disabled:opacity-60 disabled:cursor-not-allowed"
-                  >
-                    {deletingAssessmentId === assessment.id ? 'Deleting...' : 'Delete'}
-                    </button>
-                  </div>)}
                 </div>
               </div>
               
