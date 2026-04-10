@@ -273,7 +273,7 @@ export default function CreationStudio() {
               <button
                 onClick={() => setDifficulty("easy")}
                 className={`flex-1 py-3 rounded-xl font-semibold transition-all ${difficulty === "easy"
-                  ? "bg-white text-emerald-600 shadow-md dark:bg-slate-950 dark:text-emerald-300"
+                  ? "bg-white text-green-600 shadow-md dark:bg-slate-950 dark:text-green-300"
                   : "text-gray-600 hover:text-gray-900 dark:text-slate-300 dark:hover:text-slate-100"
                   }`}
               >
@@ -282,7 +282,7 @@ export default function CreationStudio() {
               <button
                 onClick={() => setDifficulty("medium")}
                 className={`flex-1 py-3 rounded-xl font-semibold transition-all ${difficulty === "medium"
-                  ? "bg-white text-emerald-600 shadow-md dark:bg-slate-950 dark:text-emerald-300"
+                  ? "bg-white text-amber-600 shadow-md dark:bg-slate-950 dark:text-amber-300"
                   : "text-gray-600 hover:text-gray-900 dark:text-slate-300 dark:hover:text-slate-100"
                   }`}
               >
@@ -291,7 +291,7 @@ export default function CreationStudio() {
               <button
                 onClick={() => setDifficulty("hard")}
                 className={`flex-1 py-3 rounded-xl font-semibold transition-all ${difficulty === "hard"
-                  ? "bg-white text-emerald-600 shadow-md dark:bg-slate-950 dark:text-emerald-300"
+                  ? "bg-white text-red-600 shadow-md dark:bg-slate-950 dark:text-red-300"
                   : "text-gray-600 hover:text-gray-900 dark:text-slate-300 dark:hover:text-slate-100"
                   }`}
               >
@@ -378,7 +378,7 @@ export default function CreationStudio() {
                       {selectedTypes.map((type) => (
                         <span
                           key={type}
-                          className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-medium dark:bg-emerald-500/10 dark:text-emerald-300"
+                          className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-medium dark:bg-blue-500/10 dark:text-blue-300"
                         >
                           {type
                             .split("-")
@@ -401,9 +401,18 @@ export default function CreationStudio() {
 
                 <div>
                   <div className="text-sm text-gray-600 mb-2 dark:text-slate-300">Difficulty</div>
-                  <div className="inline-flex items-center gap-2 bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-sm font-medium dark:bg-amber-500/10 dark:text-amber-300">
-                    {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
-                  </div>
+                  {difficulty === "easy" && (
+                    <div className="inline-flex items-center gap-2 bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium dark:bg-green-500/10 dark:text-green-300">
+                      Easy
+                    </div>)}
+                  {difficulty === "medium" &&
+                    (<div className="inline-flex items-center gap-2 bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-sm font-medium dark:bg-amber-500/10 dark:text-amber-300">
+                      Medium
+                    </div>)}
+                  {difficulty === "hard" &&
+                    (<div className="inline-flex items-center gap-2 bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-medium dark:bg-red-500/10 dark:text-red-300">
+                      Hard
+                    </div>)}
                 </div>
               </div>
 
