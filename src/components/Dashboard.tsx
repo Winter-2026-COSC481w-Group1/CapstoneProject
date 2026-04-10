@@ -116,9 +116,6 @@ export default function Dashboard() {
           <div className="bg-white rounded-3xl p-6 shadow-lg border border-gray-200 dark:bg-slate-900 dark:border-slate-700 dark:shadow-black/20">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-bold text-gray-900 dark:text-slate-100">Recent Activity</h3>
-              <button className="text-emerald-600 text-sm font-medium hover:text-emerald-700">
-                View all
-              </button>
             </div>
             <div className="space-y-4">
               {activities?.slice(0, 5).map((activity) => (
