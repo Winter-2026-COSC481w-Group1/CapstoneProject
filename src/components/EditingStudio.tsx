@@ -640,7 +640,7 @@ export default function EditingStudio() {
             setCurrentAssessment(changedAssessment);
             setIsEdited(true);
           }}
-          className="w-full py-4 rounded-xl font-bold text-lg transition-all border-blue-200 hover:border-blue-300 border-2 flex items-center justify-center gap-2 bg-blue-50 hover:bg-blue-100 text-blue-600 shadow-lg hover:shadow-xl"
+          className="w-full py-4 rounded-xl font-bold text-lg transition-all border-blue-200 hover:border-blue-300 border-2 flex items-center justify-center gap-2 bg-blue-50 hover:bg-blue-100 text-blue-600 shadow-lg hover:shadow-xl dark:bg-blue-500/10 dark:text-blue-300 dark:hover:bg-blue-500/20 border-blue-200/20 hover:border-blue-300/20"
         >
           Add a question
         </button>

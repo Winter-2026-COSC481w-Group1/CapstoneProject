@@ -406,6 +406,8 @@ class AssessmentService:
 
             # split topics by comma
             topics = [t.strip() for t in query.split(",") if t.strip()]
+            if len(topics) == 0:
+                topics = [""]
             num_topics = len(topics)
             chunks_needed = num_questions * 3
             min_floor = num_topics * 5
