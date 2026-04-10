@@ -83,7 +83,6 @@ export default function EditingStudio() {
       }
 
       setIsEdited(false);
-      console.log("Assessment updated successfully");
     } catch (error) {
       console.error('Error updating assessment:', error);
     } finally {
@@ -99,7 +98,7 @@ export default function EditingStudio() {
         title: "Empty Assessment",
         topic: "",
         createdAt: new Date(),
-        status: 'pending',
+        status: 'ready',
         sourceFiles: [],
         questionCount: 0,
         difficulty: 'none',
