@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Upload, FileText, Loader2, CheckCircle, CircleX, Trash2, Eye } from 'lucide-react';
 import { useApp } from '../AppContext';
+import { useToast } from '../ToastContext';
 import { LibraryFile } from '../types';
 import { supabaseClient } from '../supabase';
 
@@ -9,7 +10,8 @@ import { post, get} from '../api';
 const VITE_API_URL = import.meta.env.VITE_API_URL;
 
 export default function Library() {
-  const { libraryFiles, setLibraryFiles, fetchLibraryFiles } = useApp();
+  const { libraryFiles, setLibraryFiles } = useApp();
+  const { showToast } = useToast();
   const [isDragging, setIsDragging] = useState(false);
   const [previewingDocumentId, setPreviewingDocumentId] = useState<string | null>(null);
   const [deletingDocumentId, setDeletingDocumentId] = useState<string | null>(null);
@@ -56,7 +58,7 @@ export default function Library() {
       pageCount: 0 // Will be updated from backend
     };
 
-    setLibraryFiles(prev => [...prev, newFile]);
+    setLibraryFiles(prev => [newFile, ...prev]);
 
     const formData = new FormData();
     formData.append('file', file);
@@ -77,11 +79,18 @@ export default function Library() {
           pageCount: doc.pageCount ?? 0
         } : f)
       );
-      fetchLibraryFiles(); // will poll until uploaded document either completes or fails
+
+      // Show appropriate toast based on final status
+      if (doc.status === 'ready') {
+        showToast('success', 'Document Ready', `${file.name} is ready to use`);
+      } else if (doc.status === 'failed') {
+        showToast('error', 'Document Failed', `${file.name} could not be processed`);
+      }
     } catch (error) {
       console.error('Error uploading file:', error);
       // Handle upload error, maybe remove the file from the list
       setLibraryFiles(prev => prev.filter(f => f.id !== tempId));
+      showToast('error', 'Document Failed', `Failed to upload ${file.name}`);
     }
   };
 

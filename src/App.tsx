@@ -14,34 +14,37 @@ import Layout from './Layout';
 import { HashRouter } from 'react-router-dom';
 import { Routes, Route } from 'react-router-dom';
 import { AppProvider } from './AppContext';
+import { ToastProvider } from './ToastContext';
 
 
 function App() {
   return (
     <HashRouter>
-      <AppProvider>
-      <Routes>
-        {/* Landing page*/ }
-        <Route path="/" element={<LandingPage />} />
-        
-        {/* Auth related pages */}
-        <Route path="/auth" element={<AuthPage />} />
-        <Route path="/resetPass" element={<ResetPassPage />} />
-        <Route path="/passForgetPage" element={<PassForgetPage />} />
-        
-        {/* Dashboard pages */}
-        <Route path="/dashboard" element={<Layout />}>
-          <Route path="home" element={<Dashboard />} />
-          <Route path="library" element={<Library />} />
-          <Route path="exam-studio" element={<ExamStudio />} />
-          <Route path="assessments" element={<AssessmentsHub />} />
-          <Route path="exam-mode" element={<ExamMode />} />
-          <Route path="grading-report" element={<GradingReport />} />
-          <Route path="profile" element={<Profile />} />
-          <Route path="trash" element={<Trash />} />
-        </Route>
-        </Routes>
-      </AppProvider>
+      <ToastProvider>
+        <AppProvider>
+        <Routes>
+          {/* Landing page*/ }
+          <Route path="/" element={<LandingPage />} />
+          
+          {/* Auth related pages */}
+          <Route path="/auth" element={<AuthPage />} />
+          <Route path="/resetPass" element={<ResetPassPage />} />
+          <Route path="/passForgetPage" element={<PassForgetPage />} />
+          
+          {/* Dashboard pages */}
+          <Route path="/dashboard" element={<Layout />}>
+            <Route path="home" element={<Dashboard />} />
+            <Route path="library" element={<Library />} />
+            <Route path="exam-studio" element={<ExamStudio />} />
+            <Route path="assessments" element={<AssessmentsHub />} />
+            <Route path="exam-mode" element={<ExamMode />} />
+            <Route path="grading-report" element={<GradingReport />} />
+            <Route path="profile" element={<Profile />} />
+            <Route path="trash" element={<Trash />} />
+          </Route>
+          </Routes>
+        </AppProvider>
+      </ToastProvider>
     </HashRouter>
   );
 }

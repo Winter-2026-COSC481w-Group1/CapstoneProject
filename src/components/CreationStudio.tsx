@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { CheckSquare, Square, Zap } from "lucide-react";
 import { useApp } from "../AppContext";
+import { useToast } from '../ToastContext';
 import { supabaseClient } from "../supabase";
 import { post } from "../api";
 import { useNavigate } from "react-router-dom";
@@ -9,8 +10,8 @@ import { Assessment } from "../types";
 export default function CreationStudio() {
   const navigate = useNavigate();
 
-  const { libraryFiles, fetchAssessments, setAssessments } =
-    useApp();
+  const { libraryFiles, fetchAssessmentDetails, setAssessments } = useApp();
+  const { showToast } = useToast();
 
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([
@@ -86,7 +87,7 @@ export default function CreationStudio() {
       } = await supabaseClient.auth.getSession();
       if (!session?.access_token) {
         console.error("no session token available"); //do something else here?
-        return;
+        throw new Error("no session token available");
       }
 
       const createdAssessmentId = await post(
@@ -104,14 +105,21 @@ export default function CreationStudio() {
         ),
       );
 
-      await fetchAssessments();
+      const updatedAssessment = await fetchAssessmentDetails(createdAssessmentId);
+
+      // Show appropriate toast based on final status
+      if (updatedAssessment?.status === "failed") {
+        showToast("error", "Assessment Failed", `${updatedAssessment.title} failed to generate`);
+      } else {
+        showToast("success","Assessment Ready", `${updatedAssessment?.title || optimisticAssessment.title} is ready to take`);
+      }
     } catch (error) {
       // Remove temporary pending card when generation request fails.
       setAssessments((prevAssessments) =>
         prevAssessments.filter((assessment) => assessment.id !== tempAssessmentId),
       );
       console.error("Generation error:", error);
-      alert("Error generating assessment. Please try again.");
+      showToast("error", "Assessment Failed", `Failed to generate ${optimisticAssessment.title}`);
       navigate("/dashboard/exam-studio");
     }
   };

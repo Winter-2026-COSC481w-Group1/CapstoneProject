@@ -12,7 +12,7 @@ interface AppContextType {
   setLibraryFiles: (files: LibraryFile[] | ((prevFiles: LibraryFile[]) => LibraryFile[])) => void;
   fetchLibraryFiles: () => Promise<void>;
   assessments: Assessment[];
-  setAssessments: (assessments: Assessment[]) => void;
+  setAssessments: (assessments: Assessment[] | ((prevAssessments: Assessment[]) => Assessment[])) => void;
   fetchAssessments: () => Promise<void>;
   fetchAssessmentDetails: (assessmentId: string) => Promise<Assessment | null>;
   currentAssessment: Assessment | null;
@@ -233,7 +233,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (!session?.access_token) return null;
 
       const assessmentData = await get(`api/v1/assessments/${assessmentId}`, session.access_token);
-      const questions = assessmentData.questions.map((que: any) => ({
+      const questions = (assessmentData.questions || []).map((que: any) => ({
         id: que.id,
         type: que.type,
         question: que.question,

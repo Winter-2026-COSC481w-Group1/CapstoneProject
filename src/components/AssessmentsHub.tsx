@@ -79,9 +79,7 @@ export default function AssessmentsHub() {
         },
       });
       if (res.ok) {
-        setAssessments((prevAssessments) =>
-          prevAssessments.filter((assessment) => assessment.id !== id)
-        );
+        setAssessments(assessments.filter((assessment) => assessment.id !== id));
       } else {
         console.error('failed moving assessment to trash', res.status);
       }
