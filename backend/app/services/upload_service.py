@@ -121,6 +121,7 @@ class UploadService:
         document = None
         should_trigger_task = False
         message = ""
+        restored_from_trash = False
 
         # Case 1: Document exists and is NOT failed (ready, processing, indexing)
         if existing and existing.data and existing.data.get("status") != "failed":
@@ -178,11 +179,28 @@ class UploadService:
                 self.db.table("documents").update({"status": "failed"}).eq("id", document_id).execute()
                 raise HTTPException(status_code=500, detail=f"Storage upload failed: {e}")
 
-        # 4. User Linking: Always perform an upsert on the 'user_library' table
-        self.db.table("user_library").upsert(
-            {"user_id": user_id, "document_id": document_id},
-            on_conflict="user_id,document_id",
-        ).execute()
+        # 4. User Linking:
+        # - If an existing link is trashed, restore it (deleted_at -> null)
+        # - If no link exists, insert a fresh link
+        link_res = (
+            self.db.table("user_library")
+            .select("deleted_at")
+            .eq("user_id", user_id)
+            .eq("document_id", document_id)
+            .maybe_single()
+            .execute()
+        )
+
+        if link_res and link_res.data:
+            if link_res.data.get("deleted_at") is not None:
+                self.db.table("user_library").update({"deleted_at": None}).eq(
+                    "user_id", user_id
+                ).eq("document_id", document_id).execute()
+                restored_from_trash = True
+        else:
+            self.db.table("user_library").insert(
+                {"user_id": user_id, "document_id": document_id}
+            ).execute()
 
         # 5. Single Trigger: if 'should_trigger_task' is True, await the task exactly once
         if should_trigger_task:
@@ -199,6 +217,9 @@ class UploadService:
             final_doc_res = self.db.table("documents").select("*").eq("id", document_id).maybe_single().execute()
             if final_doc_res.data:
                 document = final_doc_res.data
+
+        if restored_from_trash and not should_trigger_task:
+            message = "Document restored from trash."
 
         return {
             "document": {

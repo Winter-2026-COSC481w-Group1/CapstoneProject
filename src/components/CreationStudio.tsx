@@ -118,7 +118,7 @@ export default function CreationStudio() {
         prevAssessments.filter((assessment) => assessment.id !== tempAssessmentId),
       );
       console.error("Generation error:", error);
-      showToast("error", "Assessment Failed", `Failed to generate ${optimisticAssessment.title}`);
+      showToast("error", "Assessment Failed", `${optimisticAssessment.title} failed to generate`);
       navigate("/dashboard/exam-studio");
     }
   };

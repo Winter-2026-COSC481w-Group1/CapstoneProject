@@ -90,7 +90,7 @@ export default function Library() {
       console.error('Error uploading file:', error);
       // Handle upload error, maybe remove the file from the list
       setLibraryFiles(prev => prev.filter(f => f.id !== tempId));
-      showToast('error', 'Document Failed', `Failed to upload ${file.name}`);
+      showToast('error', 'Document Failed', `${file.name} failed to upload`);
     }
   };
 
