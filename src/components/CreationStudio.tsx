@@ -86,7 +86,6 @@ export default function CreationStudio() {
         data: { session },
       } = await supabaseClient.auth.getSession();
       if (!session?.access_token) {
-        console.error("no session token available"); //do something else here?
         throw new Error("no session token available");
       }
 
@@ -108,11 +107,11 @@ export default function CreationStudio() {
       const updatedAssessment = await fetchAssessmentDetails(createdAssessmentId);
 
       // Show appropriate toast based on final status
-      if (updatedAssessment?.status === "failed") {
-        showToast("error", "Assessment Failed", `${updatedAssessment.title} failed to generate`);
-      } else {
-        showToast("success","Assessment Ready", `${updatedAssessment?.title || optimisticAssessment.title} is ready to take`);
-      }
+      if (updatedAssessment?.status === 'ready') {
+        showToast('success', 'Assessment Ready', `${updatedAssessment?.title || optimisticAssessment.title} is ready to take`);
+      } else if (updatedAssessment?.status === 'failed') {
+        showToast('error', 'Assessment Failed', `${updatedAssessment.title} failed to generate`);
+      } 
     } catch (error) {
       // Remove temporary pending card when generation request fails.
       setAssessments((prevAssessments) =>

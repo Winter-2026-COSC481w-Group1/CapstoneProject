@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { X, CheckCircle, AlertCircle } from 'lucide-react';
 
 export interface ToastMessage {
@@ -14,13 +14,30 @@ interface ToastProps {
 }
 
 export function Toast({ toast, onClose }: ToastProps) {
-  useEffect(() => {
-    const timer = setTimeout(() => {
+  const [isVisible, setIsVisible] = useState(false);
+
+  const dismissToast = useCallback(() => {
+    setIsVisible(false);
+    window.setTimeout(() => {
       onClose(toast.id);
+    }, 300);
+  }, [onClose, toast.id]);
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      setIsVisible(true);
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      dismissToast();
     }, 10000); // 10 seconds
 
-    return () => clearTimeout(timer);
-  }, [toast.id, onClose]);
+    return () => window.clearTimeout(timer);
+  }, [dismissToast]);
 
   const isSuccess = toast.type === 'success';
   const bgColor = isSuccess ? 'bg-emerald-50' : 'bg-red-50';
@@ -31,7 +48,9 @@ export function Toast({ toast, onClose }: ToastProps) {
 
   return (
     <div
-      className={`${bgColor} ${borderColor} border rounded-xl p-4 shadow-lg flex items-start gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300`}
+      className={`${bgColor} ${borderColor} border rounded-xl p-4 shadow-lg flex items-start gap-3 transition-all duration-300 ease-out ${
+        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
+      }`}
     >
       {isSuccess ? (
         <CheckCircle className={`w-5 h-5 flex-shrink-0 mt-0.5 ${iconColor}`} />
@@ -45,7 +64,7 @@ export function Toast({ toast, onClose }: ToastProps) {
       </div>
 
       <button
-        onClick={() => onClose(toast.id)}
+        onClick={dismissToast}
         className={`flex-shrink-0 p-1 hover:bg-white/50 rounded transition-colors ${messageColor}`}
         title="Close"
       >
