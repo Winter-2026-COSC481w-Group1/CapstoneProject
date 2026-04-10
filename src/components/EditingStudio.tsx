@@ -97,6 +97,7 @@ export default function EditingStudio() {
 
       // Update local state
       const updatedAssessment = structuredClone(currentAssessment);
+      updatedAssessment.status = "ready"; // invalidate latest attempt
       setCurrentAssessment(updatedAssessment);
       
       // if this is a newly created assessment, make sure to add it to the assessments list

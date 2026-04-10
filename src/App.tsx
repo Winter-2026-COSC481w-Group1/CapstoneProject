@@ -3,7 +3,6 @@ import AuthPage from './components/AuthPage';
 import Dashboard from './components/Dashboard';
 import Library from './components/Library';
 import ExamStudio from './components/ExamStudio';
-import LoadingRoom from './components/LoadingRoom';
 import AssessmentsHub from './components/AssessmentsHub';
 import ExamMode from './components/ExamMode';
 import GradingReport from './components/GradingReport';
@@ -35,7 +34,6 @@ function App() {
           <Route path="home" element={<Dashboard />} />
           <Route path="library" element={<Library />} />
           <Route path="exam-studio" element={<ExamStudio />} />
-          <Route path="loading" element={<LoadingRoom />} />
           <Route path="assessments" element={<AssessmentsHub />} />
           <Route path="exam-mode" element={<ExamMode />} />
           <Route path="grading-report" element={<GradingReport />} />

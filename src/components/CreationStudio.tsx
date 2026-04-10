@@ -4,11 +4,12 @@ import { useApp } from "../AppContext";
 import { supabaseClient } from "../supabase";
 import { post } from "../api";
 import { useNavigate } from "react-router-dom";
+import { Assessment } from "../types";
 
 export default function CreationStudio() {
   const navigate = useNavigate();
 
-  const { libraryFiles, fetchAssessments } =
+  const { libraryFiles, fetchAssessments, setAssessments } =
     useApp();
 
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
@@ -57,8 +58,27 @@ export default function CreationStudio() {
       question_types: selectedTypes.map((t) => t.replace("-", "_")), // match 'multiple_choice' backend format
     };
 
+    const tempAssessmentId = `temp-${crypto.randomUUID()}`;
+    const optimisticAssessment: Assessment = {
+      id: tempAssessmentId,
+      title: assessmentTitle.trim() || `Assessment: ${topic || "Untitled"}`,
+      topic,
+      createdAt: new Date(),
+      status: "pending",
+      sourceFiles: documentIds,
+      questionCount: questionCount,
+      difficulty,
+      numAttempts: 0,
+      numCorrect: 0,
+      questions: [],
+    };
+
     try {
-      navigate("/dashboard/loading");
+      // Add a local pending card immediately for responsive UX.
+      setAssessments((prevAssessments) => [optimisticAssessment, ...prevAssessments]);
+
+      // Navigate to assessments hub where you can poll for status
+      navigate("/dashboard/assessments");
 
       //get session token
       const {
@@ -69,20 +89,30 @@ export default function CreationStudio() {
         return;
       }
 
-      await post(
+      const createdAssessmentId = await post(
         "api/v1/assessments",
         requestBody,
         session.access_token,
       );
 
-      await fetchAssessments();
+      // Replace temporary ID with server ID before refresh to avoid duplicate cards.
+      setAssessments((prevAssessments) =>
+        prevAssessments.map((assessment) =>
+          assessment.id === tempAssessmentId
+            ? { ...assessment, id: createdAssessmentId }
+            : assessment,
+        ),
+      );
 
-      // Navigate to assessments hub where you can poll for status
-      navigate("/dashboard/assessments");
+      await fetchAssessments();
     } catch (error) {
+      // Remove temporary pending card when generation request fails.
+      setAssessments((prevAssessments) =>
+        prevAssessments.filter((assessment) => assessment.id !== tempAssessmentId),
+      );
       console.error("Generation error:", error);
       alert("Error generating assessment. Please try again.");
-      navigate("/dashboard/examStudio");
+      navigate("/dashboard/exam-studio");
     }
   };
 
