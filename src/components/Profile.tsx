@@ -4,6 +4,8 @@ import { supabaseClient } from '../supabase';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 
+const VITE_API_URL = import.meta.env.VITE_API_URL;
+
 export default function Profile() {
   const navigate = useNavigate();
   const { currentUser, libraryFiles, assessments } = useApp();
@@ -34,6 +36,31 @@ export default function Profile() {
   const handleAccountDeletion = async () => {
     console.log("account deletion");
     // todo implement full user deletion
+    try {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (!session?.access_token) {
+        console.error('no session token available for account deletion');
+        return;
+      }
+      //todo change to supabase version
+      const res = await fetch(`${VITE_API_URL}/api/v1/api/users`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
+      if (res.ok) {
+        console.log('successfully deleted account');
+      }
+      else
+      {
+        console.error('failed deleting account');
+      }
+    } catch (err) {
+      console.error('error deleting account', err);
+    } finally {
+      navigate('/');
+    }
   };
   
   const handleNameChange = async () => { 
