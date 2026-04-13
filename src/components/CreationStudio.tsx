@@ -1,15 +1,17 @@
 import { useState } from "react";
 import { CheckSquare, Square, Zap } from "lucide-react";
 import { useApp } from "../AppContext";
+import { useToast } from '../ToastContext';
 import { supabaseClient } from "../supabase";
 import { post } from "../api";
 import { useNavigate } from "react-router-dom";
+import { Assessment } from "../types";
 
 export default function CreationStudio() {
   const navigate = useNavigate();
 
-  const { libraryFiles, fetchAssessments } =
-    useApp();
+  const { libraryFiles, fetchAssessmentDetails, setAssessments } = useApp();
+  const { showToast } = useToast();
 
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([
@@ -57,32 +59,67 @@ export default function CreationStudio() {
       question_types: selectedTypes.map((t) => t.replace("-", "_")), // match 'multiple_choice' backend format
     };
 
+    const tempAssessmentId = `temp-${crypto.randomUUID()}`;
+    const optimisticAssessment: Assessment = {
+      id: tempAssessmentId,
+      title: assessmentTitle.trim() || `Assessment: ${topic || "Untitled"}`,
+      topic,
+      createdAt: new Date(),
+      status: "pending",
+      sourceFiles: documentIds,
+      questionCount: questionCount,
+      difficulty,
+      numAttempts: 0,
+      numCorrect: 0,
+      questions: [],
+    };
+
     try {
-      navigate("/dashboard/loading");
+      // Add a local pending card immediately for responsive UX.
+      setAssessments((prevAssessments) => [optimisticAssessment, ...prevAssessments]);
+
+      // Navigate to assessments hub where you can poll for status
+      navigate("/dashboard/assessments");
 
       //get session token
       const {
         data: { session },
       } = await supabaseClient.auth.getSession();
       if (!session?.access_token) {
-        console.error("no session token available"); //do something else here?
-        return;
+        throw new Error("no session token available");
       }
 
-      await post(
+      const createdAssessmentId = await post(
         "api/v1/assessments",
         requestBody,
         session.access_token,
       );
 
-      await fetchAssessments();
+      // Replace temporary ID with server ID before refresh to avoid duplicate cards.
+      setAssessments((prevAssessments) =>
+        prevAssessments.map((assessment) =>
+          assessment.id === tempAssessmentId
+            ? { ...assessment, id: createdAssessmentId }
+            : assessment,
+        ),
+      );
 
-      // Navigate to assessments hub where you can poll for status
-      navigate("/dashboard/assessments");
+      const updatedAssessment = await fetchAssessmentDetails(createdAssessmentId);
+
+      // Show appropriate toast based on final status
+      if (updatedAssessment?.status === 'ready') {
+        showToast('success', 'Assessment Ready', `${updatedAssessment?.title || optimisticAssessment.title} is ready to take`);
+      } else if (updatedAssessment?.status === 'failed') {
+        showToast('error', 'Assessment Failed', `${updatedAssessment.title} failed to generate`);
+      } 
     } catch (error) {
+      // Remove temporary pending card when generation request fails.
+      setAssessments((prevAssessments) =>
+        prevAssessments.filter((assessment) => assessment.id !== tempAssessmentId),
+      );
       console.error("Generation error:", error);
-      alert("Error generating assessment. Please try again.");
-      navigate("/dashboard/examStudio");
+      showToast("error", "Assessment Failed", `${optimisticAssessment.title} failed to generate`);
+      navigate("/dashboard/exam-studio");
     }
   };
 
@@ -273,7 +310,7 @@ export default function CreationStudio() {
               <button
                 onClick={() => setDifficulty("easy")}
                 className={`flex-1 py-3 rounded-xl font-semibold transition-all ${difficulty === "easy"
-                  ? "bg-white text-emerald-600 shadow-md dark:bg-slate-950 dark:text-emerald-300"
+                  ? "bg-white text-green-600 shadow-md dark:bg-slate-950 dark:text-green-300"
                   : "text-gray-600 hover:text-gray-900 dark:text-slate-300 dark:hover:text-slate-100"
                   }`}
               >
@@ -282,7 +319,7 @@ export default function CreationStudio() {
               <button
                 onClick={() => setDifficulty("medium")}
                 className={`flex-1 py-3 rounded-xl font-semibold transition-all ${difficulty === "medium"
-                  ? "bg-white text-emerald-600 shadow-md dark:bg-slate-950 dark:text-emerald-300"
+                  ? "bg-white text-amber-600 shadow-md dark:bg-slate-950 dark:text-amber-300"
                   : "text-gray-600 hover:text-gray-900 dark:text-slate-300 dark:hover:text-slate-100"
                   }`}
               >
@@ -291,7 +328,7 @@ export default function CreationStudio() {
               <button
                 onClick={() => setDifficulty("hard")}
                 className={`flex-1 py-3 rounded-xl font-semibold transition-all ${difficulty === "hard"
-                  ? "bg-white text-emerald-600 shadow-md dark:bg-slate-950 dark:text-emerald-300"
+                  ? "bg-white text-red-600 shadow-md dark:bg-slate-950 dark:text-red-300"
                   : "text-gray-600 hover:text-gray-900 dark:text-slate-300 dark:hover:text-slate-100"
                   }`}
               >
@@ -378,7 +415,7 @@ export default function CreationStudio() {
                       {selectedTypes.map((type) => (
                         <span
                           key={type}
-                          className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-medium dark:bg-emerald-500/10 dark:text-emerald-300"
+                          className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-medium dark:bg-blue-500/10 dark:text-blue-300"
                         >
                           {type
                             .split("-")
@@ -401,9 +438,18 @@ export default function CreationStudio() {
 
                 <div>
                   <div className="text-sm text-gray-600 mb-2 dark:text-slate-300">Difficulty</div>
-                  <div className="inline-flex items-center gap-2 bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-sm font-medium dark:bg-amber-500/10 dark:text-amber-300">
-                    {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
-                  </div>
+                  {difficulty === "easy" && (
+                    <div className="inline-flex items-center gap-2 bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium dark:bg-green-500/10 dark:text-green-300">
+                      Easy
+                    </div>)}
+                  {difficulty === "medium" &&
+                    (<div className="inline-flex items-center gap-2 bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-sm font-medium dark:bg-amber-500/10 dark:text-amber-300">
+                      Medium
+                    </div>)}
+                  {difficulty === "hard" &&
+                    (<div className="inline-flex items-center gap-2 bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-medium dark:bg-red-500/10 dark:text-red-300">
+                      Hard
+                    </div>)}
                 </div>
               </div>
 
