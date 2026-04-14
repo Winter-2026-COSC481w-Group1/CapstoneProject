@@ -11,6 +11,8 @@ export default function Navigation() {
 
   if (!currentUser) return null;
 
+
+
   const navLinks = [
     { id: '/dashboard/home', label: 'Home' },
     { id: '/dashboard/library', label: 'Library' },
@@ -45,10 +47,10 @@ export default function Navigation() {
           </div>
 
           <div className="flex items-center gap-3 ml-auto">
-            <div className="relative">
-              <button type="button" className="relative p-2 hover:bg-gray-100 rounded-full transition-colors dark:hover:bg-slate-800" onClick={() => { setShowBugReportMenu(!showBugReportMenu); }}>
-                <CircleQuestionMark className="w-5 h-5 text-gray-600 dark:text-slate-300" />
-              </button>
+
+
+            <button className="relative p-2 hover:bg-gray-100 rounded-full transition-colors" onClick={() => { setShowBugReportMenu(!showBugReportMenu) }}>
+              <CircleQuestionMark className="w-5 h-5 text-gray-600" />
               {showBugReportMenu && (
                 <div className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-200 py-2 min-w-[180px] z-10 dark:bg-slate-900 dark:border-slate-700">
                   <a className="inline-flex w-full text-left px-4 py-2 hover:bg-emerald-50 text-sm font-medium text-gray-700 dark:text-slate-200 dark:hover:bg-slate-800" href="https://docs.google.com/forms/d/e/1FAIpQLSfHOyMmNEj4jzZT_MQoPgkXWuzxD2Bwr_Lv_G7fUOKGTOXTBQ/viewform?usp=publish-editor" target="_blank" rel="noreferrer">
@@ -97,7 +99,8 @@ export default function Navigation() {
 
       {showMobileMenu && (
         <div className="fixed top-24 left-0 right-0 z-40 flex justify-center px-4 md:hidden">
-          <div className="backdrop-blur-xl bg-white/90 border border-white/40 shadow-lg rounded-3xl p-4 w-full max-w-md dark:bg-slate-900/95 dark:border-slate-700/60">
+          <div className="backdrop-blur-xl bg-white/90 border border-white/40 shadow-lg rounded-3xl p-4 w-full max-w-md">
+
             {navLinks.map((link) => (
               <Link
                 key={link.id}

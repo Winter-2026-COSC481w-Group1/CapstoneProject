@@ -12,7 +12,7 @@ interface AppContextType {
   setLibraryFiles: (files: LibraryFile[] | ((prevFiles: LibraryFile[]) => LibraryFile[])) => void;
   fetchLibraryFiles: () => Promise<void>;
   assessments: Assessment[];
-  setAssessments: (assessments: Assessment[] | ((prevAssessments: Assessment[]) => Assessment[])) => void;
+  setAssessments: React.Dispatch<React.SetStateAction<Assessment[]>>;
   fetchAssessments: () => Promise<void>;
   fetchAssessmentDetails: (assessmentId: string) => Promise<Assessment | null>;
   currentAssessment: Assessment | null;
@@ -28,27 +28,6 @@ interface AppContextType {
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
-
-// const mockActivities: Activity[] = [
-//   {
-//     id: '1',
-//     type: 'exam-created',
-//     description: 'Created Biology Chapter 5 - Cell Structure Quiz',
-//     timestamp: new Date('2024-01-16T10:30:00')
-//   },
-//   {
-//     id: '2',
-//     type: 'file-uploaded',
-//     description: 'Uploaded Introduction to Biology - Chapter 5.pdf',
-//     timestamp: new Date('2024-01-15T14:20:00')
-//   },
-//   {
-//     id: '3',
-//     type: 'exam-completed',
-//     description: 'Completed World History - Industrial Revolution (Score: 85%)',
-//     timestamp: new Date('2024-01-10T16:45:00')
-//   }
-// ];
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -101,6 +80,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         uploadedAt: new Date(doc.uploadedAt),
         status: doc.status as 'ready' | 'indexing' | 'processing' | 'pending' | 'failed',
         pageCount: doc.pageCount ?? 0,
+        sections: doc.sections || [],
       })).sort((a: LibraryFile, b: LibraryFile) => b.uploadedAt.getTime() - a.uploadedAt.getTime());
 
       setLibraryFiles(files);
@@ -162,33 +142,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
         numCorrect: ass.numCorrect,
       })).sort((a: Assessment, b: Assessment) => b.createdAt.getTime() - a.createdAt.getTime());
 
-      setAssessments(prev => {
-        return assessments.map(newAss => {
-          const existing = prev.find(a => a.id === newAss.id);
-          if (existing && (existing.questions || existing.attempt)) {
-            return {
-              ...newAss,
-              questions: existing.questions || newAss.questions,
-              attempt: existing.attempt || newAss.attempt,
-              // Use detailed versions if available
-              numAttempts: existing.attempt?.numAttempts ?? newAss.numAttempts,
-              numCorrect: existing.attempt?.numCorrect ?? newAss.numCorrect,
-            };
-          }
-          return newAss;
-        });
-      });
-
-      // Poll if any assessments are either pending/processing
-      if (assessments.some(ass => ass.status === 'pending' || ass.status === 'processing')) {
-        setTimeout(() => {
-          fetchAssessments();
-        }, 5000);
-      }
+      setAssessments(assessments);
     } catch (err) {
       console.error('error loading assessments', err);
     }
   };
+
+
 
   const fetchTrash = async () => {
     try {
@@ -247,8 +207,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         timeSubmitted: assessmentData.attempt?.time_submitted,
       };
 
-      // Construct the object directly from API data so it works 
-      // even if the local 'assessments' list is still empty or stale.
       const updatedAssessment: Assessment = {
         id: assessmentData.id || assessmentId,
         title: assessmentData.title || 'Untitled Assessment',

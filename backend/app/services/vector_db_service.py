@@ -31,6 +31,7 @@ class VectorDBService:
             global_index = start_index + i
             text = chunk.get("text", "")
             page_num = chunk.get("page_number", -1)
+            section = chunk.get("section", "Introduction")
 
             records.append(
                 (
@@ -41,6 +42,7 @@ class VectorDBService:
                         "file_hash": file_hash,
                         "text": text,
                         "page_number": page_num,
+                        "section": section,
                         "chunk_index": global_index,
                     },
                 )
@@ -75,6 +77,33 @@ class VectorDBService:
 
         except Exception as e:
             print(f"Vecs Query Error: {e}")
+            return []
+
+    async def fetch_chunks_by_metadata(
+        self, filters: dict[str, any], limit: int = 100
+    ) -> list[tuple[str, float, dict[str, any]]]:
+        """
+        Fetches chunks based on metadata filters only.
+        Uses a dummy vector but returns ALL matches (up to limit).
+        Results are then manually sorted by 'chunk_index' to ensure sequential order.
+        """
+        try:
+            # Using a dummy vector for filtering purposes
+            results = self.collection.query(
+                data=[0.0] * 768,
+                limit=limit,
+                filters=filters,
+                include_value=True,
+                include_metadata=True,
+            )
+
+            # Sort by 'chunk_index' from metadata for original reading order
+            sorted_results = sorted(
+                results, key=lambda x: x[2].get("chunk_index", 0)
+            )
+            return sorted_results
+        except Exception as e:
+            print(f"Vecs Metadata Fetch Error: {e}")
             return []
 
     async def delete_document_vectors(self, document_id: str):
