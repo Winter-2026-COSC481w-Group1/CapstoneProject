@@ -33,7 +33,7 @@ export default function AssessmentsHub() {
       const updatedAssessment = await fetchAssessmentDetails(assessmentId);
       if (updatedAssessment) {
         setCurrentAssessment(updatedAssessment);
-        navigate('/dashboard/exam-mode');
+        navigate('/exam-mode');
       }
     } catch (error) {
       console.error('Failed to start exam:', error);
