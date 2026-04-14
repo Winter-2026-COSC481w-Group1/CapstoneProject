@@ -3,6 +3,7 @@ import { Mail, Lock, ArrowLeft } from 'lucide-react';
 import { convertUser, supabaseClient } from '../supabase';
 import { useApp } from '../AppContext';
 import { useNavigate } from 'react-router-dom';
+import Logo from '../examable.svg';
 
 export default function AuthPage() {
   const { setCurrentUser } = useApp();
@@ -64,7 +65,7 @@ export default function AuthPage() {
 
         <div className="relative z-10 flex flex-col justify-between p-12 text-white">
           <div className="flex items-center gap-3">
-            <img src="/examable.svg" alt="Examable" className="w-10 h-10 rounded-lg" />
+            <img src={Logo} alt="Examable" className="w-10 h-10 rounded-lg" />
             <span className="font-bold text-2xl">Examable</span>
           </div>
 

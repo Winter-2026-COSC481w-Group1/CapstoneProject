@@ -3,6 +3,7 @@ import { useApp } from '../AppContext';
 import { Link, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import NotificationBell from './NotificationBell';
+import Logo from '../examable.svg';
 
 export default function Navigation() {
   const { currentUser, showMobileMenu, setShowMobileMenu, theme, setTheme } = useApp();
@@ -24,7 +25,7 @@ export default function Navigation() {
       <nav className="fixed top-0 left-0 right-0 z-50 flex justify-center pt-6 px-4">
         <div className="backdrop-blur-xl bg-white/80 border border-white/40 shadow-lg rounded-full px-6 py-3 flex items-center gap-8 max-w-5xl w-full dark:bg-slate-900/80 dark:border-slate-700/60 dark:shadow-black/20">
           <div className="flex items-center gap-3">
-            <img src="/examable.svg" alt="Examable" className="w-8 h-8" />
+            <img src={Logo} alt="Examable" className="w-8 h-8" />
             <span className="font-bold text-gray-800 text-lg hidden sm:block dark:text-slate-100">Examable</span>
           </div>
 
