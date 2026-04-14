@@ -202,11 +202,6 @@ export default function GradingReport() {
                   <div className="text-sm text-gray-600 dark:text-slate-500">Score</div>
                 </div>
               </div>
-
-              <button className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors dark:bg-emerald-500 dark:hover:bg-emerald-400">
-                <Download className="w-4 h-4" />
-                Download Graded PDF
-              </button>
             </div>
           </div>
         </div>
