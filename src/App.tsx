@@ -37,11 +37,11 @@ function App() {
             <Route path="library" element={<Library />} />
             <Route path="exam-studio" element={<ExamStudio />} />
             <Route path="assessments" element={<AssessmentsHub />} />
-            <Route path="exam-mode" element={<ExamMode />} />
             <Route path="grading-report" element={<GradingReport />} />
             <Route path="profile" element={<Profile />} />
             <Route path="trash" element={<Trash />} />
-          </Route>
+            </Route>
+            <Route path="exam-mode" element={<ExamMode />} />
           </Routes>
         </AppProvider>
       </ToastProvider>
