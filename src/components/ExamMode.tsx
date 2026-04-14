@@ -149,20 +149,20 @@ export default function ExamMode() {
   const isLastQuestion = currentQuestion === questions.length - 1;
 
   return (
-    <div className="min-h-screen bg-stone-50">
-      <div className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
+    <div className="min-h-screen bg-stone-50 dark:bg-slate-950 text-gray-900 dark:text-slate-100 transition-colors duration-300">
+      <div className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm dark:bg-slate-900 dark:border-slate-700 dark:shadow-black/20">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-xl font-bold text-gray-900">{currentAssessment.title}</h1>
-              <p className="text-sm text-gray-600">
+              <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">{currentAssessment.title}</h1>
+              <p className="text-sm text-gray-600 dark:text-slate-300">
                 Question {currentQuestion + 1} of {questions.length}
               </p>
             </div>
 
             <button
               onClick={() => navigate('/dashboard/assessments')}
-              className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors dark:text-slate-300 dark:hover:bg-slate-800"
             >
               <Save className="w-4 h-4" />
               Save & Exit
@@ -170,7 +170,7 @@ export default function ExamMode() {
           </div>
 
           <div className="mt-4">
-            <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div className="h-2 bg-gray-200 rounded-full overflow-hidden dark:bg-slate-700">
               <div
                 className="h-full bg-emerald-600 transition-all duration-300"
                 style={{ width: `${progress}%` }}
@@ -181,12 +181,12 @@ export default function ExamMode() {
       </div>
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200">
+        <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200 dark:bg-slate-900 dark:border-slate-700 dark:shadow-black/20">
           <div className="mb-8">
-            <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-sm font-medium mb-4">
+            <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-sm font-medium mb-4 dark:bg-emerald-500/10 dark:text-emerald-300">
               {question.type.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4 leading-relaxed">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4 leading-relaxed dark:text-slate-100">
               {question.question}
             </h2>
           </div>
@@ -200,21 +200,21 @@ export default function ExamMode() {
                     onClick={() => handleAnswer(idx)}
                     className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
                       answers[question.id] === idx
-                        ? 'border-emerald-500 bg-emerald-50'
-                        : 'border-gray-200 hover:border-emerald-300 bg-white'
+                        ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10'
+                        : 'border-gray-200 hover:border-emerald-300 bg-white dark:border-slate-700 dark:hover:border-emerald-400 dark:bg-slate-800'
                     }`}
                   >
                     <div className="flex items-center gap-3">
                       <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
                         answers[question.id] === idx
                           ? 'border-emerald-500 bg-emerald-500'
-                          : 'border-gray-300'
+                          : 'border-gray-300 dark:border-slate-600'
                       }`}>
                         {answers[question.id] === idx && (
                           <div className="w-2 h-2 bg-white rounded-full"></div>
                         )}
                       </div>
-                      <span className="text-gray-900 font-medium">{option}</span>
+                      <span className="text-gray-900 font-medium dark:text-slate-100">{option}</span>
                     </div>
                   </button>
                 ))}
@@ -229,21 +229,21 @@ export default function ExamMode() {
                     onClick={() => handleAnswer(idx)}
                     className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
                       answers[question.id] === idx
-                        ? 'border-emerald-500 bg-emerald-50'
-                        : 'border-gray-200 hover:border-emerald-300 bg-white'
+                        ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10'
+                        : 'border-gray-200 hover:border-emerald-300 bg-white dark:border-slate-700 dark:hover:border-emerald-400 dark:bg-slate-800'
                     }`}
                   >
                     <div className="flex items-center gap-3">
                       <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
                         answers[question.id] === idx
                           ? 'border-emerald-500 bg-emerald-500'
-                          : 'border-gray-300'
+                          : 'border-gray-300 dark:border-slate-600'
                       }`}>
                         {answers[question.id] === idx && (
                           <div className="w-2 h-2 bg-white rounded-full"></div>
                         )}
                       </div>
-                      <span className="text-gray-900 font-medium">{option}</span>
+                      <span className="text-gray-900 font-medium dark:text-slate-100">{option}</span>
                     </div>
                   </button>
                 ))}
@@ -270,14 +270,14 @@ export default function ExamMode() {
                       }
                     }}
                     placeholder="Type your answer here (max 10 words)..."
-                    className="w-full p-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent min-h-[100px] resize-none"
+                    className="w-full p-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent min-h-[100px] resize-none dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder:text-slate-500"
                   />
                   <div className={`flex justify-between items-center mt-2 text-sm ${
                     wordCount >= MAX_WORDS
-                      ? 'text-red-600 font-semibold'
+                      ? 'text-red-600 font-semibold dark:text-red-300'
                       : wordCount >= WARN_WORDS
-                      ? 'text-amber-600 font-medium'
-                      : 'text-gray-400'
+                      ? 'text-amber-600 font-medium dark:text-amber-300'
+                      : 'text-gray-400 dark:text-slate-500'
                   }`}>
                     <span>
                       {wordCount >= MAX_WORDS
@@ -295,44 +295,46 @@ export default function ExamMode() {
         </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg dark:bg-slate-900 dark:border-slate-700 dark:shadow-black/20">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center gap-4">
           <button
             onClick={handlePrevious}
             disabled={currentQuestion === 0}
-            className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-colors ${
+            className={`flex-shrink-0 flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-colors ${
               currentQuestion === 0
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-slate-800 dark:text-slate-500'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'
             }`}
           >
             <ChevronLeft className="w-5 h-5" />
             Previous
           </button>
 
-          <div className="flex gap-2">
-            {questions.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => setCurrentQuestion(idx)}
-                className={`w-8 h-8 rounded-lg font-semibold text-sm transition-all ${
-                  idx === currentQuestion
-                    ? 'bg-emerald-600 text-white'
-                    : answers[questions[idx].id] !== undefined
-                    ? 'bg-emerald-100 text-emerald-700'
-                    : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                }`}
-              >
-                {idx + 1}
-              </button>
-            ))}
+          <div className="flex-1 min-w-0 overflow-x-auto scrollbar-thin pb-4">
+            <div className="flex gap-2 w-max mx-auto">
+              {questions.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setCurrentQuestion(idx)}
+                  className={`w-8 h-8 rounded-lg font-semibold text-sm transition-all flex-shrink-0 ${
+                    idx === currentQuestion
+                      ? 'bg-emerald-600 text-white'
+                      : answers[questions[idx].id] !== undefined
+                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300'
+                      : 'bg-gray-200 text-gray-600 hover:bg-gray-300 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  {idx + 1}
+                </button>
+              ))}
+            </div>
           </div>
 
           {isLastQuestion ? (
             <button
               onClick={handleSubmit}
               disabled={isSubmitting}
-              className="flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-shrink-0 flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed dark:bg-emerald-500 dark:hover:bg-emerald-400"
             >
               {isSubmitting ? 'Submitting...' : 'Submit'}
               <ChevronRight className="w-5 h-5" />
@@ -340,7 +342,7 @@ export default function ExamMode() {
           ) : (
             <button
               onClick={handleNext}
-              className="flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold transition-colors"
+              className="flex-shrink-0 flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold transition-colors dark:bg-emerald-500 dark:hover:bg-emerald-400"
             >
               Next
               <ChevronRight className="w-5 h-5" />

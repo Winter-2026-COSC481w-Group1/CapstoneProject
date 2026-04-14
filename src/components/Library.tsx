@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Upload, FileText, Loader2, CheckCircle, CircleX, Trash2, Eye } from 'lucide-react';
 import { useApp } from '../AppContext';
+import { useToast } from '../ToastContext';
 import { LibraryFile } from '../types';
 import { supabaseClient } from '../supabase';
 
@@ -9,8 +10,11 @@ import { post, get} from '../api';
 const VITE_API_URL = import.meta.env.VITE_API_URL;
 
 export default function Library() {
-  const { libraryFiles, setLibraryFiles, fetchLibraryFiles } = useApp();
+  const { libraryFiles, setLibraryFiles } = useApp();
+  const { showToast } = useToast();
   const [isDragging, setIsDragging] = useState(false);
+  const [previewingDocumentId, setPreviewingDocumentId] = useState<string | null>(null);
+  const [deletingDocumentId, setDeletingDocumentId] = useState<string | null>(null);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -54,7 +58,7 @@ export default function Library() {
       pageCount: 0 // Will be updated from backend
     };
 
-    setLibraryFiles(prev => [...prev, newFile]);
+    setLibraryFiles(prev => [newFile, ...prev]);
 
     const formData = new FormData();
     formData.append('file', file);
@@ -75,16 +79,24 @@ export default function Library() {
           pageCount: doc.pageCount ?? 0
         } : f)
       );
-      fetchLibraryFiles(); // will poll until uploaded document either completes or fails
+
+      // Show appropriate toast based on final status
+      if (doc.status === 'ready') {
+        showToast('success', 'Document Ready', `${file.name} is ready to use`);
+      } else if (doc.status === 'failed') {
+        showToast('error', 'Document Failed', `${file.name} could not be processed`);
+      }
     } catch (error) {
       console.error('Error uploading file:', error);
       // Handle upload error, maybe remove the file from the list
       setLibraryFiles(prev => prev.filter(f => f.id !== tempId));
+      showToast('error', 'Document Failed', `${file.name} failed to upload`);
     }
   };
 
   // Move document to trash
   const handleDelete = async (id: string) => {
+    setDeletingDocumentId(id);
     try {
       const { data: { session } } = await supabaseClient.auth.getSession();
       if (!session?.access_token) {
@@ -98,41 +110,50 @@ export default function Library() {
         },
       });
       if (res.ok) {
-        setLibraryFiles(libraryFiles.filter(f => f.id !== id));
+        setLibraryFiles(prev => prev.filter(f => f.id !== id));
       } else {
         console.error('failed moving document to trash', res.status);
       }
     } catch (err) {
       console.error('error moving document to trash', err);
+    } finally {
+      setDeletingDocumentId(null);
     }
   };
 
   const handlePreview = async (documentId: string) => {
+      setPreviewingDocumentId(documentId);
+      try {
       const { data: {session} } = await supabaseClient.auth.getSession();
       if (!session?.access_token) return null;
       const response = await get(`api/v1/documents/${documentId}/preview`, session.access_token);
       
       // the url is our signed url from Supabase
-      // opening in a new tab allows the brower's native pdf viewer to take over
+      // opening in a new tab allows the browser's native pdf viewer to take over
       window.open(response.url, '_blank', 'noopener,noreferrer');
+      } catch (err) {
+        console.error('error previewing document', err);
+      } finally {
+        setPreviewingDocumentId(null);
+      }
       }
 
   return (
-    <div className="min-h-screen bg-stone-50 pt-28 pb-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-stone-50 pt-28 pb-12 px-4 sm:px-6 lg:px-8 text-gray-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300">
       <div className="max-w-6xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">My Library</h1>
-          <p className="text-gray-600">Upload and manage your course materials</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2 dark:text-slate-100">My Library</h1>
+          <p className="text-gray-600 dark:text-slate-300">Upload and manage your course materials</p>
         </div>
 
         <div
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          className={`relative bg-white rounded-3xl border-3 border-dashed p-12 mb-8 transition-all ${
+          className={`relative bg-white rounded-3xl border-3 border-dashed p-12 mb-8 transition-all dark:bg-slate-900 dark:border-slate-700 ${
             isDragging
-              ? 'border-emerald-500 bg-emerald-50 scale-[1.02]'
-              : 'border-gray-300 hover:border-emerald-400 hover:bg-emerald-50/50'
+              ? 'border-emerald-500 bg-emerald-50 scale-[1.02] dark:bg-emerald-500/10'
+              : 'border-gray-300 hover:border-emerald-400 hover:bg-emerald-50/50 dark:border-slate-700 dark:hover:bg-slate-800'
           }`}
         >
           <input
@@ -151,24 +172,24 @@ export default function Library() {
             }`}>
               <Upload className={`w-10 h-10 ${isDragging ? 'text-white' : 'text-emerald-600'}`} />
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+            <h3 className="text-xl font-semibold text-gray-900 mb-2 dark:text-slate-100">
               {isDragging ? 'Drop your files here' : 'Upload your documents'}
             </h3>
-            <p className="text-gray-600 mb-4">
+            <p className="text-gray-600 mb-4 dark:text-slate-300">
               Drag and drop or click to browse
             </p>
-            <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 px-4 py-2 rounded-full text-sm">
+            <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 px-4 py-2 rounded-full text-sm dark:bg-emerald-500/10 dark:text-emerald-300">
               PDF or PPTX files up to 50MB
             </div>
           </label>
         </div>
 
         <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-gray-900">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-slate-100">
             Your Files ({libraryFiles.length})
           </h2>
           <div className="flex items-center gap-2">
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-gray-600 dark:text-slate-300">
               {libraryFiles.filter(f => f.status === 'ready').length} ready
             </div>
             <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
@@ -179,18 +200,18 @@ export default function Library() {
           {libraryFiles.map((file) => (
             <div
               key={file.id}
-              className="bg-white rounded-2xl p-6 shadow-lg border border-gray-200 hover:shadow-xl transition-all group"
+              className="bg-white rounded-2xl p-6 shadow-lg border border-gray-200 hover:shadow-xl transition-all group dark:bg-slate-900 dark:border-slate-700 dark:shadow-black/20"
             >
               <div className="flex items-start gap-4">
-                <div className="w-14 h-14 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <FileText className="w-7 h-7 text-red-600" />
+                <div className="w-14 h-14 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0 dark:bg-red-500/10">
+                  <FileText className="w-7 h-7 text-red-600 dark:text-red-300" />
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1 truncate">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1 truncate dark:text-slate-100">
                     {file.name}
                   </h3>
-                  <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
+                  <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600 dark:text-slate-300">
                     <span>{file.size}</span>
                     <span>•</span>
                     <span>{file.pageCount} pages</span>
@@ -206,48 +227,71 @@ export default function Library() {
                 </div>
 
                 <div className="flex items-center gap-3">
+                  {(() => {
+                    const isPreviewLoading = previewingDocumentId === file.id;
+                    const isDeleteLoading = deletingDocumentId === file.id;
+
+                    return (
+                      <>
                   {file.status === 'ready' ? (
-                    <div className="flex items-center gap-2 bg-emerald-100 px-4 py-2 rounded-full">
-                      <CheckCircle className="w-4 h-4 text-emerald-600" />
-                      <span className="text-sm font-medium text-emerald-700">Ready</span>
+                    <div className="flex items-center gap-2 bg-emerald-100 px-4 py-2 rounded-full dark:bg-emerald-500/10">
+                      <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-300" />
+                      <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">Ready</span>
                     </div>
                   ) : file.status === 'pending' ? (
-                    <div className="flex items-center gap-2 bg-blue-100 px-4 py-2 rounded-full">
-                      <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
-                      <span className="text-sm font-medium text-blue-700">Pending...</span>
+                    <div className="flex items-center gap-2 bg-blue-100 px-4 py-2 rounded-full dark:bg-blue-500/10">
+                      <Loader2 className="w-4 h-4 text-blue-600 animate-spin dark:text-blue-300" />
+                      <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Pending...</span>
                     </div>
                   ) : file.status === 'processing' ? (
-                    <div className="flex items-center gap-2 bg-blue-100 px-4 py-2 rounded-full">
-                      <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
-                      <span className="text-sm font-medium text-blue-700">Processing...</span>
+                    <div className="flex items-center gap-2 bg-blue-100 px-4 py-2 rounded-full dark:bg-blue-500/10">
+                      <Loader2 className="w-4 h-4 text-blue-600 animate-spin dark:text-blue-300" />
+                      <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Processing...</span>
                     </div>
                   ) : file.status === 'indexing' ? (
-                    <div className="flex items-center gap-2 bg-amber-100 px-4 py-2 rounded-full">
-                      <Loader2 className="w-4 h-4 text-amber-600 animate-spin" />
-                      <span className="text-sm font-medium text-amber-700">Indexing...</span>
+                    <div className="flex items-center gap-2 bg-amber-100 px-4 py-2 rounded-full dark:bg-amber-500/10">
+                      <Loader2 className="w-4 h-4 text-amber-600 animate-spin dark:text-amber-300" />
+                      <span className="text-sm font-medium text-amber-700 dark:text-amber-300">Indexing...</span>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-2 bg-red-100 px-4 py-2 rounded-full">
-                      <CircleX className="w-4 h-4 text-red-600" />
-                      <span className="text-sm font-medium text-red-700">Failed</span>
+                    <div className="flex items-center gap-2 bg-red-100 px-4 py-2 rounded-full dark:bg-red-500/10">
+                      <CircleX className="w-4 h-4 text-red-600 dark:text-red-300" />
+                      <span className="text-sm font-medium text-red-700 dark:text-red-300">Failed</span>
                     </div>
                   )}
 
                   <button
                     onClick={() => handlePreview(file.id)}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                    disabled={isPreviewLoading || isDeleteLoading}
+                    className={`p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-slate-800 ${
+                      isPreviewLoading ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                    }`}
                     title="Preview"
                   >
-                    <Eye className="w-5 h-5 text-gray-600" />
+                    {isPreviewLoading ? (
+                      <Loader2 className="w-5 h-5 text-gray-600 animate-spin dark:text-slate-300" />
+                    ) : (
+                      <Eye className="w-5 h-5 text-gray-600 dark:text-slate-300" />
+                    )}
                   </button>
 
                   <button
                     onClick={() => handleDelete(file.id)}
-                    className="p-2 hover:bg-red-100 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                    disabled={isDeleteLoading || isPreviewLoading}
+                    className={`p-2 hover:bg-red-100 rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-red-500/10 ${
+                      isDeleteLoading ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                    }`}
                     title="Move to Trash"
                   >
-                    <Trash2 className="w-5 h-5 text-red-600" />
+                    {isDeleteLoading ? (
+                      <Loader2 className="w-5 h-5 text-red-600 animate-spin dark:text-red-300" />
+                    ) : (
+                      <Trash2 className="w-5 h-5 text-red-600 dark:text-red-300" />
+                    )}
                   </button>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
@@ -255,9 +299,9 @@ export default function Library() {
 
           {libraryFiles.length === 0 && (
             <div className="text-center py-12">
-              <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">No files yet</h3>
-              <p className="text-gray-600">Upload your first document to get started</p>
+              <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4 dark:text-slate-600" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2 dark:text-slate-100">No files yet</h3>
+              <p className="text-gray-600 dark:text-slate-300">Upload your first document to get started</p>
             </div>
           )}
         </div>

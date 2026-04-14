@@ -19,17 +19,17 @@ export default function Dashboard() {
   });
 
   return (
-    <div className="min-h-screen bg-stone-50 pt-28 pb-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-stone-50 pt-28 pb-12 px-4 sm:px-6 lg:px-8 text-gray-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
           <div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">
+            <h1 className="text-4xl font-bold text-gray-900 mb-2 dark:text-slate-100">
               Welcome back, {currentUser?.name?.split(' ')[0]}
             </h1>
-            <p className="text-gray-600">Ready to create something amazing?</p>
+            <p className="text-gray-600 dark:text-slate-300">Ready to create something amazing?</p>
           </div>
           <div className="mt-4 sm:mt-0">
-            <div className="inline-flex items-center gap-2 bg-white border border-gray-200 px-4 py-2 rounded-full text-sm text-gray-600">
+            <div className="inline-flex items-center gap-2 bg-white border border-gray-200 px-4 py-2 rounded-full text-sm text-gray-600 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-300">
               <Clock className="w-4 h-4" />
               {today}
             </div>
@@ -63,7 +63,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="bg-white rounded-3xl p-6 shadow-lg border border-gray-200 hover:shadow-xl transition-shadow">
+          <div className="bg-white rounded-3xl p-6 shadow-lg border border-gray-200 hover:shadow-xl transition-shadow dark:bg-slate-900 dark:border-slate-700 dark:shadow-black/20">
             <div className="flex items-start justify-between mb-4">
               <div className="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center">
                 <FileText className="w-6 h-6 text-emerald-600" />
@@ -74,8 +74,8 @@ export default function Dashboard() {
               </div>
             </div>
             <div className="mb-2">
-              <div className="text-4xl font-bold text-gray-900">{libraryFiles.length}</div>
-              <div className="text-gray-600 text-sm">Files in Library</div>
+              <div className="text-4xl font-bold text-gray-900 dark:text-slate-100">{libraryFiles.length}</div>
+              <div className="text-gray-600 text-sm dark:text-slate-300">Files in Library</div>
             </div>
             <button
               onClick={() => navigate('/dashboard/library')}
@@ -86,13 +86,13 @@ export default function Dashboard() {
             </button>
           </div>
 
-          <div className="bg-white rounded-3xl p-6 shadow-lg border border-gray-200 hover:shadow-xl transition-shadow">
+          <div className="bg-white rounded-3xl p-6 shadow-lg border border-gray-200 hover:shadow-xl transition-shadow dark:bg-slate-900 dark:border-slate-700 dark:shadow-black/20">
             <div className="w-12 h-12 bg-amber-100 rounded-2xl flex items-center justify-center mb-4">
               <TrendingUp className="w-6 h-6 text-amber-600" />
             </div>
             <div className="mb-4">
-              <div className="text-4xl font-bold text-gray-900">{avgScore}%</div>
-              <div className="text-gray-600 text-sm">Average Score</div>
+              <div className="text-4xl font-bold text-gray-900 dark:text-slate-100">{avgScore}%</div>
+              <div className="text-gray-600 text-sm dark:text-slate-300">Average Score</div>
             </div>
             <div className="relative pt-1">
               <div className="flex mb-2 items-center justify-between">
@@ -113,16 +113,13 @@ export default function Dashboard() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white rounded-3xl p-6 shadow-lg border border-gray-200">
+          <div className="bg-white rounded-3xl p-6 shadow-lg border border-gray-200 dark:bg-slate-900 dark:border-slate-700 dark:shadow-black/20">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-gray-900">Recent Activity</h3>
-              <button className="text-emerald-600 text-sm font-medium hover:text-emerald-700">
-                View all
-              </button>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-slate-100">Recent Activity</h3>
             </div>
             <div className="space-y-4">
               {activities?.slice(0, 5).map((activity) => (
-                <div key={activity.id} className="flex items-start gap-4 pb-4 border-b border-gray-100 last:border-0">
+                <div key={activity.id} className="flex items-start gap-4 pb-4 border-b border-gray-100 last:border-0 dark:border-slate-800">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
                     activity.type === 'exam-created' ? 'bg-emerald-100' :
                     activity.type === 'file-uploaded' ? 'bg-blue-100' :
@@ -138,14 +135,14 @@ export default function Dashboard() {
                   </div>
                   <div className="flex-1 min-w-0">
                     {activity.type === 'exam-created' ? (
-                      <p className="text-sm font-medium text-gray-900">Created {activity.name}</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-slate-100">Created {activity.name}</p>
                     ) : activity.type === 'file-uploaded' ? (
-                      <p className="text-sm font-medium text-gray-900">Uploaded {activity.name}</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-slate-100">Uploaded {activity.name}</p>
                     ) : (
-                      <p className="text-sm font-medium text-gray-900">Completed {activity.name}</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-slate-100">Completed {activity.name}</p>
                     )}
                     
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-500 mt-1 dark:text-slate-400">
                       {activity.timestamp.toLocaleDateString('en-US', {
                         month: 'short',
                         day: 'numeric',
@@ -159,35 +156,35 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="bg-white rounded-3xl p-6 shadow-lg border border-gray-200">
+          <div className="bg-white rounded-3xl p-6 shadow-lg border border-gray-200 dark:bg-slate-900 dark:border-slate-700 dark:shadow-black/20">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-gray-900">Quick Stats</h3>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-slate-100">Quick Stats</h3>
             </div>
             <div className="space-y-6">
-              <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-xl">
+              <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-xl dark:bg-emerald-500/10">
                 <div>
-                  <div className="text-sm text-gray-600 mb-1">Total Assessments</div>
-                  <div className="text-2xl font-bold text-gray-900">{assessments.length}</div>
+                  <div className="text-sm text-gray-600 mb-1 dark:text-slate-300">Total Assessments</div>
+                  <div className="text-2xl font-bold text-gray-900 dark:text-slate-100">{assessments.length}</div>
                 </div>
                 <div className="w-12 h-12 bg-emerald-600 rounded-xl flex items-center justify-center">
                   <FileCheck className="w-6 h-6 text-white" />
                 </div>
               </div>
 
-              <div className="flex items-center justify-between p-4 bg-blue-50 rounded-xl">
+              <div className="flex items-center justify-between p-4 bg-blue-50 rounded-xl dark:bg-blue-500/10">
                 <div>
-                  <div className="text-sm text-gray-600 mb-1">Ready Files</div>
-                  <div className="text-2xl font-bold text-gray-900">{readyFiles}</div>
+                  <div className="text-sm text-gray-600 mb-1 dark:text-slate-300">Ready Files</div>
+                  <div className="text-2xl font-bold text-gray-900 dark:text-slate-100">{readyFiles}</div>
                 </div>
                 <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center">
                   <FileText className="w-6 h-6 text-white" />
                 </div>
               </div>
 
-              <div className="flex items-center justify-between p-4 bg-amber-50 rounded-xl">
+              <div className="flex items-center justify-between p-4 bg-amber-50 rounded-xl dark:bg-amber-500/10">
                 <div>
-                  <div className="text-sm text-gray-600 mb-1">Completed Tests</div>
-                  <div className="text-2xl font-bold text-gray-900">{completedAssessments.length}</div>
+                  <div className="text-sm text-gray-600 mb-1 dark:text-slate-300">Completed Tests</div>
+                  <div className="text-2xl font-bold text-gray-900 dark:text-slate-100">{completedAssessments.length}</div>
                 </div>
                 <div className="w-12 h-12 bg-amber-600 rounded-xl flex items-center justify-center">
                   <CheckCircle className="w-6 h-6 text-white" />

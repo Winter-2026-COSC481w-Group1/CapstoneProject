@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from dateutil import parser
 
 from fastapi import HTTPException
 
@@ -86,7 +87,7 @@ class DocumentService:
                 # Calculate days remaining before auto-deletion (30 days)
                 days_remaining = None
                 if deleted_at:
-                    deleted_dt = datetime.fromisoformat(deleted_at.replace("Z", "+00:00"))
+                    deleted_dt = datetime.fromisoformat(parser.isoparse(deleted_at).isoformat())
                     elapsed = (datetime.now(timezone.utc) - deleted_dt).days
                     days_remaining = max(0, 30 - elapsed)
 

@@ -6,6 +6,8 @@ import { get } from './api';
 interface AppContextType {
   currentUser: User | null;
   setCurrentUser: React.Dispatch<React.SetStateAction<User | null>>;
+  theme: 'light' | 'dark';
+  setTheme: (theme: 'light' | 'dark') => void;
   libraryFiles: LibraryFile[];
   setLibraryFiles: (files: LibraryFile[] | ((prevFiles: LibraryFile[]) => LibraryFile[])) => void;
   fetchLibraryFiles: () => Promise<void>;
@@ -29,6 +31,16 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window === 'undefined') return 'light';
+
+    const savedTheme = window.localStorage.getItem('theme');
+    if (savedTheme === 'light' || savedTheme === 'dark') {
+      return savedTheme;
+    }
+
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  });
   const [libraryFiles, setLibraryFiles] = useState<LibraryFile[]>([]);
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [currentAssessment, setCurrentAssessment] = useState<Assessment | null>(null);
@@ -36,6 +48,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [trashedDocuments, setTrashedDocuments] = useState<TrashedDocument[]>([]);
   const [trashedAssessments, setTrashedAssessments] = useState<TrashedAssessment[]>([]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.toggle('dark', theme === 'dark');
+    window.localStorage.setItem('theme', theme);
+  }, [theme]);
 
   useEffect(() => {
     if (currentUser) {
@@ -67,11 +85,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       setLibraryFiles(files);
 
-      // Check if any files are either pending/processing/indexing
+      // Poll if any files are either pending/processing/indexing
       if (files.some(file => file.status !== 'ready' && file.status !== 'failed')) {
         setTimeout(() => {
           fetchLibraryFiles();
-        }, 3000); // wait 3 seconds
+        }, 3000);
       }
     } catch (err) {
       console.error('error loading documents', err);
@@ -175,7 +193,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (!session?.access_token) return null;
 
       const assessmentData = await get(`api/v1/assessments/${assessmentId}`, session.access_token);
-      const questions = assessmentData.questions.map((que: any) => ({
+      const questions = (assessmentData.questions || []).map((que: any) => ({
         id: que.id,
         type: que.type,
         question: que.question,
@@ -225,6 +243,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       value={{
         currentUser,
         setCurrentUser,
+        theme,
+        setTheme,
         libraryFiles,
         setLibraryFiles,
         fetchLibraryFiles,

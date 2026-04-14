@@ -1,6 +1,7 @@
 from typing import Dict, Any, List
 from uuid import uuid4
 from datetime import datetime, timezone
+from dateutil import parser
 import re
 import asyncio
 import random
@@ -379,7 +380,7 @@ class AssessmentService:
                 "question_text": q_data.question,
                 "question_type": q_type_map.get(q_data.type, "MCQ"),
                 "explanation": f"Page: {q_data.page_number} Text: {q_data.source_text}",  # Using source_text as explanation/context
-                "document_id": q_data.document_id,
+                "document_id": q_data.document_id or None, # There may be no source
             }
 
             q_result = (
@@ -729,7 +730,7 @@ class AssessmentService:
             "query": assessment_data.topic,
             "status": "ready",
         }
-
+        
         update_result = (
             self.db_client.table("assessments")
             .update(metadata_update)
@@ -737,28 +738,38 @@ class AssessmentService:
             .eq("id", assessment_id)
             .execute()
         )
-
+        
+        # Check if assessment exists in database
         if not update_result.data:
-            raise HTTPException(status_code=404, detail="Assessment not found")
-
-        # delete existing questions
-        delete_result = (
+          # add in the uuid and user_id the client presented
+          metadata_update.update(
+              {
+                  "id": assessment_id,
+                  "user_id": user_id
+              }
+          )
+          
+          # add the blank assessment to the table
+          result = self.db_client.table("assessments").insert(metadata_update).execute()
+  
+          if not result.data:
+              raise ValueError("Failed to initialize assessment record in Supabase.")
+          
+        # delete existing questions (if any)
+        _ = (
             self.db_client.table("questions")
             .delete()
             .eq("assessment_id", assessment_id)
             .execute()
         )
 
-        # if not delete_result.data:
-        # raise HTTPException(status_code=404, detail="No questions found")
-
+        # write questions (if any)
         await self._save_assessment_to_db(assessment_id, assessment_data)
 
         return {"message": "Assessment updated successfully"}
 
     async def delete_assessment(self, assessment_id: str, user_id: str):
         """Soft-delete an assessment (move to trash)."""
-        from datetime import datetime, timezone
         deleted_at = datetime.now(timezone.utc).isoformat()
 
         result = (
@@ -780,7 +791,6 @@ class AssessmentService:
 
     async def get_trash_assessments(self, user_id: str) -> list:
         """Return assessments the user has soft-deleted (in the trash)."""
-        from datetime import datetime, timezone
         response = (
             self.db_client.table("assessments")
             .select("*")
@@ -794,7 +804,7 @@ class AssessmentService:
             deleted_at = row.get("deleted_at")
             days_remaining = None
             if deleted_at:
-                deleted_dt = datetime.fromisoformat(deleted_at.replace("Z", "+00:00"))
+                deleted_dt = datetime.fromisoformat(parser.isoparse(deleted_at).isoformat())
                 elapsed = (datetime.now(timezone.utc) - deleted_dt).days
                 days_remaining = max(0, 30 - elapsed)
 

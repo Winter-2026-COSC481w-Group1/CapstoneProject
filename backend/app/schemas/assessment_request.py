@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class AssessmentRequest(BaseModel):
@@ -6,6 +6,6 @@ class AssessmentRequest(BaseModel):
     sections: list[str] | None = None # Filter by specific document sections/chapters
     query: str  # the topic of the exam. unable to rename because of db schema
     title: str | None = None
-    num_questions: int
+    num_questions: int = Field(ge=1, le=50)
     difficulty: str = "medium"
     question_types: list[str] = ["multiple_choice"]

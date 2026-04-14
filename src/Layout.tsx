@@ -3,11 +3,14 @@ import { Outlet, useNavigate } from "react-router-dom";
 import { useEffect, useState } from 'react';
 import { convertUser, supabaseClient } from './supabase';
 import { useApp } from './AppContext';
+import { useToast } from './ToastContext';
+import { ToastContainer } from './components/Toast';
 import { Loader2 } from 'lucide-react';
 import { User } from './types';
 
 export default function Layout() {
   const { setCurrentUser } = useApp();
+  const { toasts, removeToast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   
@@ -37,8 +40,8 @@ export default function Layout() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-stone-50">
-        <Loader2 className="w-12 h-12 text-emerald-600 animate-spin" />
+      <div className="min-h-screen flex items-center justify-center bg-stone-50 dark:bg-slate-950">
+        <Loader2 className="w-12 h-12 text-emerald-600 animate-spin dark:text-emerald-400" />
       </div>
     );
   }
@@ -46,7 +49,8 @@ export default function Layout() {
   return (
     <>
       <Navigation />
-      <div className="pt-2">
+      <ToastContainer toasts={toasts} onClose={removeToast} />
+      <div className="pt-2 min-h-screen bg-stone-50 text-gray-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300">
         <Outlet />
       </div>
     </>
