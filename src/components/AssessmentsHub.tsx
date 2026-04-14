@@ -3,6 +3,7 @@ import { Play, Download, Clock, CheckCircle, CircleX, FileText, TrashIcon, Loade
 import { useApp } from '../AppContext';
 import { supabaseClient } from '../supabase';
 import { useNavigate } from 'react-router-dom';
+import { Assessment } from '../types';
 
 const VITE_API_URL = import.meta.env.VITE_API_URL;
 
@@ -61,6 +62,101 @@ export default function AssessmentsHub() {
 
   const handleDownloadMenu = (assessmentId: string) => {
     setShowDownloadMenu((prev) => (prev === assessmentId ? null : assessmentId));
+  };
+
+  const buildPrintDocument = (assessment: Assessment, includeAnswers: boolean): string => {
+    const OPTION_LABELS = ['A', 'B', 'C', 'D', 'E'];
+    const questionsHtml = assessment.questions.map((q, idx) => {
+      const optionsHtml =
+        q.type === 'multiple-choice' && q.options
+          ? q.options
+              .map((opt, i) => {
+                const label = OPTION_LABELS[i] ?? String(i + 1);
+                const isCorrect = includeAnswers && q.correctAnswer === i;
+                return `<div class="option${isCorrect ? ' correct-answer' : ''}">${label}. ${opt}</div>`;
+              })
+              .join('')
+          : q.type === 'true-false'
+          ? (() => {
+              const trueCorrect = includeAnswers && q.correctAnswer === true;
+              const falseCorrect = includeAnswers && q.correctAnswer === false;
+              return `<div class="option${trueCorrect ? ' correct-answer' : ''}">A. True</div><div class="option${falseCorrect ? ' correct-answer' : ''}">B. False</div>`;
+            })()
+          : `<div class="short-answer-line">Answer: _______________________________________________</div>`;
+
+      const answerNote =
+        includeAnswers && q.type === 'short-answer'
+          ? `<div class="short-answer-key">Answer: ${q.correctAnswer}</div>`
+          : '';
+
+      return `<div class="question">
+        <p class="question-text"><strong>${idx + 1}.</strong> ${q.question}</p>
+        ${optionsHtml}
+        ${answerNote}
+      </div>`;
+    }).join('');
+
+    const docTitle = includeAnswers
+      ? `${assessment.title} — Answer Key`
+      : `${assessment.title} — Question Paper`;
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>${docTitle}</title>
+  <style>
+    body { font-family: Georgia, serif; max-width: 780px; margin: 40px auto; color: #111; font-size: 14px; line-height: 1.6; }
+    h1 { font-size: 22px; margin-bottom: 4px; }
+    .meta { color: #555; font-size: 12px; margin-bottom: 28px; border-bottom: 1px solid #ccc; padding-bottom: 12px; }
+    .doc-type { display: inline-block; background: ${includeAnswers ? '#d1fae5' : '#dbeafe'}; color: ${includeAnswers ? '#065f46' : '#1e3a8a'}; padding: 2px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 8px; }
+    .question { margin-bottom: 22px; }
+    .question-text { margin: 0 0 8px; font-size: 14px; }
+    .option { margin: 3px 0 3px 18px; font-size: 13px; color: #222; }
+    .correct-answer { font-weight: bold; color: #065f46; }
+    .correct-answer::after { content: ' ✓'; }
+    .short-answer-line { margin: 8px 0 4px 18px; color: #444; font-style: italic; }
+    .short-answer-key { margin: 4px 0 0 18px; font-weight: bold; color: #065f46; }
+    @media print { body { margin: 20px; } }
+  </style>
+</head>
+<body>
+  <div class="doc-type">${includeAnswers ? 'Answer Key' : 'Question Paper'}</div>
+  <h1>${assessment.title}</h1>
+  <div class="meta">
+    Topic: ${assessment.topic} &nbsp;|&nbsp; Questions: ${assessment.questions.length} &nbsp;|&nbsp; Difficulty: ${assessment.difficulty}
+  </div>
+  ${questionsHtml}
+</body>
+</html>`;
+  };
+
+  const handleDownload = async (assessmentId: string, includeAnswers: boolean) => {
+    setShowDownloadMenu(null);
+    setLoadingAction(`download-${assessmentId}`);
+    try {
+      const fullAssessment = await fetchAssessmentDetails(assessmentId);
+      if (!fullAssessment || !fullAssessment.questions?.length) {
+        alert('Could not load assessment questions. Please try again.');
+        return;
+      }
+      const html = buildPrintDocument(fullAssessment, includeAnswers);
+      const win = window.open('', '_blank');
+      if (!win) {
+        alert('Pop-up blocked. Please allow pop-ups for this site to download.');
+        return;
+      }
+      win.document.write(html);
+      win.document.close();
+      win.focus();
+      // Give the document a moment to render before printing
+      setTimeout(() => win.print(), 400);
+    } catch (err) {
+      console.error('Download failed:', err);
+      alert('Download failed. Please try again.');
+    } finally {
+      setLoadingAction(null);
+    }
   };
 
   // Move assessment to trash
@@ -261,20 +357,31 @@ export default function AssessmentsHub() {
                 <div className="relative">
                   <button
                     onClick={() => {
-                      if (assessment.status === "ready" || assessment.status === "completed") {
+                      if ((assessment.status === "ready" || assessment.status === "completed") && !loadingAction) {
                         handleDownloadMenu(assessment.id);
                       }
                     }}
-                    className={"p-3 border-2 border-gray-200 " + ((assessment.status === "completed") ? "hover:border-emerald-500 dark:border-slate-700 dark:hover:border-emerald-500" : "bg-gray-200 cursor-default dark:bg-slate-800 dark:border-slate-700") + " rounded-xl transition-colors"}
+                    disabled={loadingAction === `download-${assessment.id}`}
+                    className={"p-3 border-2 border-gray-200 " + ((assessment.status === "ready" || assessment.status === "completed") ? "hover:border-emerald-500 dark:border-slate-700 dark:hover:border-emerald-500" : "bg-gray-200 cursor-default dark:bg-slate-800 dark:border-slate-700") + " rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed"}
                   >
-                    <Download className="w-5 h-5 text-gray-600 dark:text-slate-300" />
+                    {loadingAction === `download-${assessment.id}` ? (
+                      <Loader2 className="w-5 h-5 text-gray-600 dark:text-slate-300 animate-spin" />
+                    ) : (
+                      <Download className="w-5 h-5 text-gray-600 dark:text-slate-300" />
+                    )}
                   </button>
                   {showDownloadMenu === assessment.id && (
                     <div className="absolute right-0 top-full mt-2 bg-white rounded-xl shadow-xl border border-gray-200 py-2 min-w-[180px] z-10 dark:bg-slate-900 dark:border-slate-700">
-                      <button className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-sm font-medium text-gray-700 dark:text-slate-200 dark:hover:bg-slate-800">
+                      <button
+                        onClick={() => handleDownload(assessment.id, false)}
+                        className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-sm font-medium text-gray-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                      >
                         Question Paper
                       </button>
-                      <button className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-sm font-medium text-gray-700 dark:text-slate-200 dark:hover:bg-slate-800">
+                      <button
+                        onClick={() => handleDownload(assessment.id, true)}
+                        className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-sm font-medium text-gray-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                      >
                         Answer Key
                       </button>
                     </div>
