@@ -213,13 +213,13 @@ export default function Profile() {
               
               <button
                 onClick={handleAccountDeletion}
-                className="w-full flex items-center justify-between p-4 bg-white border-2 border-red-300 rounded-xl hover:border-red-500 hover:bg-red-50 transition-all group"
+                className="w-full flex items-center justify-between p-4 bg-white border-2 border-red-300 rounded-xl hover:border-red-500 hover:bg-red-50 transition-all group dark:bg-slate-950 dark:border-red-500/30 dark:hover:bg-red-500/10"
               >
                 <div className="flex items-center gap-3">
-                  <UserRoundX className="w-5 h-5 text-red-600" />
+                  <UserRoundX className="w-5 h-5 text-red-600 dark:text-red-300" />
                   <div className="text-left">
-                    <div className="font-semibold text-red-900">Delete Account</div>
-                    <div className="text-sm text-red-700">Permanently delete all your data</div>
+                    <div className="font-semibold text-red-900 dark:text-red-300">Delete Account</div>
+                    <div className="text-sm text-red-700 dark:text-red-200">Permanently delete all your data</div>
                   </div>
                 </div>
               </button>
