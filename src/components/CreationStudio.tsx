@@ -1,15 +1,17 @@
 import { useState } from "react";
 import { CheckSquare, Square, Zap } from "lucide-react";
 import { useApp } from "../AppContext";
+import { useToast } from '../ToastContext';
 import { supabaseClient } from "../supabase";
 import { post } from "../api";
 import { useNavigate } from "react-router-dom";
+import { Assessment } from "../types";
 
 export default function CreationStudio() {
   const navigate = useNavigate();
 
-  const { libraryFiles, fetchAssessments } =
-    useApp();
+  const { libraryFiles, fetchAssessmentDetails, setAssessments } = useApp();
+  const { showToast } = useToast();
 
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([
@@ -57,32 +59,67 @@ export default function CreationStudio() {
       question_types: selectedTypes.map((t) => t.replace("-", "_")), // match 'multiple_choice' backend format
     };
 
+    const tempAssessmentId = `temp-${crypto.randomUUID()}`;
+    const optimisticAssessment: Assessment = {
+      id: tempAssessmentId,
+      title: assessmentTitle.trim() || `Assessment: ${topic || "Untitled"}`,
+      topic,
+      createdAt: new Date(),
+      status: "pending",
+      sourceFiles: documentIds,
+      questionCount: questionCount,
+      difficulty,
+      numAttempts: 0,
+      numCorrect: 0,
+      questions: [],
+    };
+
     try {
-      navigate("/dashboard/loading");
+      // Add a local pending card immediately for responsive UX.
+      setAssessments((prevAssessments) => [optimisticAssessment, ...prevAssessments]);
+
+      // Navigate to assessments hub where you can poll for status
+      navigate("/dashboard/assessments");
 
       //get session token
       const {
         data: { session },
       } = await supabaseClient.auth.getSession();
       if (!session?.access_token) {
-        console.error("no session token available"); //do something else here?
-        return;
+        throw new Error("no session token available");
       }
 
-      await post(
+      const createdAssessmentId = await post(
         "api/v1/assessments",
         requestBody,
         session.access_token,
       );
 
-      await fetchAssessments();
+      // Replace temporary ID with server ID before refresh to avoid duplicate cards.
+      setAssessments((prevAssessments) =>
+        prevAssessments.map((assessment) =>
+          assessment.id === tempAssessmentId
+            ? { ...assessment, id: createdAssessmentId }
+            : assessment,
+        ),
+      );
 
-      // Navigate to assessments hub where you can poll for status
-      navigate("/dashboard/assessments");
+      const updatedAssessment = await fetchAssessmentDetails(createdAssessmentId);
+
+      // Show appropriate toast based on final status
+      if (updatedAssessment?.status === 'ready') {
+        showToast('success', 'Assessment Ready', `${updatedAssessment?.title || optimisticAssessment.title} is ready to take`);
+      } else if (updatedAssessment?.status === 'failed') {
+        showToast('error', 'Assessment Failed', `${updatedAssessment.title} failed to generate`);
+      } 
     } catch (error) {
+      // Remove temporary pending card when generation request fails.
+      setAssessments((prevAssessments) =>
+        prevAssessments.filter((assessment) => assessment.id !== tempAssessmentId),
+      );
       console.error("Generation error:", error);
-      alert("Error generating assessment. Please try again.");
-      navigate("/dashboard/examStudio");
+      showToast("error", "Assessment Failed", `${optimisticAssessment.title} failed to generate`);
+      navigate("/dashboard/exam-studio");
     }
   };
 
@@ -92,32 +129,32 @@ export default function CreationStudio() {
     <>
       <div className="grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Assessment Title</h2>
-            <p className="text-gray-600 mb-6">Give your assessment a name</p>
+          <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200 dark:bg-slate-900 dark:border-slate-700 dark:shadow-black/20">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2 dark:text-slate-100">Assessment Title</h2>
+            <p className="text-gray-600 mb-6 dark:text-slate-300">Give your assessment a name</p>
             <input
               type="text"
               value={assessmentTitle}
               onChange={(e) => setAssessmentTitle(e.target.value)}
               placeholder="e.g. Biology Midterm Review"
-              className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-emerald-500 outline-none transition-all"
+              className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-emerald-500 outline-none transition-all dark:bg-slate-950 dark:border-slate-700 dark:text-slate-100 dark:placeholder:text-slate-500"
             />
           </div>
 
-          <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200 dark:bg-slate-900 dark:border-slate-700 dark:shadow-black/20">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2 dark:text-slate-100">
               Source Materials
             </h2>
-            <p className="text-gray-600 mb-6">Select files from your library</p>
+            <p className="text-gray-600 mb-6 dark:text-slate-300">Select files from your library</p>
 
             {readyFiles.length === 0 ? (
-              <div className="text-center py-12 border-2 border-dashed border-gray-300 rounded-2xl">
-                <p className="text-gray-600 mb-4">
+              <div className="text-center py-12 border-2 border-dashed border-gray-300 rounded-2xl dark:border-slate-700">
+                <p className="text-gray-600 mb-4 dark:text-slate-300">
                   No ready files in your library
                 </p>
                 <button
                   onClick={() => navigate("/dashboard/library")}
-                  className="text-emerald-600 font-medium hover:text-emerald-700"
+                  className="text-emerald-600 font-medium hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
                 >
                   Go to Library →
                 </button>
@@ -129,20 +166,20 @@ export default function CreationStudio() {
                     key={file.id}
                     onClick={() => toggleFile(file.name)}
                     className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${selectedFiles.includes(file.name)
-                      ? "border-emerald-500 bg-emerald-50"
-                      : "border-gray-200 hover:border-emerald-300 bg-white"
+                      ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 dark:border-emerald-400"
+                      : "border-gray-200 hover:border-emerald-300 bg-white dark:bg-slate-950 dark:border-slate-700 dark:hover:border-emerald-400"
                       }`}
                   >
                     {selectedFiles.includes(file.name) ? (
-                      <CheckSquare className="w-6 h-6 text-emerald-600 flex-shrink-0" />
+                      <CheckSquare className="w-6 h-6 text-emerald-600 flex-shrink-0 dark:text-emerald-300" />
                     ) : (
-                      <Square className="w-6 h-6 text-gray-400 flex-shrink-0" />
+                      <Square className="w-6 h-6 text-gray-400 flex-shrink-0 dark:text-slate-500" />
                     )}
                     <div className="flex-1 text-left">
-                      <div className="font-medium text-gray-900">
+                      <div className="font-medium text-gray-900 dark:text-slate-100">
                         {file.name}
                       </div>
-                      <div className="text-sm text-gray-500">
+                      <div className="text-sm text-gray-500 dark:text-slate-400">
                         {file.pageCount} pages
                       </div>
                     </div>
@@ -152,9 +189,9 @@ export default function CreationStudio() {
             )}
           </div>
 
-          <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Assessment Topics</h2>
-            <p className="text-gray-600 mb-6">
+          <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200 dark:bg-slate-900 dark:border-slate-700 dark:shadow-black/20">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2 dark:text-slate-100">Assessment Topics</h2>
+            <p className="text-gray-600 mb-6 dark:text-slate-300">
               Enter chapters or subjects. Use a <strong>comma</strong> to separate multiple topics.
             </p>
 
@@ -163,7 +200,7 @@ export default function CreationStudio() {
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
               placeholder="e.g. Photosynthesis, Mitosis, ATP"
-              className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-emerald-500 outline-none transition-all"
+              className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-emerald-500 outline-none transition-all dark:bg-slate-950 dark:border-slate-700 dark:text-slate-100 dark:placeholder:text-slate-500"
             />
 
             {/* The "Card" Display */}
@@ -176,7 +213,7 @@ export default function CreationStudio() {
                   .map((cleanTopic, index) => (
                     <div
                       key={index}
-                      className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-50 border border-gray-200 text-gray-700 text-sm font-medium"
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-50 border border-gray-200 text-gray-700 text-sm font-medium dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200"
                     >
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                       {cleanTopic}
@@ -185,58 +222,58 @@ export default function CreationStudio() {
               </div>
             )}
           </div>
-          <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200 dark:bg-slate-900 dark:border-slate-700 dark:shadow-black/20">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2 dark:text-slate-100">
               Question Types
             </h2>
-            <p className="text-gray-600 mb-6">Select one or more types</p>
+            <p className="text-gray-600 mb-6 dark:text-slate-300">Select one or more types</p>
 
             <div className="grid sm:grid-cols-3 gap-4">
               <button
                 onClick={() => toggleType("multiple-choice")}
                 className={`p-6 rounded-2xl border-3 transition-all ${selectedTypes.includes("multiple-choice")
-                  ? "border-emerald-500 bg-emerald-50"
-                  : "border-gray-200 hover:border-emerald-300 bg-white"
+                  ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 dark:border-emerald-400"
+                  : "border-gray-200 hover:border-emerald-300 bg-white dark:bg-slate-950 dark:border-slate-700 dark:hover:border-emerald-400"
                   }`}
               >
                 <div className="text-4xl mb-3">📝</div>
-                <div className="font-semibold text-gray-900">
+                <div className="font-semibold text-gray-900 dark:text-slate-100">
                   Multiple Choice
                 </div>
-                <div className="text-sm text-gray-600 mt-1">4 options</div>
+                <div className="text-sm text-gray-600 mt-1 dark:text-slate-400">4 options</div>
               </button>
 
               <button
                 onClick={() => toggleType("true-false")}
                 className={`p-6 rounded-2xl border-3 transition-all ${selectedTypes.includes("true-false")
-                  ? "border-emerald-500 bg-emerald-50"
-                  : "border-gray-200 hover:border-emerald-300 bg-white"
+                  ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 dark:border-emerald-400"
+                  : "border-gray-200 hover:border-emerald-300 bg-white dark:bg-slate-950 dark:border-slate-700 dark:hover:border-emerald-400"
                   }`}
               >
                 <div className="text-4xl mb-3">✓✗</div>
-                <div className="font-semibold text-gray-900">True/False</div>
-                <div className="text-sm text-gray-600 mt-1">Binary choice</div>
+                <div className="font-semibold text-gray-900 dark:text-slate-100">True/False</div>
+                <div className="text-sm text-gray-600 mt-1 dark:text-slate-400">Binary choice</div>
               </button>
 
               <button
                 onClick={() => toggleType("short-answer")}
                 className={`p-6 rounded-2xl border-3 transition-all ${selectedTypes.includes("short-answer")
-                  ? "border-emerald-500 bg-emerald-50"
-                  : "border-gray-200 hover:border-emerald-300 bg-white"
+                  ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 dark:border-emerald-400"
+                  : "border-gray-200 hover:border-emerald-300 bg-white dark:bg-slate-950 dark:border-slate-700 dark:hover:border-emerald-400"
                   }`}
               >
                 <div className="text-4xl mb-3">✍️</div>
-                <div className="font-semibold text-gray-900">Short Answer</div>
-                <div className="text-sm text-gray-600 mt-1">Free text</div>
+                <div className="font-semibold text-gray-900 dark:text-slate-100">Short Answer</div>
+                <div className="text-sm text-gray-600 mt-1 dark:text-slate-400">Free text</div>
               </button>
             </div>
           </div>
 
-          <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200 dark:bg-slate-900 dark:border-slate-700 dark:shadow-black/20">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2 dark:text-slate-100">
               Question Count
             </h2>
-            <p className="text-gray-600 mb-6">
+            <p className="text-gray-600 mb-6 dark:text-slate-300">
               How many questions to generate?
             </p>
 
@@ -253,9 +290,9 @@ export default function CreationStudio() {
                   background: `linear-gradient(to right, rgb(5 150 105) 0%, rgb(5 150 105) ${((questionCount - 5) / 45) * 100}%, rgb(209 250 229) ${((questionCount - 5) / 45) * 100}%, rgb(209 250 229) 100%)`,
                 }}
               />
-              <div className="flex justify-between text-sm text-gray-600">
+              <div className="flex justify-between text-sm text-gray-600 dark:text-slate-300">
                 <span>5</span>
-                <span className="font-bold text-emerald-600 text-2xl">
+                <span className="font-bold text-emerald-600 text-2xl dark:text-emerald-300">
                   {questionCount}
                 </span>
                 <span>50</span>
@@ -263,18 +300,18 @@ export default function CreationStudio() {
             </div>
           </div>
 
-          <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200 dark:bg-slate-900 dark:border-slate-700 dark:shadow-black/20">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2 dark:text-slate-100">
               Difficulty Level
             </h2>
-            <p className="text-gray-600 mb-6">Choose the challenge level</p>
+            <p className="text-gray-600 mb-6 dark:text-slate-300">Choose the challenge level</p>
 
-            <div className="flex items-center gap-4 bg-gray-100 p-2 rounded-2xl">
+            <div className="flex items-center gap-4 bg-gray-100 p-2 rounded-2xl dark:bg-slate-800">
               <button
                 onClick={() => setDifficulty("easy")}
                 className={`flex-1 py-3 rounded-xl font-semibold transition-all ${difficulty === "easy"
-                  ? "bg-white text-emerald-600 shadow-md"
-                  : "text-gray-600 hover:text-gray-900"
+                  ? "bg-white text-green-600 shadow-md dark:bg-slate-950 dark:text-green-300"
+                  : "text-gray-600 hover:text-gray-900 dark:text-slate-300 dark:hover:text-slate-100"
                   }`}
               >
                 Easy
@@ -282,8 +319,8 @@ export default function CreationStudio() {
               <button
                 onClick={() => setDifficulty("medium")}
                 className={`flex-1 py-3 rounded-xl font-semibold transition-all ${difficulty === "medium"
-                  ? "bg-white text-emerald-600 shadow-md"
-                  : "text-gray-600 hover:text-gray-900"
+                  ? "bg-white text-amber-600 shadow-md dark:bg-slate-950 dark:text-amber-300"
+                  : "text-gray-600 hover:text-gray-900 dark:text-slate-300 dark:hover:text-slate-100"
                   }`}
               >
                 Medium
@@ -291,8 +328,8 @@ export default function CreationStudio() {
               <button
                 onClick={() => setDifficulty("hard")}
                 className={`flex-1 py-3 rounded-xl font-semibold transition-all ${difficulty === "hard"
-                  ? "bg-white text-emerald-600 shadow-md"
-                  : "text-gray-600 hover:text-gray-900"
+                  ? "bg-white text-red-600 shadow-md dark:bg-slate-950 dark:text-red-300"
+                  : "text-gray-600 hover:text-gray-900 dark:text-slate-300 dark:hover:text-slate-100"
                   }`}
               >
                 Hard
@@ -303,35 +340,35 @@ export default function CreationStudio() {
 
         <div className="lg:col-span-1">
           <div className="sticky top-28">
-            <div className="bg-white rounded-3xl p-6 shadow-lg border border-gray-200">
-              <h3 className="text-xl font-bold text-gray-900 mb-6">
+            <div className="bg-white rounded-3xl p-6 shadow-lg border border-gray-200 dark:bg-slate-900 dark:border-slate-700 dark:shadow-black/20">
+              <h3 className="text-xl font-bold text-gray-900 mb-6 dark:text-slate-100">
                 Configuration Summary
               </h3>
 
               <div className="space-y-4 mb-6">
-                <div className="pb-4 border-b border-gray-200">
-                  <div className="text-sm text-gray-600 mb-2">Assessment Title</div>
-                  <div className="text-sm font-semibold text-gray-900 truncate">
-                    {assessmentTitle || <span className="text-gray-400 italic">No custom title</span>}
+                <div className="pb-4 border-b border-gray-200 dark:border-slate-700">
+                  <div className="text-sm text-gray-600 mb-2 dark:text-slate-300">Assessment Title</div>
+                  <div className="text-sm font-semibold text-gray-900 truncate dark:text-slate-100">
+                    {assessmentTitle || <span className="text-gray-400 italic dark:text-slate-500">No custom title</span>}
                   </div>
                 </div>
 
-                <div className="pb-4 border-b border-gray-200">
-                  <div className="text-sm text-gray-600 mb-2">Source Files</div>
+                <div className="pb-4 border-b border-gray-200 dark:border-slate-700">
+                  <div className="text-sm text-gray-600 mb-2 dark:text-slate-300">Source Files</div>
                   {selectedFiles.length === 0 ? (
-                    <div className="text-sm text-gray-400 italic">
+                    <div className="text-sm text-gray-400 italic dark:text-slate-500">
                       None selected
                     </div>
                   ) : (
                     <div className="space-y-2">
                       {selectedFiles.map((file, idx) => (
                         <div key={idx} className="flex items-start gap-2">
-                          <div className="w-5 h-5 bg-emerald-100 rounded flex items-center justify-center flex-shrink-0 mt-0.5">
-                            <span className="text-xs font-bold text-emerald-600">
+                          <div className="w-5 h-5 bg-emerald-100 rounded flex items-center justify-center flex-shrink-0 mt-0.5 dark:bg-emerald-500/10">
+                            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-300">
                               {idx + 1}
                             </span>
                           </div>
-                          <div className="text-sm text-gray-900 flex-1 min-w-0">
+                          <div className="text-sm text-gray-900 flex-1 min-w-0 dark:text-slate-100">
                             <div className="truncate">{file}</div>
                           </div>
                         </div>
@@ -341,10 +378,10 @@ export default function CreationStudio() {
                 </div>
 
                 {/* Insert this between "Source Files" and "Question Types" */}
-                <div className="pb-4 border-b border-gray-200">
-                  <div className="text-sm text-gray-600 mb-2">Target Topics</div>
+                <div className="pb-4 border-b border-gray-200 dark:border-slate-700">
+                  <div className="text-sm text-gray-600 mb-2 dark:text-slate-300">Target Topics</div>
                   {topic.trim() === "" ? (
-                    <div className="text-sm text-gray-400 italic">
+                    <div className="text-sm text-gray-400 italic dark:text-slate-500">
                       No topics specified
                     </div>
                   ) : (
@@ -356,7 +393,7 @@ export default function CreationStudio() {
                         .map((cleanTopic, idx) => (
                           <span
                             key={idx}
-                            className="inline-flex items-center bg-blue-50 text-blue-700 px-2.5 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wide border border-blue-100"
+                            className="inline-flex items-center bg-blue-50 text-blue-700 px-2.5 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wide border border-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:border-blue-500/20"
                           >
                             {cleanTopic}
                           </span>
@@ -365,12 +402,12 @@ export default function CreationStudio() {
                   )}
                 </div>
 
-                <div className="pb-4 border-b border-gray-200">
-                  <div className="text-sm text-gray-600 mb-2">
+                <div className="pb-4 border-b border-gray-200 dark:border-slate-700">
+                  <div className="text-sm text-gray-600 mb-2 dark:text-slate-300">
                     Question Types
                   </div>
                   {selectedTypes.length === 0 ? (
-                    <div className="text-sm text-gray-400 italic">
+                    <div className="text-sm text-gray-400 italic dark:text-slate-500">
                       None selected
                     </div>
                   ) : (
@@ -378,7 +415,7 @@ export default function CreationStudio() {
                       {selectedTypes.map((type) => (
                         <span
                           key={type}
-                          className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-medium"
+                          className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-medium dark:bg-blue-500/10 dark:text-blue-300"
                         >
                           {type
                             .split("-")
@@ -390,20 +427,29 @@ export default function CreationStudio() {
                   )}
                 </div>
 
-                <div className="pb-4 border-b border-gray-200">
-                  <div className="text-sm text-gray-600 mb-2">
+                <div className="pb-4 border-b border-gray-200 dark:border-slate-700">
+                  <div className="text-sm text-gray-600 mb-2 dark:text-slate-300">
                     Question Count
                   </div>
-                  <div className="text-2xl font-bold text-gray-900">
+                  <div className="text-2xl font-bold text-gray-900 dark:text-slate-100">
                     {questionCount}
                   </div>
                 </div>
 
                 <div>
-                  <div className="text-sm text-gray-600 mb-2">Difficulty</div>
-                  <div className="inline-flex items-center gap-2 bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-sm font-medium">
-                    {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
-                  </div>
+                  <div className="text-sm text-gray-600 mb-2 dark:text-slate-300">Difficulty</div>
+                  {difficulty === "easy" && (
+                    <div className="inline-flex items-center gap-2 bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium dark:bg-green-500/10 dark:text-green-300">
+                      Easy
+                    </div>)}
+                  {difficulty === "medium" &&
+                    (<div className="inline-flex items-center gap-2 bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-sm font-medium dark:bg-amber-500/10 dark:text-amber-300">
+                      Medium
+                    </div>)}
+                  {difficulty === "hard" &&
+                    (<div className="inline-flex items-center gap-2 bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-medium dark:bg-red-500/10 dark:text-red-300">
+                      Hard
+                    </div>)}
                 </div>
               </div>
 
@@ -411,8 +457,8 @@ export default function CreationStudio() {
                 onClick={handleGenerate}
                 disabled={!canGenerate}
                 className={`w-full py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2 ${canGenerate
-                  ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg hover:shadow-xl"
-                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                  ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg hover:shadow-xl dark:bg-emerald-500 dark:hover:bg-emerald-400"
+                  : "bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-slate-800 dark:text-slate-500"
                   }`}
               >
                 <Zap className="w-5 h-5" />
@@ -420,7 +466,7 @@ export default function CreationStudio() {
               </button>
 
               {!canGenerate && (
-                <p className="text-sm text-gray-500 text-center mt-3">
+                <p className="text-sm text-gray-500 text-center mt-3 dark:text-slate-400">
                   Select at least one file and question type
                 </p>
               )}

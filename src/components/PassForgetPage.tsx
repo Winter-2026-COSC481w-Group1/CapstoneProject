@@ -74,11 +74,11 @@ export default function PassForgetPage() {
         </div>
       </div>
 
-      <div className="flex-1 flex items-center justify-center bg-white p-8">
+      <div className="flex-1 flex items-center justify-center bg-white p-8 dark:bg-slate-950">
         <div className="w-full max-w-md">
           <button
             onClick={() => navigate('/')}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-8 transition-colors"
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-8 transition-colors dark:text-slate-300 dark:hover:text-slate-100"
           >
             <ArrowLeft className="w-5 h-5" />
             Back to home
@@ -86,7 +86,7 @@ export default function PassForgetPage() {
           
           {!emailSent && <form onSubmit={handleSubmitEmail} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-slate-300">
                 Email address
               </label>
               <div className="relative">
@@ -96,30 +96,30 @@ export default function PassForgetPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@university.edu"
-                  className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder:text-slate-500"
                   required
                 />
               </div>
             </div>
             
-            {err && <div className="bg-red-50 border-2 border-red-200 rounded-3xl p-2 text-center">
-              <p className="font-bold text-red-900">{err}</p>
+            {err && <div className="bg-red-50 border-2 border-red-200 rounded-3xl p-2 text-center dark:bg-red-500/10 dark:border-red-500/30">
+              <p className="font-bold text-red-900 dark:text-red-300">{err}</p>
             </div>
             }
 
             <button
               type="submit"
-              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-semibold transition-colors"
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-semibold transition-colors dark:bg-emerald-500 dark:hover:bg-emerald-400"
             >
               Reset Password
             </button>
           </form>}
           
           {emailSent && <>
-            <p className="font-medium">Password reset email sent! Check your email to find your one time pin.</p>
+            <p className="font-medium dark:text-slate-300">Password reset email sent! Check your email to find your one time pin.</p>
             <form onSubmit={handleSubmitOtp} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-slate-300">
                 Eight Digit OTP
               </label>
               <div className="relative">
@@ -130,20 +130,20 @@ export default function PassForgetPage() {
                   placeholder="12345678"
                   maxLength={6}
                   minLength={6}
-                  className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder:text-slate-500"
                   required
                 />
               </div>
               </div>
               
-              {otpErr && <div className="bg-red-50 border-2 border-red-200 rounded-3xl p-2 text-center">
-                <p className="font-bold text-red-900">{otpErr}</p>
+              {otpErr && <div className="bg-red-50 border-2 border-red-200 rounded-3xl p-2 text-center dark:bg-red-500/10 dark:border-red-500/30">
+                <p className="font-bold text-red-900 dark:text-red-300">{otpErr}</p>
               </div>
               }
             
             <button
               type="submit"
-              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-semibold transition-colors"
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-semibold transition-colors dark:bg-emerald-500 dark:hover:bg-emerald-400"
             >
               Submit OTP
             </button>
