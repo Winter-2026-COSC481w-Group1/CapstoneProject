@@ -34,15 +34,40 @@ export default function Profile() {
   };
   
   const handleAccountDeletion = async () => {
-    console.log("account deletion");
-    // todo implement full user deletion
-    try {
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      if (!session?.access_token) {
-        console.error('no session token available for account deletion');
-        return;
+    confirm("Are you sure? This will delete all your uploaded documents and all your assessments.");
+    
+    // get the session token which
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session?.access_token) {
+      console.error('no session token available for account deletion');
+      return;
+    }
+    
+    // delete this user's reference to all files (file will be saved if another user has them uploaded)
+    for (const file of libraryFiles) {
+      try {
+        const res = await fetch(`${VITE_API_URL}/api/v1/documents/${file.id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        if (!res.ok) throw new Error(await res.text());
+      } catch (err) {
+        console.error('Error permanently deleting document:', err);
       }
-      //todo change to supabase version
+      
+      try {
+        const res = await fetch(`${VITE_API_URL}/api/v1/trash/documents/${file.id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        if (!res.ok) throw new Error(await res.text());
+      } catch (err) {
+        console.error('Error permanently deleting document:', err);
+      }
+    }
+    
+    // delete the user from the auth table (cascades down through public tables)
+    try {
       const res = await fetch(`${VITE_API_URL}/api/v1/api/users`, {
         method: 'DELETE',
         headers: {
