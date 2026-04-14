@@ -1,6 +1,7 @@
 from typing import Dict, Any
 from uuid import uuid4
 from datetime import datetime, timezone
+from dateutil import parser
 import re
 import asyncio
 import random
@@ -405,6 +406,8 @@ class AssessmentService:
 
             # split topics by comma
             topics = [t.strip() for t in query.split(",") if t.strip()]
+            if len(topics) == 0:
+                topics = [""]
             num_topics = len(topics)
             chunks_needed = num_questions * 3
             min_floor = num_topics * 5
@@ -720,7 +723,6 @@ class AssessmentService:
 
     async def delete_assessment(self, assessment_id: str, user_id: str):
         """Soft-delete an assessment (move to trash)."""
-        from datetime import datetime, timezone
         deleted_at = datetime.now(timezone.utc).isoformat()
 
         result = (
@@ -742,7 +744,6 @@ class AssessmentService:
 
     async def get_trash_assessments(self, user_id: str) -> list:
         """Return assessments the user has soft-deleted (in the trash)."""
-        from datetime import datetime, timezone
         response = (
             self.db_client.table("assessments")
             .select("*")
@@ -756,7 +757,7 @@ class AssessmentService:
             deleted_at = row.get("deleted_at")
             days_remaining = None
             if deleted_at:
-                deleted_dt = datetime.fromisoformat(deleted_at.replace("Z", "+00:00"))
+                deleted_dt = datetime.fromisoformat(parser.isoparse(deleted_at).isoformat())
                 elapsed = (datetime.now(timezone.utc) - deleted_dt).days
                 days_remaining = max(0, 30 - elapsed)
 

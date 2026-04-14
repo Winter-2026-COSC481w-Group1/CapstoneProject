@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { CheckCircle, Circle, FileText, X, Plus } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { CheckCircle, Circle, FileText, X, Plus, ChevronDown } from "lucide-react";
 import { useApp } from "../AppContext";
 import { Assessment } from "../types";
 import { put } from '../api';
@@ -16,11 +16,24 @@ export default function EditingStudio() {
 
   const [isEdited, setIsEdited] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDifficultyOpen, setIsDifficultyOpen] = useState(false);
+  const difficultyDropdownRef = useRef<HTMLDivElement | null>(null);
+
+  const selectedDifficulty = (currentAssessment?.difficulty || "medium").toLowerCase();
+  const difficultyStyles: Record<string, string> = {
+    easy: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300",
+    medium: "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300",
+    hard: "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300",
+  };
+  const difficultySizes: Record<string, string> = {
+    easy: "w-24",
+    medium: "w-28",
+    hard: "w-24",
+  };
 
   const handleDifficultyChange = function (difficulty: string) {
     // validate
     if (
-      difficulty != "none" &&
       difficulty != "easy" &&
       difficulty != "medium" &&
       difficulty != "hard"
@@ -28,10 +41,25 @@ export default function EditingStudio() {
       return;
     if (!currentAssessment) return;
 
-    // assign with no re-render
-    currentAssessment.difficulty = difficulty;
+    const changedAssessment: Assessment = structuredClone(currentAssessment);
+    changedAssessment.difficulty = difficulty;
+    setCurrentAssessment(changedAssessment);
     setIsEdited(true);
   };
+
+  useEffect(() => {
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (!difficultyDropdownRef.current) return;
+      if (!difficultyDropdownRef.current.contains(event.target as Node)) {
+        setIsDifficultyOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+    };
+  }, []);
 
   const handleSaving = async function () {
     if (!currentAssessment || isSaving || currentAssessment.questions.length == 0) return;
@@ -69,11 +97,12 @@ export default function EditingStudio() {
 
       // Update local state
       const updatedAssessment = structuredClone(currentAssessment);
+      updatedAssessment.status = "ready"; // invalidate latest attempt
       setCurrentAssessment(updatedAssessment);
       
       // if this is a newly created assessment, make sure to add it to the assessments list
       if (assessments.filter(assessment => assessment.id === currentAssessment.id).length === 0)
-        setAssessments([...assessments, updatedAssessment]);
+        setAssessments([updatedAssessment, ...assessments]);
       else {
         // otherwise update the assessment that is already in the assessments list
         const updatedAssessments = assessments.map((test) =>
@@ -101,7 +130,7 @@ export default function EditingStudio() {
         status: 'ready',
         sourceFiles: [],
         questionCount: 0,
-        difficulty: 'none',
+        difficulty: 'medium',
         numAttempts: 0,
         numCorrect: 0,
         questions: [],
@@ -218,21 +247,41 @@ export default function EditingStudio() {
 
               <div>
                 <div className="text-sm text-gray-600 mb-2 dark:text-slate-300">Difficulty</div>
-                <select
-                  defaultValue={
-                    (currentAssessment.difficulty || 'none').charAt(0).toUpperCase() +
-                    (currentAssessment.difficulty || 'none').slice(1)
-                  }
-                  className="text-left bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-sm font-medium appearance-none dark:bg-amber-500/10 dark:text-amber-300"
-                  onChange={(e) => {
-                    handleDifficultyChange(e.target.value.toLowerCase());
-                  }}
+                <div
+                  ref={difficultyDropdownRef}
+                  className={`relative inline-block ${difficultySizes[selectedDifficulty] || difficultySizes.medium}`}
                 >
-                  <option className="bg-white dark:bg-slate-900">None</option>
-                  <option className="bg-white dark:bg-slate-900">Easy</option>
-                  <option className="bg-white dark:bg-slate-900">Medium</option>
-                  <option className="bg-white dark:bg-slate-900">Hard</option>
-                </select>
+                  <button
+                    type="button"
+                    className={`relative rounded-full px-4 py-1 pr-8 text-sm font-medium transition-colors ${difficultyStyles[selectedDifficulty] || difficultyStyles.medium}`}
+                    onClick={() => {
+                      setIsDifficultyOpen((prev) => !prev);
+                    }}
+                  >
+                    <span className="block text-center capitalize">{selectedDifficulty}</span>
+                    <ChevronDown
+                      className={`pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 transition-transform ${isDifficultyOpen ? "rotate-180" : ""}`}
+                    />
+                  </button>
+
+                  {isDifficultyOpen && (
+                    <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
+                      {(["easy", "medium", "hard"] as const).map((difficulty) => (
+                        <button
+                          key={difficulty}
+                          type="button"
+                          className={`w-full px-2 py-2 text-sm transition-colors hover:bg-gray-100 dark:hover:bg-slate-800 ${selectedDifficulty === difficulty ? "font-semibold" : "font-medium"}`}
+                          onClick={() => {
+                            handleDifficultyChange(difficulty);
+                            setIsDifficultyOpen(false);
+                          }}
+                        >
+                          <span className="block text-center capitalize">{difficulty}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -591,7 +640,7 @@ export default function EditingStudio() {
             setCurrentAssessment(changedAssessment);
             setIsEdited(true);
           }}
-          className="w-full py-4 rounded-xl font-bold text-lg transition-all border-blue-200 hover:border-blue-300 border-2 flex items-center justify-center gap-2 bg-blue-50 hover:bg-blue-100 text-blue-600 shadow-lg hover:shadow-xl"
+          className="w-full py-4 rounded-xl font-bold text-lg transition-all border-blue-200 hover:border-blue-300 border-2 flex items-center justify-center gap-2 bg-blue-50 hover:bg-blue-100 text-blue-600 shadow-lg hover:shadow-xl dark:bg-blue-500/10 dark:text-blue-300 dark:hover:bg-blue-500/20 border-blue-200/20 hover:border-blue-300/20"
         >
           Add a question
         </button>

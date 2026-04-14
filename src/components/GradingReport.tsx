@@ -199,7 +199,7 @@ export default function GradingReport() {
               <div className={`w-32 h-32 rounded-full flex items-center justify-center ${getScoreBgColor(score)}`}>
                 <div className="text-center">
                   <div className={`text-5xl font-bold ${getScoreColor(score)}`}>{score}%</div>
-                  <div className="text-sm text-gray-600 dark:text-slate-300">Score</div>
+                  <div className="text-sm text-gray-600 dark:text-slate-500">Score</div>
                 </div>
               </div>
 
@@ -360,13 +360,13 @@ export default function GradingReport() {
                     </div>}
 
                     {question.source && (
-                      <div className="mt-4 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-lg">
+                      <div className="mt-4 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-lg dark:bg-blue-500/10 dark:border-blue-400">
                         <div className="flex items-start gap-3">
                           <FileText className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
                           <div className="flex-1">
-                            <div className="text-sm font-semibold text-blue-900 mb-2">Source Citation</div>
-                            <p className="text-sm text-gray-700 italic mb-2">"{question.source.text}"</p>
-                            <div className="flex items-center gap-2 text-xs text-blue-700">
+                            <div className="text-sm font-semibold text-blue-900 mb-2 dark:text-blue-200">Source Citation</div>
+                            <p className="text-sm text-gray-700 italic mb-2 dark:text-slate-300">"{question.source.text}"</p>
+                            <div className="flex items-center gap-2 text-xs text-blue-700 dark:text-blue-300">
                               <span className="font-medium">
                               {question.source.document_name || question.source.document_id}
                             </span>
