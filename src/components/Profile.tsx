@@ -4,6 +4,8 @@ import { supabaseClient } from '../supabase';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 
+const VITE_API_URL = import.meta.env.VITE_API_URL;
+
 export default function Profile() {
   const navigate = useNavigate();
   const { currentUser, libraryFiles, assessments } = useApp();
@@ -32,8 +34,58 @@ export default function Profile() {
   };
   
   const handleAccountDeletion = async () => {
-    console.log("account deletion");
-    // todo implement full user deletion
+    confirm("Are you sure? This will delete all your uploaded documents and all your assessments.");
+    
+    // get the session token which
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session?.access_token) {
+      console.error('no session token available for account deletion');
+      return;
+    }
+    
+    // delete this user's reference to all files (file will be saved if another user has them uploaded)
+    for (const file of libraryFiles) {
+      try {
+        const res = await fetch(`${VITE_API_URL}/api/v1/documents/${file.id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        if (!res.ok) throw new Error(await res.text());
+      } catch (err) {
+        console.error('Error permanently deleting document:', err);
+      }
+      
+      try {
+        const res = await fetch(`${VITE_API_URL}/api/v1/trash/documents/${file.id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        if (!res.ok) throw new Error(await res.text());
+      } catch (err) {
+        console.error('Error permanently deleting document:', err);
+      }
+    }
+    
+    // delete the user from the auth table (cascades down through public tables)
+    try {
+      const res = await fetch(`${VITE_API_URL}/api/v1/api/users`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
+      if (res.ok) {
+        console.log('successfully deleted account');
+      }
+      else
+      {
+        console.error('failed deleting account');
+      }
+    } catch (err) {
+      console.error('error deleting account', err);
+    } finally {
+      navigate('/');
+    }
   };
   
   const handleNameChange = async () => { 
@@ -61,19 +113,24 @@ export default function Profile() {
                 {currentUser!.avatar}
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-slate-100">{currentUser!.name}</h2>
-                <p className="text-gray-600 dark:text-slate-300">{currentUser!.email}</p>
-              </div>
-            </div>
-
-            <div className="border-t border-gray-200 pt-6 dark:border-slate-700">
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div className="flex items-start gap-3 p-4 bg-emerald-50 rounded-xl dark:bg-emerald-500/10">
-                  <User className="w-5 h-5 text-emerald-600 mt-0.5" />
-                  <div>
-                    <div className="text-sm text-gray-600 dark:text-slate-300">Account Type</div>
-                    <div className="font-semibold text-gray-900 dark:text-slate-100">Premium</div>
-                  </div>
+                <div className="inline-flex">
+                  <h2 className={!editingName ? "text-2xl font-bold text-gray-900 dark:text-slate-100" : "hidden"}>{currentUser!.name}</h2>
+                  <input
+                    className={editingName ? "text-2xl font-bold text-gray-900 dark:text-slate-100 border-gray-900 border-2 rounded-md p-1" : "hidden"}
+                    onChange={(e) => { 
+                      setNewName(e.currentTarget.value);
+                    }}
+                  ></input>
+                  <Pencil
+                    className={!editingName ? "w-4 h-4 inline ml-2 m-auto hover:scale-110 text-emerald-600" : "hidden"}
+                    onClick={() => { setEditingName(true) }}
+                  />
+                  <button
+                    className={editingName ? "ml-2 inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors" : "hidden"}
+                    onClick={() => {
+                      handleNameChange();
+                    }}
+                  >Save</button>
                 </div>
                 <p className={editingName ? "text-red-600" : "hidden"}>Warning: using Google sign-in overwrites your name</p>
                 <p className="text-gray-600">{currentUser!.email}</p>
@@ -123,49 +180,10 @@ export default function Profile() {
             </div>
           </div>
 
-          <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200 dark:bg-slate-900 dark:border-slate-700 dark:shadow-black/20">
-            <h3 className="text-xl font-bold text-gray-900 mb-6 dark:text-slate-100">Account Actions</h3>
-
-            <div className="space-y-4">
-              <button className="w-full flex items-center justify-between p-4 border-2 border-gray-200 rounded-xl hover:border-emerald-500 hover:bg-emerald-50 transition-all group dark:border-slate-700 dark:hover:border-emerald-500 dark:hover:bg-emerald-500/10">
-                <div className="flex items-center gap-3">
-                  <User className="w-5 h-5 text-gray-600 group-hover:text-emerald-600 dark:text-slate-300 dark:group-hover:text-emerald-300" />
-                  <div className="text-left">
-                    <div className="font-semibold text-gray-900 dark:text-slate-100">Edit Profile</div>
-                    <div className="text-sm text-gray-600 dark:text-slate-300">Update your personal information</div>
-                  </div>
-                </div>
-              </button>
-
-              <button className="w-full flex items-center justify-between p-4 border-2 border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all group dark:border-slate-700 dark:hover:border-blue-500 dark:hover:bg-blue-500/10">
-                <div className="flex items-center gap-3">
-                  <FileText className="w-5 h-5 text-gray-600 group-hover:text-blue-600 dark:text-slate-300 dark:group-hover:text-blue-300" />
-                  <div className="text-left">
-                    <div className="font-semibold text-gray-900 dark:text-slate-100">Export Data</div>
-                    <div className="text-sm text-gray-600 dark:text-slate-300">Download all your assessments and results</div>
-                  </div>
-                </div>
-              </button>
-            </div>
-          </div>
-
           <div className="bg-red-50 border-2 border-red-200 rounded-3xl p-8 dark:bg-red-500/10 dark:border-red-500/30">
             <h3 className="text-xl font-bold text-red-900 mb-6 dark:text-red-300">Danger Zone</h3>
 
             <div className="space-y-3">
-              <button
-                onClick={handlePurgeLibrary}
-                className="w-full flex items-center justify-between p-4 bg-white border-2 border-red-300 rounded-xl hover:border-red-500 hover:bg-red-50 transition-all group dark:bg-slate-950 dark:border-red-500/30 dark:hover:bg-red-500/10"
-              >
-                <div className="flex items-center gap-3">
-                  <Trash2 className="w-5 h-5 text-red-600 dark:text-red-300" />
-                  <div className="text-left">
-                    <div className="font-semibold text-red-900 dark:text-red-300">Purge Library</div>
-                    <div className="text-sm text-red-700 dark:text-red-200">Delete all files and assessments</div>
-                  </div>
-                </div>
-              </button>
-
               <button
                 onClick={handleLogout}
                 className="w-full flex items-center justify-between p-4 bg-white border-2 border-red-300 rounded-xl hover:border-red-500 hover:bg-red-50 transition-all group dark:bg-slate-950 dark:border-red-500/30 dark:hover:bg-red-500/10"
@@ -185,7 +203,7 @@ export default function Profile() {
               >
                 
               <div className="flex items-center gap-3">
-                <LogOut className="w-5 h-5 text-red-600 dark:text-red-300" />
+                <KeyRound className="w-5 h-5 text-red-600 dark:text-red-300" />
                 <div className="text-left">
                   <div className="font-semibold text-red-900 dark:text-red-300">Reset Password</div>
                   <div className="text-sm text-red-700 dark:text-red-200">Change your password</div>
@@ -195,13 +213,13 @@ export default function Profile() {
               
               <button
                 onClick={handleAccountDeletion}
-                className="w-full flex items-center justify-between p-4 bg-white border-2 border-red-300 rounded-xl hover:border-red-500 hover:bg-red-50 transition-all group"
+                className="w-full flex items-center justify-between p-4 bg-white border-2 border-red-300 rounded-xl hover:border-red-500 hover:bg-red-50 transition-all group dark:bg-slate-950 dark:border-red-500/30 dark:hover:bg-red-500/10"
               >
                 <div className="flex items-center gap-3">
-                  <UserRoundX className="w-5 h-5 text-red-600" />
+                  <UserRoundX className="w-5 h-5 text-red-600 dark:text-red-300" />
                   <div className="text-left">
-                    <div className="font-semibold text-red-900">Delete Account</div>
-                    <div className="text-sm text-red-700">Permanently delete all your data</div>
+                    <div className="font-semibold text-red-900 dark:text-red-300">Delete Account</div>
+                    <div className="text-sm text-red-700 dark:text-red-200">Permanently delete all your data</div>
                   </div>
                 </div>
               </button>
