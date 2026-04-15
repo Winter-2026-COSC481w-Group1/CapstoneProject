@@ -45,17 +45,13 @@ Examable is a full-stack educational platform that uses **Retrieval-Augmented Ge
 
 ## 📸 Screenshots
 
-<!-- Replace the placeholders below with actual screenshots -->
-
-| Dashboard | Exam Creation | Exam Mode |
-|:---------:|:------------:|:---------:|
-| ![Dashboard Screenshot](screenshots/dashboard.png) | ![Creation Screenshot](screenshots/creation.png) | ![Exam Mode Screenshot](screenshots/exam-mode.png) |
+| Dashboard | Exam Studio | Exam Mode |
+|:---------:|:----------:|:---------:|
+| ![Dashboard](screenshots/dashboard.png) | ![Exam Studio](screenshots/creation.png) | ![Exam Mode](screenshots/exam-mode.png) |
 
 | Grading Report | Library | Editing Studio |
 |:--------------:|:-------:|:--------------:|
-| ![Grading Screenshot](screenshots/grading.png) | ![Library Screenshot](screenshots/library.png) | ![Editing Screenshot](screenshots/editing.png) |
-
-> **Note:** To add screenshots, create a `screenshots/` folder in the project root and add your images there.
+| ![Grading Report](screenshots/grading.png) | ![Library](screenshots/library.png) | ![Editing Studio](screenshots/editing.png) |
 
 ---
 
