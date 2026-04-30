@@ -12,6 +12,7 @@ export interface LibraryFile {
   uploadedAt: Date;
   status: 'pending' | 'failed' | 'ready' | 'indexing' | 'processing';
   pageCount: number;
+  sections?: { title: string; page_number: number }[];
 }
 
 export interface Question {

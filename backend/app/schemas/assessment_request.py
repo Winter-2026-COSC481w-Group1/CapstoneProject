@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field
 
 class AssessmentRequest(BaseModel):
     document_ids: list[str]
+    sections: list[str] | None = None # Filter by specific document sections/chapters
     query: str  # the topic of the exam. unable to rename because of db schema
     title: str | None = None
     num_questions: int = Field(ge=1, le=50)

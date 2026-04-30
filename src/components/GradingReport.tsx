@@ -26,10 +26,10 @@ export default function GradingReport() {
 
   if (!assessment.questions) {
     return (
-      <div className="min-h-screen bg-stone-50 flex flex-col items-center justify-center p-4 dark:bg-slate-950">
+      <div className="min-h-screen bg-stone-50 flex flex-col items-center justify-center p-4">
         <Loader2 className="w-12 h-12 text-emerald-600 animate-spin mb-4" />
-        <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100">Loading your results...</h2>
-        <p className="text-gray-600 dark:text-slate-300">This should only take a moment.</p>
+        <h2 className="text-xl font-bold text-gray-900">Loading your results...</h2>
+        <p className="text-gray-600">This should only take a moment.</p>
       </div>
     );
   }

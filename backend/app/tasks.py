@@ -26,12 +26,24 @@ async def process_document(
         # Determine which processor to use based on extension
         file_ext = os.path.splitext(file_path)[1].lower()
 
+        chunks = []
+        sections = []
+
         if file_ext == ".pdf":
-            chunks = pdf_process_to_chunks(file_bytes, file_hash)
+            result = pdf_process_to_chunks(file_bytes, file_hash)
+            chunks = result["chunks"]
+            sections = result["sections"]
         elif file_ext == ".pptx":
+            # For now, pptx doesn't support sections, but we could add it later
             chunks = pptx_process_to_chunks(file_bytes, file_hash)
+            sections = [{"title": "Full Presentation", "page_number": 1}]
         else:
             raise ValueError(f"Unsupported file extension: {file_ext}")
+
+        # Update the document with detected sections
+        db_client.table("documents").update({"sections": sections}).eq(
+            "id", document_id
+        ).execute()
 
         batch_size = 20
         total_chunks = len(chunks)

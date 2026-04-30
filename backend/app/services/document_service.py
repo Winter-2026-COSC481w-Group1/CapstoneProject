@@ -38,6 +38,7 @@ class DocumentService:
                         "size": doc.get("file_size"),
                         "pageCount": doc.get("page_count", 0),
                         "uploadedAt": doc.get("created_at"),
+                        "sections": doc.get("sections") or [],
                     }
                 )
 
